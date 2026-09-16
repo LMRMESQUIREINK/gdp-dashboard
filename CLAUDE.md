@@ -10,6 +10,10 @@ yourself every time.
   business context has been gathered yet — `business-brain.md` is an
   empty template waiting to be filled in through conversation.
 - No builds have been shipped yet. `/builds` is empty.
+- Software Factory skills added (`.claude/skills/new-feature`,
+  `code-structure`, `evidence-driven-testing`, `review-loop`) — see
+  "Software Factory method" under TECHNIQUES below. Not yet exercised
+  on a real build.
 
 ---
 
@@ -133,6 +137,38 @@ version for any kind of multi-step work, visual or not.
 Full template and copy-paste starter prompt: `/prompts/goal-loop-method.md`.
 Use it by default on any build big enough to have multiple tasks or
 stages, especially when working autonomously — don't wait to be asked.
+
+### Software Factory method (isolate → build → prove → ship)
+
+For any feature-sized or larger build, run it through four stations, in
+order — this is the concrete, skill-backed implementation of Goal/Loop
+for full builds, especially when several builds might be in flight at
+once (multiple agents, multiple sessions):
+
+1. **Isolate** — `.claude/skills/new-feature`. Start the work on its own
+   branch (or git worktree, when running locally with several agents in
+   parallel), never directly on `main` or the shared base branch.
+2. **Build** — `.claude/skills/code-structure`. Write the code in a
+   clean, service-layer structure a human or a fresh agent could pick up
+   cold — working code is the floor, not the bar.
+3. **Prove** — `.claude/skills/evidence-driven-testing`. Capture a
+   before state and an after state — screenshots for visual work,
+   concrete numbers for performance/data work — and never report
+   something done without showing both.
+4. **Ship** — `.claude/skills/review-loop`. Run the build through review
+   (an external tool like Greptile/CodeRabbit if one's configured,
+   otherwise a rigorous self-review checklist) before presenting it as
+   ready. Anything that doesn't pass loops back to `build`, then `prove`,
+   then `ship` again — automatically, without stopping to ask permission
+   each cycle — until it actually passes. Merging itself always stays a
+   human decision.
+
+Invoke each skill by name when its station is reached (`Skill: new-feature`,
+etc.), or let them trigger naturally from their descriptions. This
+doesn't replace the screenshot-before-done or Goal/Loop rules above — it's
+the same discipline, organized as four named, reusable stations instead
+of one general instruction, so the same workflow runs consistently across
+different builds and different sessions.
 
 ---
 
