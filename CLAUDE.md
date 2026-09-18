@@ -9,7 +9,14 @@ yourself every time.
 - Scaffolding just created (context files + folder structure). No
   business context has been gathered yet — `business-brain.md` is an
   empty template waiting to be filled in through conversation.
-- No builds have been shipped yet. `/builds` is empty.
+- First real build shipped: `/builds/kryptera-strategy-lab-pro` — a
+  from-spec Pro rewrite of an uploaded "Kryptera Strategy Lab" trading
+  strategy generator (source script wasn't provided, only its docs/
+  packaging). Full deep-analysis writeup in
+  `/notes/kryptera-strategy-lab-analysis.md`. Ran through the full
+  isolate→build→prove→ship loop; proved via a pinned-venv fresh install
+  and synthetic-data smoke tests (no live network access to Yahoo
+  Finance from this sandbox, called out explicitly rather than faked).
 - Software Factory skills added (`.claude/skills/new-feature`,
   `code-structure`, `evidence-driven-testing`, `review-loop`) — see
   "Software Factory method" under TECHNIQUES below. Not yet exercised
