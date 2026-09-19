@@ -17,6 +17,17 @@ yourself every time.
   isolate→build→prove→ship loop; proved via a pinned-venv fresh install
   and synthetic-data smoke tests (no live network access to Yahoo
   Finance from this sandbox, called out explicitly rather than faked).
+- Second build shipped: `/builds/trading-jarvis` — completes an uploaded
+  5-file "Trading Jarvis" bundle (2 of its own documented 6 files,
+  `signal_generator.py` and `risk_manager.py`, were missing from the
+  upload, so the original couldn't even import). Full writeup in
+  `/notes/trading-jarvis-analysis.md`. Fixed: fabricated OHLC/volume
+  data undermining ATR stops and volume confirmation, a hardcoded
+  stale model ID, placeholder API keys going straight to the network,
+  no isolation/pinning. Proven via pinned-venv install + synthetic-data
+  unit tests + a mocked-Anthropic-client test of the tool-dispatch
+  loop (no live EODHD/FMP/Anthropic access from this sandbox — same
+  egress restriction as the Yahoo Finance case above).
 - Software Factory skills added (`.claude/skills/new-feature`,
   `code-structure`, `evidence-driven-testing`, `review-loop`) — see
   "Software Factory method" under TECHNIQUES below. Not yet exercised
