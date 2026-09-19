@@ -80,6 +80,20 @@ yourself every time.
   dependency enforcement, agent reassignment, revenue-ranked decision
   logic) have no code behind them — pre-existing, not a regression,
   and left alone as scope expansion nobody asked for.
+- A round-4 upload (9 files) turned out to be almost entirely a full
+  revert to pre-fix, pre-Swamp-Intelligence snapshots — every code file
+  matched an earlier state already superseded in the build (fabricated
+  OHLC, stale hardcoded model, `risk_manager.py`'s same schema bug
+  arriving a third time, `run_strategy.py` without `--swamp`). Verified
+  precisely (grepped the build for each regressed marker, `diff`'d
+  `signal_generator.py`) before concluding no code needed touching —
+  see Addendum 4 in `/notes/trading-jarvis-analysis.md`. One file was
+  genuinely new: an HTML analysis of the *source article* itself
+  (distinct from round 3's HTML, which analyzed the uploaded code),
+  confirming the article's original pitch (voice + persistent memory +
+  live execution via MCP) was broader than what got built, consistent
+  with every README's own stated scope cuts. No files changed this
+  round.
 - Software Factory skills added (`.claude/skills/new-feature`,
   `code-structure`, `evidence-driven-testing`, `review-loop`) — see
   "Software Factory method" under TECHNIQUES below. Not yet exercised

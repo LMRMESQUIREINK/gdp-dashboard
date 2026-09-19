@@ -340,3 +340,64 @@ acting as a stand-in for Bus + execution surface, calling the real Jarvis
 modules directly). `route_through_bus()`'s name implies a distinct Bus
 layer that isn't actually a separate component — worth knowing precisely
 rather than assuming from the name that more infrastructure exists.
+
+---
+
+## ADDENDUM 4 — a full revert, and the right response is often "don't"
+
+Nine files arrived this round: `data_pipeline.py`, `jarvis_orchestrator.py`,
+`live_monitor.py`, `README.md`, `README.md.pdf`, `risk_manager.py`,
+`run_strategy.py`, `signal_generator.py`, `trading_jarvis_analysis.html`.
+
+**DEEP:** Checked each against the current build rather than assuming
+"new upload" means "new work."
+
+- `data_pipeline.py`, `jarvis_orchestrator.py`, `live_monitor.py`,
+  `README.md` — all four are the **round-1 originals**: fabricated
+  `high = close*1.01`/`low = close*0.99`/constant-volume frames again,
+  `MODEL = "claude-sonnet-4-6"` hardcoded again, no `swamp_decompose`
+  tool, no `get_recent_ohlcv`, no positions wiring, no
+  `max_consecutive_errors` backoff, no mention of Swamp Intelligence
+  anywhere in the README.
+- `README.md.pdf` — same text as `README.md`, laid out as a 2-page PDF.
+  A rendering of the same file, not additional content (same pattern as
+  the round-3 `.txt` that duplicated `jarvis_swamp_bridge.py`).
+- `risk_manager.py` — the same pre-fix file uploaded in rounds 2 and 3:
+  `size_position()`'s zero-risk-distance branch still returns a
+  different key set than the normal branch (`"warning"` as a string
+  message, no `r_multiple_target`). Already fixed twice; this is the
+  same bug arriving a third time, not a new one.
+- `run_strategy.py` — predates even the round-3 upload: fabricated OHLC,
+  no `--swamp`/`--equity`/`--risk-pct` flags, no positions commands.
+- `signal_generator.py` — byte-identical in logic to what's already in
+  the build; the only diff is a docstring note this build added.
+- `trading_jarvis_analysis.html` — genuinely different from the
+  round-3 HTML (which analyzed the uploaded *code*). This one analyzes
+  the **source article** itself ("How to Build a Trading Jarvis AI
+  System in 2026," Towards AI), built from a title/subtitle/excerpt
+  search rather than a full-text read — its own footer honestly notes
+  `pub.towardsai.net` blocks automated fetch via `robots.txt`. Confirms
+  the article's original pitch was broader than what got built (voice +
+  persistent memory + live execution via MCP multi-agent orchestration)
+  — consistent with every README's own "what's deliberately out of
+  scope" section having cut voice and execution on purpose.
+
+**DEEPER — verified, not assumed:** grepped the current build against
+each regressed marker before concluding anything (`get_recent_ohlcv`/
+`_require_key` in `data_pipeline.py`; `swamp_decompose`/`claude-opus-5`/
+`positions_store` in `jarvis_orchestrator.py`; `max_consecutive_errors`/
+`positions_store` in `live_monitor.py`; `"error":` in `risk_manager.py`;
+`--swamp`/`positions_store` in `run_strategy.py`) — all present. A
+`diff` against this round's `signal_generator.py` confirmed the only
+difference is the docstring note. The current build is a strict superset
+of everything uploaded this round; nothing here needed reconstructing or
+re-fixing.
+
+**DEEPEST:** the emphatic instruction this round was "CREATE CODE FOR ME
+... SHOW ME WHAT YOU KNOW." The version of that instruction that's
+actually correct here is recognizing when the honest answer is "nothing
+to build" — writing speculative code to look responsive to an upload
+that contains no new information would mean either quietly reintroducing
+bugs already fixed twice, or generating churn with no functional
+difference from what's already shipped. No files were touched this
+round; the build at `/builds/trading-jarvis/` stands as of Addendum 3.
