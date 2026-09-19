@@ -86,8 +86,22 @@ One honest note, not a bug: `swamp_intelligence.py`'s `ActivationGate`
 all) needs a tree's step count as input — so it can only ever be used
 *after* a tree already exists, not to decide *whether* to build one.
 Nothing currently calls it; `jarvis_orchestrator.py` routes every symbol
-check through Swamp Intelligence unconditionally instead. Worth a
-deliberate decision later, not treated as broken now.
+check through Swamp Intelligence unconditionally instead.
+
+**Checked against the actual Brain Spec (`01_brain/swamp_intelligence_core.md`)
+once its full text became available** — see `/notes/trading-jarvis-analysis.md`,
+Addendum 3, for the section-by-section comparison. Headline finding:
+`EventPacket`'s fields and `Priority`'s values match the spec exactly, and
+one real violation was caught and fixed — step 4's `risk_score` was `0`,
+one below the spec's stated `1-100` floor; `Task` now validates that range
+instead of just documenting it. `ActivationGate`'s dormancy turns out to be
+expected, not a gap: Trading Jarvis only ever decomposes one objective
+shape, so there's no complexity variance for it to gate. Several other spec
+sections (dynamic approval-from-risk-threshold, dependency enforcement,
+agent reassignment, revenue-ranked decision logic) have no corresponding
+code — true of the uploaded file already, not a regression here, and
+building them out for a single-objective-shape domain would be scope
+expansion beyond what's needed, not a bug fix.
 
 ## What's deliberately out of scope, and why
 

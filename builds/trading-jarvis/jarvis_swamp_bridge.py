@@ -47,6 +47,10 @@ WHAT CHANGED IN THIS BUILD
     - Now passes real existing_positions (via positions_store.py) into
       evaluate_trade(), so the printed portfolio heat reflects other
       recorded open positions, not just this one trade.
+    - Step 4's risk_score was 0 — one below the Brain Spec's stated
+      1-100 range (see swamp_intelligence.py's Task validation, added
+      once the actual spec text confirmed the range). Now 1, the floor
+      of that range, not below it.
 """
 
 from __future__ import annotations
@@ -109,7 +113,8 @@ def decompose_objective(symbol: str, risk_pct: float) -> "TaskTree":  # noqa: F8
         task="Present sized suggestion to a human. No order is placed by this system.",
         agent=AGENT_HUMAN_APPROVAL,
         priority=Priority.HIGH,
-        risk_score=0,
+        risk_score=1,  # Brain Spec's OUTPUT FORMAT states 1-100; this step is the
+        # floor of that range (lowest-risk step in the tree), not below it.
         approval_required=True,
         depends_on=(3,),
     ))

@@ -261,3 +261,82 @@ prompt instead unconditionally routes every symbol check through
 deliberately, not left as an unused class that looks wired in but isn't.
 
 Full build, all pieces now real and integrated: `/builds/trading-jarvis/`.
+
+---
+
+## ADDENDUM 3 — the actual Brain Spec, checked line by line
+
+The "01_brain/swamp_intelligence_core.md" referenced by name in three files
+across this build was pasted in full this round. Verified the
+implementation against it section by section rather than assuming the
+earlier code-only read was complete.
+
+**DEEP — where it matches, precisely:**
+`EventPacket`'s seven fields (`event_type`, `priority_level`, `risk_score`,
+`domain`, `assigned_agent`, `expected_output`, `approval_required`) are an
+exact match to the spec's EVENT STRUCTURING list, same order. `Priority`'s
+three values (Low/Medium/High, no fourth level) match OUTPUT FORMAT
+exactly. `ActivationGate.should_activate(step_count, cross_domain,
+ambiguous)`'s three parameters map directly onto ACTIVATION CONDITIONS'
+three trigger clauses. This wasn't a loose interpretation — someone built
+this specific implementation directly from this specific spec.
+
+**DEEPER — one real, fixed violation:** the spec's OUTPUT FORMAT section
+states `Risk: [Score 1–100]`. `jarvis_swamp_bridge.py`'s step 4 used
+`risk_score=0` — one below the spec's floor. Worse: last round, without
+this spec text in hand, I "corrected" `swamp_intelligence.py`'s code
+comment from `1-100` to `0-100` to rationalize that 0 — turning a
+correct-per-spec comment into an incorrect one, in the wrong direction.
+Fixed properly now that the actual spec is available: step 4's
+`risk_score` is `1` (the floor, not below it), the comment is back to
+`1-100`, and `Task.__post_init__` now actually enforces the range instead
+of just documenting it — a real invariant now, not a comment nobody
+checks.
+
+**DEEPEST — spec sections with no corresponding code, and why that's
+probably fine here:** several spec sections describe dynamic behavior
+this codebase doesn't implement:
+- **FAILURE HANDLING**'s "if risk > threshold: route to approval" implies
+  `approval_required` should be *derived* from `risk_score` against some
+  threshold. In practice it's hand-set per task in `decompose_objective()`
+  — consistent with a plausible threshold by construction (step 3 at 55
+  is `True`, steps 1-2 at 10/20 are `False`), but not computed by any
+  rule. A task built elsewhere with a high `risk_score` and a forgotten
+  `approval_required=True` wouldn't be caught.
+- **EXECUTION SEQUENCING**'s "no downstream execution without upstream
+  validation" and FAILURE HANDLING's "if dependency missing: halt
+  downstream execution" imply `depends_on` should be enforced. It's
+  descriptive metadata only — nothing reads it to gate anything.
+  `route_through_bus()` happens to execute in the right order because
+  it's hardcoded procedurally that way, not because the tree enforces its
+  own declared dependencies.
+- **AGENT ASSIGNMENT**'s "if agent mismatch: reassign before routing" and
+  **DECISION LOGIC**'s revenue/risk/efficiency/resource hierarchy have no
+  implementation at all — no reassignment path, no ranking logic.
+
+None of this is a regression introduced by this build — it was already
+true of the uploaded `swamp_intelligence.py`. Worth naming plainly instead
+of implying more machinery exists than does: this codebase is closer to
+"a spec-compliant data structure (Task/TaskTree/EventPacket) plus a
+governance guard" than "a reasoning engine that performs the spec's
+dynamic decomposition and failure-handling rules." For Trading Jarvis
+specifically — one fixed objective shape ("check a symbol"), always
+decomposing into the same 4 steps — that gap mostly doesn't bite: there's
+no varying complexity for `ActivationGate` to gate, no agent mismatches to
+reassign, no competing tasks to rank by revenue impact. The spec was
+written for a broader domain (its own worked example is "Launch AI funnel
+for fitness niche" with agents like "Positioning Engine" and "Media Buyer
+Agent" — the same domain the earlier HTML dashboard's MONETIZATION tab was
+gesturing at). Trading Jarvis is deliberately "just one tenant," per
+`swamp_intelligence.py`'s own docstring, and a narrow, safety-scoped one at
+that — building out FAILURE HANDLING's dynamic rules or DECISION LOGIC's
+ranking for a system with one task shape would be speculative scope
+expansion, not a bug fix, so it wasn't done here without being asked.
+
+**SYSTEM POSITION note:** the spec describes five layers (Council → Swamp
+Intelligence → Master Event Bus → Taskade → Soldiers). Only two exist in
+this codebase (Swamp Intelligence itself, and `jarvis_swamp_bridge.py`
+acting as a stand-in for Bus + execution surface, calling the real Jarvis
+modules directly). `route_through_bus()`'s name implies a distinct Bus
+layer that isn't actually a separate component — worth knowing precisely
+rather than assuming from the name that more infrastructure exists.

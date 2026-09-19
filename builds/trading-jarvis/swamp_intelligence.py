@@ -36,7 +36,19 @@ gate the decision to decompose in the first place (only whether to use
 a tree once built). jarvis_orchestrator.py's system prompt instead
 routes every symbol check through swamp_decompose unconditionally. Left
 as-is here rather than force a wiring decision that wasn't asked for —
-see /notes/trading-jarvis-analysis.md.
+see /notes/trading-jarvis-analysis.md. Checked against the actual Brain
+Spec text once it became available: Trading Jarvis only ever decomposes
+one objective shape (a single-symbol check, always the same 4 steps),
+so there's no varying complexity for this gate to distinguish between —
+its dormancy here isn't a missed wiring step, it's that this domain
+doesn't have the objective variety the spec's originating (broader,
+business/funnel-agent) domain was built for.
+
+Task.risk_score is now validated against the spec's stated 1-100 range
+(OUTPUT FORMAT: "Risk: [Score 1–100]") — added once the real spec text
+confirmed that range; a prior fix in this build had, without the spec
+in hand, guessed the range as 0-100 to match a since-corrected caller
+bug. See /notes/trading-jarvis-analysis.md, Addendum 3.
 """
 
 from __future__ import annotations
@@ -67,9 +79,16 @@ class Task:
     task: str
     agent: str
     priority: Priority
-    risk_score: int  # 0-100, per Brain Spec Section: OUTPUT FORMAT
+    risk_score: int  # 1-100 per Brain Spec Section: OUTPUT FORMAT ("Risk: [Score 1–100]")
     approval_required: bool
     depends_on: tuple[int, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if not 1 <= self.risk_score <= 100:
+            raise ValueError(
+                f"Task step {self.step}: risk_score={self.risk_score} is outside "
+                f"the Brain Spec's stated 1-100 range."
+            )
 
     def render(self) -> str:
         return (

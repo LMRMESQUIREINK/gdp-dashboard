@@ -65,6 +65,21 @@ yourself every time.
   `route_through_bus()` run against a forced BUY signal, rendering the
   Task Tree, all 4 Event Packets, and a real risk-sized suggestion.
   Addendum 2 in `/notes/trading-jarvis-analysis.md`.
+- The actual Brain Spec (`01_brain/swamp_intelligence_core.md`) arrived
+  and was checked against the implementation section by section —
+  Addendum 3 in `/notes/trading-jarvis-analysis.md`. `EventPacket`'s
+  fields and `Priority`'s values match the spec exactly. One real
+  violation found and fixed: step 4's `risk_score` was `0`, below the
+  spec's stated `1-100` floor — a prior round's fix had (without the
+  spec in hand) widened the code comment to `0-100` to rationalize
+  that, in the wrong direction; both are corrected now, and `Task`
+  validates the range instead of just documenting it. Confirmed
+  `ActivationGate`'s dormancy is expected, not a gap: this domain has
+  one fixed objective shape, so there's no complexity variance to
+  gate. Several spec sections (risk-threshold-derived approval,
+  dependency enforcement, agent reassignment, revenue-ranked decision
+  logic) have no code behind them — pre-existing, not a regression,
+  and left alone as scope expansion nobody asked for.
 - Software Factory skills added (`.claude/skills/new-feature`,
   `code-structure`, `evidence-driven-testing`, `review-loop`) — see
   "Software Factory method" under TECHNIQUES below. Not yet exercised
