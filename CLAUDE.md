@@ -28,6 +28,22 @@ yourself every time.
   unit tests + a mocked-Anthropic-client test of the tool-dispatch
   loop (no live EODHD/FMP/Anthropic access from this sandbox — same
   egress restriction as the Yahoo Finance case above).
+- `/builds/trading-jarvis` corrected in a second round: the real
+  `risk_manager.py` was uploaded (round 1 only had the other 4 files),
+  and it's more capable than the from-spec version originally written
+  in its place — genuine multi-position portfolio heat via
+  `existing_positions`, an `r_multiple_target` field, EWM-based ATR.
+  Swapped in the real file (with one schema-consistency fix), wrote
+  `signal_generator.py` to match its conventions, added
+  `positions_store.py` + `run_strategy.py --add-position/--positions/
+  --remove-position` to actually feed `existing_positions` real data
+  (previously always empty despite the capability existing), and fixed
+  a live `KeyError` in `live_monitor.py` that referenced a schema key
+  the real file never had. Addendum in
+  `/notes/trading-jarvis-analysis.md` corrects the original analysis's
+  wrong claim that multi-position heat wasn't architecturally
+  possible. Re-proven end-to-end including the positions CLI and a
+  forced BUY-signal print path.
 - Software Factory skills added (`.claude/skills/new-feature`,
   `code-structure`, `evidence-driven-testing`, `review-loop`) — see
   "Software Factory method" under TECHNIQUES below. Not yet exercised

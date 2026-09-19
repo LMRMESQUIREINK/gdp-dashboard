@@ -52,6 +52,10 @@ WHAT CHANGED IN THIS BUILD
       (high = close*1.01, low = close*0.99, volume = constant). They now
       call data_pipeline.get_recent_ohlcv() for the real frame — see
       data_pipeline.py's own docstring for why that matters.
+    - check_risk now passes real existing_positions (via
+      positions_store.py) into evaluate_trade(), so portfolio_heat
+      reflects other open positions the user has recorded, not just
+      the trade being checked.
 """
 
 import os
@@ -63,6 +67,7 @@ from anthropic import Anthropic
 from data_pipeline import get_recent_ohlcv, fetch_quote, fetch_ratios_ttm
 from signal_generator import generate_signals, latest_signal
 from risk_manager import evaluate_trade
+import positions_store as positions
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_KEY"))
 MODEL = os.getenv("JARVIS_MODEL", "claude-opus-5")
@@ -143,7 +148,8 @@ def _run_tool(name: str, tool_input: dict) -> dict:
         equity = tool_input.get("equity", DEFAULT_EQUITY)
         risk_pct = tool_input.get("risk_pct", 1.0)
         frame = get_recent_ohlcv(symbol, lookback_days=60)
-        result = evaluate_trade(frame, equity=equity, risk_pct=risk_pct)
+        existing = positions.positions_for_heat_check(exclude_symbol=symbol)
+        result = evaluate_trade(frame, equity=equity, risk_pct=risk_pct, existing_positions=existing)
         return result
 
     if name == "check_fundamentals":
@@ -171,9 +177,10 @@ integration they would need to build and approve themselves.
 Always run check_signal before check_risk for a given symbol — never
 suggest a position size for a symbol that isn't currently showing a BUY
 signal. Present findings plainly: signal, price, RSI, suggested size,
-stop, and trade risk. Flag clearly if trade risk exceeds the heat limit,
-and note that this is single-trade risk, not a whole-portfolio view,
-since this system doesn't track other open positions.
+stop, 2R target, and portfolio heat (this trade plus any other open
+positions the user has recorded). Flag clearly if portfolio heat
+exceeds the 5% limit. If the user hasn't recorded any open positions,
+note that the heat shown only reflects this one trade.
 """
 
 

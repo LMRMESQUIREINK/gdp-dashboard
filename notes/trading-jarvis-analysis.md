@@ -149,3 +149,52 @@ accident.
    silent voice layer. None of the above requires touching that design.
 
 Full build: `/builds/trading-jarvis/`.
+
+---
+
+## ADDENDUM — the real `risk_manager.py` was uploaded (round 2)
+
+A second upload provided the **actual** `risk_manager.py` — the file this
+analysis originally had to reconstruct from the other files' call
+signatures alone. It's different from, and better than, the guess:
+
+- `atr()` uses EWM (exponential) smoothing (`tr.ewm(span=n,
+  adjust=False).mean()`) — closer to true Wilder ATR than the simple
+  rolling-mean approximation this build originally substituted.
+- `size_position()` also computes an `r_multiple_target` (a 2R profit
+  target above entry) — a real feature the earlier reconstruction didn't
+  include at all.
+- **`evaluate_trade()` takes an `existing_positions` parameter, and
+  `portfolio_heat()` genuinely sums risk across a list of positions.**
+
+That last point directly contradicts finding #6 above and the
+"deepest-est" recommendation to just *document* single-trade risk as a
+limitation. The correct finding: **the capability for real portfolio-wide
+heat was already built into this file** — what was actually missing was
+anything upstream ever populating `existing_positions` with real open
+positions. Every call site (`jarvis_orchestrator.py`, `live_monitor.py`)
+always left it at the default `None`, so in *practice* heat was
+single-trade-only, but not because the architecture couldn't do
+otherwise — because nothing fed it. That's a narrower, more precise gap
+than "add position tracking later"; the fix is a positions ledger plus
+wiring, not a redesign. See `positions_store.py` in the build.
+
+One genuine bug did survive in the real file:
+`size_position()`'s zero-risk-distance branch (`entry == stop`) returned
+a different key set than its normal branch — no `r_multiple_target`, and
+a `"warning"` key that meant something different from
+`portfolio_heat()`'s own boolean `"warning"` one level up. A caller
+reading `result["sizing"]["r_multiple_target"]` unconditionally would
+`KeyError` on that edge case. Fixed by normalizing both branches to the
+same key set (the zero-risk message moved to `"error"`).
+
+A second, sharper bug this correction surfaced: `live_monitor.py`'s
+risk-gated alert path referenced `risk_check['portfolio_heat']['reason']`
+— a key that has never existed in the real schema (only
+`total_risk`/`heat_pct`/`warning`). That line would have thrown
+`KeyError` the first time a signal actually got risk-gated in
+production. It went unnoticed earlier because the swapped-in
+reconstruction had a `"reason"` key by coincidence of a different design
+choice — a reminder that testing against a plausible stand-in isn't the
+same as testing against the real contract, however carefully the
+stand-in is built.

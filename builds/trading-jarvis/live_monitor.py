@@ -35,6 +35,11 @@ WHAT CHANGED IN THIS BUILD
       same error every poll_sec forever. Now backs off and stops after
       max_consecutive_errors, with a clear message, instead of running
       unattended and failing silently.
+    - Used to reference a risk_manager return key ("reason") that
+      doesn't exist in the real risk_manager.py schema — would have
+      crashed with a KeyError the first time a signal got risk-gated.
+      Now reads the actual keys (heat_pct/warning/error) and also
+      passes real existing_positions via positions_store.py.
 """
 
 import time
@@ -43,6 +48,7 @@ from datetime import datetime
 from data_pipeline import get_recent_ohlcv, fetch_realtime
 from signal_generator import generate_signals, latest_signal
 from risk_manager import evaluate_trade
+import positions_store as positions
 
 
 def default_alert(message: str) -> None:
@@ -89,14 +95,19 @@ def monitor_signal(
             consecutive_errors = 0
 
             if sig == "BUY":
-                risk_check = evaluate_trade(frame, equity=equity, risk_pct=risk_pct)
+                existing = positions.positions_for_heat_check(exclude_symbol=symbol)
+                risk_check = evaluate_trade(frame, equity=equity, risk_pct=risk_pct,
+                                             existing_positions=existing)
+                heat = risk_check["portfolio_heat"]
                 if risk_check["approved"]:
                     alert_fn(f"♛ ALERT (review required): {line} | "
                              f"suggested size={risk_check['sizing']['shares']} shares, "
-                             f"stop=${risk_check['sizing']['stop']}")
+                             f"stop=${risk_check['sizing']['stop']} | "
+                             f"heat={heat['heat_pct']}%")
                 else:
-                    alert_fn(f"♛ SIGNAL FIRED BUT RISK-GATED: {line} | "
-                             f"reason: {risk_check['portfolio_heat']['reason']}")
+                    reason = (risk_check["sizing"]["error"] or
+                              f"portfolio heat {heat['heat_pct']}% exceeds the 5% limit")
+                    alert_fn(f"♛ SIGNAL FIRED BUT RISK-GATED: {line} | reason: {reason}")
             elif sig == "SELL":
                 alert_fn(f"♛ ALERT (review required): {line}")
 
