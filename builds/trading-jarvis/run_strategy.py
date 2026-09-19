@@ -1,16 +1,18 @@
 # ═══════════════════════════════════════════════════════════════
-#  ♛  RUTHLESS TRADING GOLD  ♛
+#  ♛  RUTHLESS TRADING GOLD  ♛  ×  SWAMP INTELLIGENCE
 #  ───────────────────────────────────────────────────────────
 #  Orchestrator entry point — runs data -> signal -> risk -> Jarvis query
+#  PATCHED: uses real OHLCV (get_recent_ohlcv) instead of fabricated
+#  high/low/volume — see data_pipeline.py's fix note for why that mattered.
 #  Data Layer: EODHD+FMP
-#  Generated: 2026-07-18 | Pro fixes applied: see README.md
+#  Generated: 2026-07-18 | Patched: 2026-08-03 | Pro fixes applied: see README.md
 # ═══════════════════════════════════════════════════════════════
 """
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
 ║              ♛  RUTHLESS TRADING GOLD  ♛                      ║
 ║                                                               ║
-║      Strategy:  Trading Jarvis — RSI-cross + volume confirm    ║
+║      Strategy:  Trading Jarvis — RSI(65) + volume confirm      ║
 ║      Symbol(s): configurable via CLI arg                       ║
 ║      Timeframe: daily                                          ║
 ║                                                               ║
@@ -20,15 +22,18 @@ Usage:
     python run_strategy.py AAPL.US
     python run_strategy.py AAPL.US --monitor      (starts the live monitor)
     python run_strategy.py --ask "Check MSFT for a signal"   (Jarvis NL mode)
+    python run_strategy.py AAPL.US --swamp        (Swamp Intelligence reasoning layer)
     python run_strategy.py --add-position AAPL.US 100 150.25 145.00
     python run_strategy.py --positions
     python run_strategy.py --remove-position AAPL.US
 
-Renamed from run_strategy1.py to match README.md's documented entry point.
-Uses the real OHLCV frame (data_pipeline.get_recent_ohlcv) instead of a
-synthetic high/low/volume band, and now feeds real open positions into
-evaluate_trade() via positions_store.py — see that file's docstring for
-why adding a position is always an explicit command, never automatic.
+WHAT CHANGED IN THIS BUILD
+    Added --add-position/--positions/--remove-position (positions_store.py)
+    so evaluate_trade()'s existing_positions parameter — always
+    architecturally supported, never fed real data by any entry point —
+    actually reflects other open positions. Recording a position is
+    always an explicit, human-typed command, never inferred from a
+    signal or an approved risk check.
 """
 
 import argparse
@@ -42,16 +47,20 @@ import positions_store as positions
 def run_once(symbol: str, equity: float = 50_000, risk_pct: float = 1.0) -> None:
     print(f"♛ RUTHLESS TRADING GOLD — checking {symbol}\n")
 
-    frame = get_recent_ohlcv(symbol, lookback_days=120)
-    signaled = generate_signals(frame)
+    ohlcv = get_recent_ohlcv(symbol, lookback_days=120)
+
+    signaled = generate_signals(ohlcv)
     sig = latest_signal(signaled)
-    print(f"  Latest close : ${frame['adjusted_close'].iloc[-1]:.2f}")
+    print(f"  Latest close : ${ohlcv['adjusted_close'].iloc[-1]:.2f}")
     print(f"  Latest RSI   : {signaled['rsi'].iloc[-1]:.1f}")
+    print(f"  Vol confirm  : {signaled['vol_confirm'].iloc[-1]}")
     print(f"  Signal       : {sig}")
 
     if sig == "BUY":
+        # ohlcv already has real close/high/low — risk_manager.atr() needs
+        # exactly those columns, no fabrication required anymore.
         existing = positions.positions_for_heat_check(exclude_symbol=symbol)
-        risk = evaluate_trade(frame, equity=equity, risk_pct=risk_pct, existing_positions=existing)
+        risk = evaluate_trade(ohlcv, equity=equity, risk_pct=risk_pct, existing_positions=existing)
         s, heat = risk["sizing"], risk["portfolio_heat"]
         print(f"\n  ♛ Risk check (review before acting on this — no order is placed):")
         if s["error"]:
@@ -85,6 +94,11 @@ if __name__ == "__main__":
     parser.add_argument("symbol", nargs="?", default="AAPL.US", help="EODHD symbol, e.g. AAPL.US")
     parser.add_argument("--monitor", action="store_true", help="Start the live polling monitor")
     parser.add_argument("--ask", type=str, default=None, help="Send a natural-language query to Jarvis (Claude API)")
+    parser.add_argument("--swamp", action="store_true",
+                         help="Route the check through the Swamp Intelligence reasoning layer "
+                              "(Task Tree + Event Packets) before running the same data->signal->risk sequence")
+    parser.add_argument("--equity", type=float, default=50_000, help="Account equity for sizing (default 50000)")
+    parser.add_argument("--risk-pct", type=float, default=1.0, help="Risk percent per trade (default 1.0)")
     parser.add_argument("--positions", action="store_true", help="List recorded open positions")
     parser.add_argument("--add-position", nargs=4, metavar=("SYMBOL", "SHARES", "ENTRY", "STOP"),
                          help="Record a position you already took elsewhere (never automatic)")
@@ -109,5 +123,8 @@ if __name__ == "__main__":
     elif args.monitor:
         from live_monitor import monitor_signal
         monitor_signal(args.symbol, poll_sec=60)
+    elif args.swamp:
+        from jarvis_swamp_bridge import route_through_bus
+        route_through_bus(args.symbol, equity=args.equity, risk_pct=args.risk_pct)
     else:
-        run_once(args.symbol)
+        run_once(args.symbol, equity=args.equity, risk_pct=args.risk_pct)

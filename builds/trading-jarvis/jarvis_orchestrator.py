@@ -1,9 +1,17 @@
 # ═══════════════════════════════════════════════════════════════
-#  ♛  RUTHLESS TRADING GOLD  ♛
+#  ♛  RUTHLESS TRADING GOLD  ♛  ×  SWAMP INTELLIGENCE
 #  ───────────────────────────────────────────────────────────
 #  Jarvis orchestrator — Claude API reasoning core + tool dispatch
+#  PATCHED (2): Swamp Intelligence decomposition is now a callable
+#  tool (swamp_decompose), so Event Packets + the approval gate show
+#  up inside natural-language --ask answers, not just --swamp mode.
+#  Also hardens check_risk: it now VERIFIES a live BUY signal itself
+#  before sizing anything, instead of trusting the system prompt to
+#  ask nicely first. approval_required=True is enforced in code here,
+#  matching jarvis_swamp_bridge.py's own hard-coded gate.
 #  Data Layer: EODHD+FMP (via data_pipeline.py)
-#  Generated: 2026-07-18 | Pro fixes applied: see README.md
+#  Generated: 2026-07-18 | Patched: 2026-08-03 | Patched again: 2026-08-04
+#  | Pro fixes applied: see README.md
 # ═══════════════════════════════════════════════════════════════
 """
 ╔═══════════════════════════════════════════════════════════════╗
@@ -12,7 +20,7 @@
 ║                                                               ║
 ║      Component: jarvis_orchestrator.py                         ║
 ║      Role:      Natural-language front end over the RUTHLESS   ║
-║                  signal/risk pipeline                          ║
+║                  signal/risk pipeline + Swamp Intelligence      ║
 ║      Interface: text query in this build (see note below on    ║
 ║                  why voice is deliberately out of scope here)  ║
 ║                                                               ║
@@ -25,12 +33,18 @@ SETUP
     Optional override:   set JARVIS_MODEL to pin a specific model id
                           (defaults to claude-opus-5)
 
-WHAT THIS IS
-    A Claude-powered "Jarvis" that takes a plain-English request like:
-        "Check AAPL for a buy signal and tell me the position size at 1% risk"
-    ...and lets Claude call real tools (data fetch, signal check, risk check)
-    to answer it, the same tool-calling pattern the article's "MCP /
-    multi-agent" framing is gesturing at.
+WHAT'S NEW IN THIS PATCH
+    A new tool, swamp_decompose, wraps jarvis_swamp_bridge.py's Task
+    Tree builder. The system prompt now instructs Claude to call it
+    FIRST for any per-symbol trading question, so the same Event
+    Packets / approval-gate structure visible in `--swamp` mode now
+    surfaces inside `--ask` answers too.
+
+    check_risk also changed: it used to size a position for whatever
+    symbol it was given, trusting the system prompt's instruction not
+    to call it without a prior BUY. It now checks the signal itself
+    and refuses (returns an explicit rejection, not a sizing result)
+    if there isn't a live BUY — a code-level gate, not a polite ask.
 
 WHY THIS BUILD IS TEXT-ONLY, NOT VOICE, AND NEVER PLACES ORDERS
     1. Voice-to-intent errors (misheard ticker, size, or direction) are a
@@ -44,14 +58,10 @@ WHY THIS BUILD IS TEXT-ONLY, NOT VOICE, AND NEVER PLACES ORDERS
        a broker API, and treat that step as non-negotiable, not a formality
        to streamline away later.
 
-WHAT CHANGED IN THIS BUILD
+WHAT CHANGED IN THIS BUILD (on top of the patch above)
     - MODEL was hardcoded to "claude-sonnet-4-6" with no override path.
       Now defaults to "claude-opus-5" and is overridable via the
       JARVIS_MODEL env var.
-    - check_signal / check_risk used to build a synthetic OHLCV frame
-      (high = close*1.01, low = close*0.99, volume = constant). They now
-      call data_pipeline.get_recent_ohlcv() for the real frame — see
-      data_pipeline.py's own docstring for why that matters.
     - check_risk now passes real existing_positions (via
       positions_store.py) into evaluate_trade(), so portfolio_heat
       reflects other open positions the user has recorded, not just
@@ -61,13 +71,14 @@ WHAT CHANGED IN THIS BUILD
 import os
 import json
 
-import pandas as pd
 from anthropic import Anthropic
 
 from data_pipeline import get_recent_ohlcv, fetch_quote, fetch_ratios_ttm
 from signal_generator import generate_signals, latest_signal
 from risk_manager import evaluate_trade
+from jarvis_swamp_bridge import decompose_objective
 import positions_store as positions
+import pandas as pd
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_KEY"))
 MODEL = os.getenv("JARVIS_MODEL", "claude-opus-5")
@@ -80,6 +91,26 @@ DEFAULT_EQUITY = 50_000  # override per-user in a real deployment
 # ───────────────────────────────────────────────────────────────
 
 TOOLS = [
+    {
+        "name": "swamp_decompose",
+        "description": (
+            "Run any per-symbol trading objective through the Swamp "
+            "Intelligence reasoning layer BEFORE touching signal or risk "
+            "tools. Returns a Task Tree (steps, assigned agents, priority, "
+            "risk score, approval_required) and Event Packets describing "
+            "exactly what will happen and in what order. This does not "
+            "fetch data or compute anything itself — it only plans."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string",
+                           "description": "EODHD symbol format, e.g. 'AAPL.US'"},
+                "risk_pct": {"type": "number", "default": 1.0},
+            },
+            "required": ["symbol"],
+        },
+    },
     {
         "name": "check_signal",
         "description": (
@@ -99,9 +130,12 @@ TOOLS = [
     {
         "name": "check_risk",
         "description": (
-            "Given a symbol showing a BUY signal, compute ATR-based stop, "
-            "fixed-fractional position size at a given risk percent, and "
-            "whether trade risk stays within the heat limit. Never places an order."
+            "Given a symbol, verify it currently shows a live BUY signal, "
+            "then compute ATR-based stop, fixed-fractional position size at "
+            "a given risk percent, and whether portfolio heat (including any "
+            "other recorded open positions) allows the trade. Refuses "
+            "(returns no sizing) if there is no live BUY signal — this check "
+            "happens in code, not just by instruction. Never places an order."
         ),
         "input_schema": {
             "type": "object",
@@ -131,25 +165,59 @@ TOOLS = [
 # ───────────────────────────────────────────────────────────────
 
 def _run_tool(name: str, tool_input: dict) -> dict:
+    if name == "swamp_decompose":
+        symbol = tool_input["symbol"]
+        risk_pct = tool_input.get("risk_pct", 1.0)
+        tree = decompose_objective(symbol, risk_pct)
+        return {
+            "task_tree": tree.render(),
+            "event_packets": [p.to_dict() for p in tree.event_packets()],
+        }
+
     if name == "check_signal":
         symbol = tool_input["symbol"]
-        frame = get_recent_ohlcv(symbol, lookback_days=120)
-        signaled = generate_signals(frame, rsi_threshold=tool_input.get("rsi_threshold", 65))
-        latest_rsi = signaled["rsi"].iloc[-1]
+        ohlcv = get_recent_ohlcv(symbol, lookback_days=120)
+        signaled = generate_signals(ohlcv, rsi_threshold=tool_input.get("rsi_threshold", 65))
         return {
             "symbol": symbol,
             "signal": latest_signal(signaled),
-            "latest_rsi": round(float(latest_rsi), 2) if not pd.isna(latest_rsi) else None,
-            "latest_close": round(float(frame["adjusted_close"].iloc[-1]), 2),
+            "latest_rsi": round(float(signaled["rsi"].iloc[-1]), 2)
+            if not pd.isna(signaled["rsi"].iloc[-1]) else None,
+            "latest_close": round(float(ohlcv["adjusted_close"].iloc[-1]), 2),
+            "volume_confirmed": bool(signaled["vol_confirm"].iloc[-1]),
         }
 
     if name == "check_risk":
         symbol = tool_input["symbol"]
         equity = tool_input.get("equity", DEFAULT_EQUITY)
         risk_pct = tool_input.get("risk_pct", 1.0)
-        frame = get_recent_ohlcv(symbol, lookback_days=60)
+
+        # ── Code-level gate (not just a system-prompt instruction) ──
+        # Re-derive the signal here, independent of whatever Claude
+        # believes the signal to be from an earlier tool call. This
+        # mirrors jarvis_swamp_bridge.py's hard skip on Step 3 when
+        # there's no BUY — approval_required stays meaningful even if
+        # a future prompt edit forgets to mention the ordering rule.
+        ohlcv = get_recent_ohlcv(symbol, lookback_days=120)
+        signaled = generate_signals(ohlcv)
+        current_signal = latest_signal(signaled)
+
+        if current_signal != "BUY":
+            return {
+                "approved": False,
+                "refused": True,
+                "reason": (
+                    f"No live BUY signal for {symbol} (current signal: "
+                    f"{current_signal}). Risk/position sizing is refused "
+                    "by design — approval_required governance gate, "
+                    "enforced in code, not just by instruction."
+                ),
+                "signal": current_signal,
+            }
+
         existing = positions.positions_for_heat_check(exclude_symbol=symbol)
-        result = evaluate_trade(frame, equity=equity, risk_pct=risk_pct, existing_positions=existing)
+        result = evaluate_trade(ohlcv, equity=equity, risk_pct=risk_pct, existing_positions=existing)
+        result["refused"] = False
         return result
 
     if name == "check_fundamentals":
@@ -165,26 +233,35 @@ def _run_tool(name: str, tool_input: dict) -> dict:
 # Orchestration loop — Claude decides which tools to call, in what order
 # ───────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = """You are the RUTHLESS Jarvis trading assistant.
+SYSTEM_PROMPT = """You are the RUTHLESS Jarvis trading assistant, running on
+top of the Swamp Intelligence reasoning layer.
 
-You have tools to check technical signals, run risk/position-sizing checks,
-and pull fundamentals. You NEVER have the ability to place a trade — no
-such tool exists. If a user asks you to "execute", "buy", or "sell" for
-real, tell them clearly that this build is signal-and-risk-analysis only,
-and that order execution requires a separate, explicitly human-reviewed
-integration they would need to build and approve themselves.
+TOOL ORDER (follow this every time a user asks about a specific symbol):
+1. Call swamp_decompose FIRST. Show the user the Task Tree and Event
+   Packets it returns — this is Swamp Intelligence structuring the
+   workflow before anything runs. Don't skip this even for a quick check.
+2. Then call check_signal.
+3. Only call check_risk if check_signal returned BUY. check_risk will
+   independently re-verify this and refuse (refused: true) if it disagrees
+   — if that happens, report the refusal plainly, don't argue with it or
+   retry with different parameters to force a result.
+4. Never call anything resembling order execution — no such tool exists.
+   If a user asks you to "execute", "buy", or "sell" for real, tell them
+   clearly that this build is signal-and-risk-analysis only, and that
+   order execution requires a separate, explicitly human-reviewed
+   integration they would need to build and approve themselves.
 
-Always run check_signal before check_risk for a given symbol — never
-suggest a position size for a symbol that isn't currently showing a BUY
-signal. Present findings plainly: signal, price, RSI, suggested size,
-stop, 2R target, and portfolio heat (this trade plus any other open
-positions the user has recorded). Flag clearly if portfolio heat
-exceeds the 5% limit. If the user hasn't recorded any open positions,
-note that the heat shown only reflects this one trade.
+Present findings plainly: the Task Tree, then signal, price, RSI, and
+(only if applicable) suggested size, stop, 2R target, and portfolio heat
+(this trade plus any other open positions the user has recorded). Flag
+clearly if portfolio heat exceeds the 5% limit. If the user hasn't
+recorded any open positions, note that the heat shown only reflects this
+one trade. Every sizing output is a suggestion for a human to review —
+never phrase it as an instruction that has been or will be carried out.
 """
 
 
-def ask_jarvis(user_query: str, max_tool_rounds: int = 4) -> str:
+def ask_jarvis(user_query: str, max_tool_rounds: int = 6) -> str:
     """Run one user query through Claude with tool access; return final text."""
     messages = [{"role": "user", "content": user_query}]
 

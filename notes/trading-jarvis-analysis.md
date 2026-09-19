@@ -198,3 +198,66 @@ reconstruction had a `"reason"` key by coincidence of a different design
 choice — a reminder that testing against a plausible stand-in isn't the
 same as testing against the real contract, however carefully the
 stand-in is built.
+
+---
+
+## ADDENDUM 2 — a new layer arrives: Swamp Intelligence (round 3)
+
+Two uploads landed for this round. The first introduced a new reasoning/
+governance layer on top of the existing system: `jarvis_swamp_bridge.py`
+(new), a patched `jarvis_orchestrator.py` (adds a `swamp_decompose` tool
+and hardens `check_risk` to independently re-verify the signal in code),
+a patched `live_monitor.py` and `data_pipeline.py` (both already carrying
+the `get_recent_ohlcv()` fix from earlier rounds — good sign the upstream
+author converged on the same fix independently), and a `.txt` file named
+`___RUTHLESS_TRADING_GOLD________SWAMP_INTELLIGENCE.txt` that turned out
+to be **byte-identical to `jarvis_swamp_bridge.py`** — not a spec
+document, a duplicate upload. `jarvis_swamp_bridge.py`'s own docstrings
+reference a "Brain Spec" (`01_brain/swamp_intelligence_core.md`) as an
+authority for its design — that spec document itself has still never
+been uploaded; only code that implements it has.
+
+`jarvis_swamp_bridge.py` imports `SwampIntelligence, Task, Priority,
+GovernanceError` from a `swamp_intelligence` module that wasn't part of
+that first upload — the same "core file missing, only its consumers
+uploaded" pattern as `signal_generator.py`/`risk_manager.py` in round 1.
+
+**The second upload, sent mid-turn, supplied the missing pieces
+directly**: the real `swamp_intelligence.py`, the real `signal_generator.py`
+(never seen before this point — every earlier round had this file
+reconstructed from spec), a `risk_manager.py` identical to the one
+corrected in Addendum 1 (same zero-risk-distance schema bug, unfixed in
+this fresh copy — confirming the pattern that each new upload doesn't
+carry this session's prior fixes forward), a `run_strategy.py` that
+already wires `--swamp`, `--equity`, and `--risk-pct` flags, and an HTML
+analysis dashboard from an earlier pass (predates `signal_generator.py`
+being available, so its flagged "RSI(65) ambiguity" is now resolved: the
+real file has `rsi_period: int = 14` and `rsi_threshold: float = 65.0`
+as two separate, unambiguous parameters).
+
+**What the real `signal_generator.py` actually does** (previously
+guessed at twice, now confirmed): single-threshold RSI-cross — entry on
+crossing UP through 65 with volume confirmation, exit on crossing back
+DOWN through the *same* 65, not a symmetric lower threshold. A coherent,
+self-contained design; no lookahead bug (every comparison uses
+`.shift(1)`/`.shift(2)`, and the `position` column's forward-fill logic
+correctly resets to flat after an exit despite looking like it might not
+at first read — traced through by hand, it's correct).
+
+**What the real `swamp_intelligence.py` actually does**: a genuinely
+small, working coordination shell — `TaskTree`/`Task`/`EventPacket`
+dataclasses, a `SwampIntelligence.guard()` that raises `GovernanceError`
+for a fixed table of prohibited actions (`execute_trade`, `place_order`,
+`execute_task`, `bypass_approval`, `bypass_bus`), and an `ActivationGate`
+class. No functional bugs found. One real design gap, not a bug:
+`ActivationGate.should_activate()` takes `step_count` as an input, but
+you only know a task's step count *after* decomposing it into a
+`TaskTree` — so as designed, it can't actually gate *whether* to
+decompose (which is what its own docstring implies it's for), only
+whether to *use* a tree that's already been built. Nothing in this
+codebase calls it at all currently; `jarvis_orchestrator.py`'s system
+prompt instead unconditionally routes every symbol check through
+`swamp_decompose`, regardless of complexity — worth deciding
+deliberately, not left as an unused class that looks wired in but isn't.
+
+Full build, all pieces now real and integrated: `/builds/trading-jarvis/`.

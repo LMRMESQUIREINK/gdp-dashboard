@@ -30,15 +30,8 @@ WHAT CHANGED IN THIS BUILD
     result["sizing"]["r_multiple_target"] unconditionally instead of
     needing a special case. The zero-risk message moved to an "error"
     key to avoid the name collision with portfolio_heat's "warning".
-
-    Everything else (atr, atr_stop, portfolio_heat, evaluate_trade's
-    signature and existing_positions support) is unchanged from the
-    original — this file's design was already sound; it just needed
-    signal_generator.py to actually exist alongside it, and the two
-    entry points (jarvis_orchestrator.py, live_monitor.py) never pass
-    real existing_positions, so multi-position heat, while fully
-    supported here, has sat unexercised. See README.md for the
-    positions_store wiring added to close that gap.
+    (This exact fix has now been applied twice across two otherwise-
+    identical uploads of this file — see /notes/trading-jarvis-analysis.md.)
 """
 
 import pandas as pd
@@ -105,10 +98,7 @@ def evaluate_trade(df: pd.DataFrame, equity: float, risk_pct: float = 1.0,
     'actionable' to the user.
 
     existing_positions: pass currently-open positions here to get a real
-    multi-position portfolio_heat reading. Every caller in this codebase
-    currently omits it (equivalent to "no other positions open"), which
-    is honest but not the whole-portfolio picture the name implies once
-    you do have more than one position on.
+    multi-position portfolio_heat reading. See positions_store.py.
     """
     existing_positions = existing_positions or []
     entry = df["close"].iloc[-1]

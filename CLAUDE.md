@@ -44,6 +44,27 @@ yourself every time.
   wrong claim that multi-position heat wasn't architecturally
   possible. Re-proven end-to-end including the positions CLI and a
   forced BUY-signal print path.
+- `/builds/trading-jarvis` gained a Swamp Intelligence reasoning/
+  governance layer (round 3): `jarvis_swamp_bridge.py` (new) routes
+  every objective through a Task Tree with `approval_required=True`
+  hard-coded on risk-bearing steps, before handing off to the real
+  Jarvis modules. Its own dependency (`swamp_intelligence.py`) wasn't
+  in the first round-3 upload — same "core file missing, only
+  consumers uploaded" pattern as round 1 — but arrived, along with the
+  real `signal_generator.py` (seen for the first time; resolves an
+  earlier HTML analysis's flagged "RSI(65) ambiguity" — period=14 and
+  threshold=65 are separate params) and another copy of
+  `risk_manager.py` (same unfixed schema bug as round 2, re-fixed),
+  in a second upload sent mid-turn. Hardened
+  `jarvis_swamp_bridge.py`'s self-test of its own governance guard
+  (used to swallow the result either way; now asserts the raise
+  happened). Re-applied the model-ID fix and positions wiring, both of
+  which reverted in this round's fresh copies of files this session
+  had already fixed before — confirms new uploads don't carry forward
+  this session's own prior edits. Proven end-to-end: a full
+  `route_through_bus()` run against a forced BUY signal, rendering the
+  Task Tree, all 4 Event Packets, and a real risk-sized suggestion.
+  Addendum 2 in `/notes/trading-jarvis-analysis.md`.
 - Software Factory skills added (`.claude/skills/new-feature`,
   `code-structure`, `evidence-driven-testing`, `review-loop`) — see
   "Software Factory method" under TECHNIQUES below. Not yet exercised

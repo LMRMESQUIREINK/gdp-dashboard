@@ -2,8 +2,10 @@
 #  ♛  RUTHLESS TRADING GOLD  ♛
 #  ───────────────────────────────────────────────────────────
 #  Live monitor — polling loop, signal + alert only (NEVER executes orders)
+#  PATCHED: uses real OHLCV (get_recent_ohlcv) instead of fabricated
+#  high/low/volume. Real-time price still overlays the latest close.
 #  Data Layer: EODHD
-#  Generated: 2026-07-18 | Pro fixes applied: see README.md
+#  Generated: 2026-07-18 | Patched: 2026-08-03 | Pro fixes applied: see README.md
 # ═══════════════════════════════════════════════════════════════
 """
 ╔═══════════════════════════════════════════════════════════════╗
@@ -25,21 +27,21 @@ separate, explicitly human-reviewed module — never as an automatic next
 step off of this monitor. Treat every BUY/SELL line below as a suggestion
 for a human to evaluate, not an instruction the system carries out.
 
+NOTE: fetch_realtime() gives an intraday price update, but not an
+intraday volume update — EODHD's real-time endpoint used here doesn't
+carry volume. The volume-confirmation check therefore still runs on the
+most recent completed daily bar's volume until intraday volume is wired
+in (see fetch_intraday() in data_pipeline.py for that upgrade path).
+
 WHAT CHANGED IN THIS BUILD
-    - Used to rebuild a synthetic OHLCV frame from closes alone
-      (high = close*1.01, low = close*0.99, volume = constant). Now
-      pulls the real frame from data_pipeline.get_recent_ohlcv() and
-      only overlays the live tick onto its close/adjusted_close — high/
-      low/volume for the ATR and volume-confirmation checks are real.
     - A persistent failure (e.g. a missing API key) used to reprint the
       same error every poll_sec forever. Now backs off and stops after
       max_consecutive_errors, with a clear message, instead of running
       unattended and failing silently.
-    - Used to reference a risk_manager return key ("reason") that
-      doesn't exist in the real risk_manager.py schema — would have
-      crashed with a KeyError the first time a signal got risk-gated.
-      Now reads the actual keys (heat_pct/warning/error) and also
-      passes real existing_positions via positions_store.py.
+    - Now passes real existing_positions (via positions_store.py) into
+      evaluate_trade(), and reports the actual portfolio_heat keys
+      (heat_pct/warning/sizing.error) instead of dumping the whole dict
+      into the alert message.
 """
 
 import time
@@ -82,21 +84,26 @@ def monitor_signal(
     consecutive_errors = 0
     while True:
         try:
-            frame = get_recent_ohlcv(symbol, lookback_days=lookback_days)
+            ohlcv = get_recent_ohlcv(symbol, lookback_days=lookback_days)
             live_price = fetch_realtime(symbol)
             if live_price:
-                frame.loc[frame.index[-1], ["close", "adjusted_close"]] = live_price
+                # Overlay the intraday price on the latest bar's close/
+                # adjusted_close; high/low/volume stay as the last
+                # completed daily bar's real values (see note above).
+                ohlcv.iloc[-1, ohlcv.columns.get_loc("close")] = live_price
+                ohlcv.iloc[-1, ohlcv.columns.get_loc("adjusted_close")] = live_price
 
-            signaled = generate_signals(frame)
+            signaled = generate_signals(ohlcv)
             sig = latest_signal(signaled)
             ts = f"{datetime.now():%Y-%m-%d %H:%M:%S}"
-            line = f"[{ts}] {symbol} | ${frame['adjusted_close'].iloc[-1]:.2f} | signal={sig}"
+            line = (f"[{ts}] {symbol} | ${ohlcv['adjusted_close'].iloc[-1]:.2f} | "
+                    f"signal={sig}")
             print(line)
             consecutive_errors = 0
 
             if sig == "BUY":
                 existing = positions.positions_for_heat_check(exclude_symbol=symbol)
-                risk_check = evaluate_trade(frame, equity=equity, risk_pct=risk_pct,
+                risk_check = evaluate_trade(ohlcv, equity=equity, risk_pct=risk_pct,
                                              existing_positions=existing)
                 heat = risk_check["portfolio_heat"]
                 if risk_check["approved"]:

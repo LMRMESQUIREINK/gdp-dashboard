@@ -1,9 +1,9 @@
 # ═══════════════════════════════════════════════════════════════
 #  ♛  RUTHLESS TRADING GOLD  ♛
 #  ───────────────────────────────────────────────────────────
-#  Signal generator — RSI-cross + volume confirmation
-#  Data Layer: none (pure function of an OHLCV frame)
-#  Generated: 2026-09-19 (completes the Trading Jarvis build)
+#  Signal generator — RSI + volume confirmation trigger (vectorized)
+#  Data Layer: EODHD
+#  Generated: 2026-07-18
 # ═══════════════════════════════════════════════════════════════
 """
 ╔═══════════════════════════════════════════════════════════════╗
@@ -11,101 +11,116 @@
 ║              ♛  RUTHLESS TRADING GOLD  ♛                      ║
 ║                                                               ║
 ║      Component: signal_generator.py                           ║
-║      Role:      RSI(threshold) cross + volume confirmation     ║
-║      Default:   threshold=65, no lookahead                     ║
+║      Strategy:  RSI threshold cross + volume confirmation      ║
+║      Symbol(s): configurable                                   ║
+║      Timeframe: daily (adaptable to intraday)                  ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 
-This module never fires on data it couldn't have known about at the
-time — every indicator is computed from bars up to and including the
-one it signals on, and generate_signals() expects one row per
-COMPLETED bar (feed it EOD or otherwise-closed data, e.g. from
-data_pipeline.get_recent_ohlcv() or a live_monitor frame with the
-final row's price overlaid onto an otherwise-real bar).
+This implements the plain-English trigger from the "Trading Jarvis" article's
+cold-open example: "alert me when RSI crosses 65 with volume confirmation."
 
-WHY RSI-CROSS, NOT RSI-REVERSION
-    Classic RSI treats RSI > 70 as overbought (sell) and RSI < 30 as
-    oversold (buy) — mean-reversion. The 65 default here doesn't fit
-    that convention (65 is below the classic 70 line), so this build
-    treats a cross ABOVE the threshold as bullish momentum breaking
-    out (BUY, confirmed by above-average volume), and a cross below
-    the symmetric lower threshold (100 - threshold) as momentum
-    breaking down (SELL). If you actually want mean-reversion RSI
-    instead, that's a different, equally valid strategy — the two
-    comparisons below are what would flip.
+Every indicator is shifted by 1 bar before it touches the signal decision —
+this file NEVER compares an indicator to the same bar's forward return.
 
-INPUT CONTRACT
-    generate_signals() expects a DataFrame with at least
-    ["adjusted_close", "volume"] columns, one row per completed bar.
+rsi_period (14, standard) and rsi_threshold (65) are separate parameters —
+this resolves the "RSI(65) — period or threshold?" ambiguity flagged in an
+earlier analysis pass that ran before this file was available: 65 is the
+threshold level, not the lookback period.
 """
 
+import numpy as np
 import pandas as pd
 
 
-def rsi(close: pd.Series, n: int = 14) -> pd.Series:
-    """Wilder's RSI via EWM — vectorized, same smoothing style as
-    risk_manager.atr()."""
-    delta = close.diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
-    avg_gain = gain.ewm(alpha=1 / n, min_periods=n, adjust=False).mean()
-    avg_loss = loss.ewm(alpha=1 / n, min_periods=n, adjust=False).mean()
-    rs = avg_gain / avg_loss.replace(0, pd.NA)
-    return (100 - (100 / (1 + rs))).fillna(50)  # neutral while warming up
+# ───────────────────────────────────────────────────────────────
+# Indicator library — vectorized, hand-rolled (no black-box TA-Lib)
+# ───────────────────────────────────────────────────────────────
+
+def ema(s: pd.Series, n: int) -> pd.Series:
+    return s.ewm(span=n, adjust=False).mean()
 
 
-def volume_confirms(volume: pd.Series, window: int = 20) -> pd.Series:
-    """True where volume is above its own rolling average."""
-    return volume > volume.rolling(window, min_periods=1).mean()
+def sma(s: pd.Series, n: int) -> pd.Series:
+    return s.rolling(n).mean()
 
 
-def _crosses_above(series: pd.Series, level: float) -> pd.Series:
-    return (series > level) & (series.shift(1) <= level)
+def rsi(s: pd.Series, n: int = 14) -> pd.Series:
+    delta = s.diff()
+    gain = delta.clip(lower=0).rolling(n).mean()
+    loss = -delta.clip(upper=0).rolling(n).mean()
+    return 100 - (100 / (1 + gain / loss))
 
 
-def _crosses_below(series: pd.Series, level: float) -> pd.Series:
-    return (series < level) & (series.shift(1) >= level)
+def volume_confirmation(volume: pd.Series, lookback: int = 20,
+                         multiple: float = 1.5) -> pd.Series:
+    """True where volume exceeds `multiple` x its trailing average."""
+    avg_vol = volume.rolling(lookback).mean()
+    return volume > (avg_vol * multiple)
 
 
-def generate_signals(frame: pd.DataFrame, rsi_threshold: float = 65,
-                      rsi_period: int = 14, volume_window: int = 20) -> pd.DataFrame:
-    """Returns a copy of `frame` with rsi/signal columns added.
-    signal is one of "BUY", "SELL", "HOLD" per row.
+# ───────────────────────────────────────────────────────────────
+# Signal generation — the RSI-cross + volume-confirmation trigger
+# ───────────────────────────────────────────────────────────────
 
-    BUY : RSI crosses above rsi_threshold AND volume confirms.
-    SELL: RSI crosses below (100 - rsi_threshold) — no volume gate on
-          the way down; exits shouldn't wait on the same confirmation
-          entries do.
+def generate_signals(
+    df: pd.DataFrame,
+    rsi_period: int = 14,
+    rsi_threshold: float = 65.0,
+    volume_lookback: int = 20,
+    volume_multiple: float = 1.5,
+    price_col: str = "adjusted_close",
+    volume_col: str = "volume",
+) -> pd.DataFrame:
     """
-    out = frame.copy()
-    out["rsi"] = rsi(out["adjusted_close"], n=rsi_period)
+    Entry: RSI crosses UP through `rsi_threshold` AND volume confirms.
+    Exit:  RSI crosses back DOWN through `rsi_threshold`.
 
-    lower_threshold = 100 - rsi_threshold
-    buy = _crosses_above(out["rsi"], rsi_threshold) & volume_confirms(out["volume"], volume_window)
-    sell = _crosses_below(out["rsi"], lower_threshold)
+    Returns df with columns: [<price_col>, rsi, vol_confirm, signal, position]
+    """
+    out = df.copy()
+    out["rsi"] = rsi(out[price_col], rsi_period)
+    out["vol_confirm"] = volume_confirmation(out[volume_col], volume_lookback, volume_multiple)
 
-    out["signal"] = "HOLD"
-    out.loc[buy, "signal"] = "BUY"
-    out.loc[sell, "signal"] = "SELL"
-    return out
+    # ♛ Lookahead-bias check — every comparison below uses .shift(1)/.shift(2),
+    #   i.e. only information available at the close of the PRIOR bar.
+    rsi_prev1 = out["rsi"].shift(1)
+    rsi_prev2 = out["rsi"].shift(2)
+    vol_confirm_prev1 = out["vol_confirm"].shift(1)
+
+    entry = (rsi_prev1 > rsi_threshold) & (rsi_prev2 <= rsi_threshold) & (vol_confirm_prev1 == True)  # noqa: E712
+    exit_ = (rsi_prev1 < rsi_threshold) & (rsi_prev2 >= rsi_threshold)
+
+    out["signal"] = 0
+    out.loc[entry, "signal"] = 1
+    out.loc[exit_, "signal"] = -1
+
+    # Position = forward-fill of signal until an exit clears it
+    out["position"] = out["signal"].replace(0, np.nan).ffill().fillna(0)
+    out.loc[out["position"] == -1, "position"] = 0
+
+    return out[[price_col, "rsi", "vol_confirm", "signal", "position"]]
 
 
-def latest_signal(signaled: pd.DataFrame) -> str:
-    """The most recent row's signal — what a live check reports."""
-    if signaled.empty or "signal" not in signaled.columns:
-        return "HOLD"
-    return str(signaled["signal"].iloc[-1])
+def latest_signal(df_with_signals: pd.DataFrame) -> str:
+    """Convert the most recent row's signal into a human-readable label."""
+    if df_with_signals.empty:
+        return "NO_DATA"
+    row = df_with_signals.iloc[-1]
+    if row["signal"] == 1:
+        return "BUY"
+    if row["signal"] == -1:
+        return "SELL"
+    return "HOLD"
 
 
 if __name__ == "__main__":
-    import numpy as np
+    # Smoke test with synthetic data
+    rng = pd.date_range("2024-01-01", periods=300, freq="B")
+    price = pd.Series(100 + np.cumsum(np.random.normal(0.1, 1.2, len(rng))), index=rng)
+    volume = pd.Series(np.random.randint(1_000_000, 3_000_000, len(rng)), index=rng)
+    synthetic = pd.DataFrame({"adjusted_close": price, "volume": volume})
 
-    idx = pd.date_range("2024-01-01", periods=200, freq="B")
-    rng = np.random.default_rng(0)
-    close = pd.Series(100 + np.cumsum(rng.normal(0, 1.2, 200)), index=idx)
-    volume = pd.Series(rng.integers(800_000, 2_200_000, 200), index=idx)
-    frame = pd.DataFrame({"adjusted_close": close, "volume": volume})
-
-    result = generate_signals(frame)
-    print(f"♛ Signal counts:\n{result['signal'].value_counts()}")
+    result = generate_signals(synthetic)
+    print(result.tail(10))
     print(f"♛ Latest signal: {latest_signal(result)}")
