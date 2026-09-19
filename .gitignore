@@ -1,5 +1,10 @@
 .streamlit/secrets.toml
 
+# Scratch work area (see CLAUDE.md project structure) — keep the
+# folder, ignore its contents.
+/.tmp/*
+!/.tmp/.gitkeep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
