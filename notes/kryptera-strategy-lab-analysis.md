@@ -129,3 +129,60 @@ Concretely:
    travels with the code even if separated from the README.
 
 Full build: `/builds/kryptera-strategy-lab-pro/`.
+
+---
+
+## ADDENDUM 1 — the condition-count contradiction, resolved
+
+A new upload (`strategy_generator_analysis.html`) directly contradicts the
+DEEP section's table above. Both can't be right, so here's the honest
+reconciliation.
+
+**What I said originally:** the QuickStart's 63-condition/6-family numbers
+were "what's actually shipped now" — reasoning from the fact that the
+`.bat`/`requirements.txt` packaging matched QuickStart's naming, **not**
+from ever having read the core script itself (it was never uploaded to
+that session — this was stated explicitly at the time).
+
+**What the new analysis claims:** it was built "from a direct read of...
+the full 1,354-line source script (both .py and .ipynb, identical
+content)" and reports the `all_columns` list — the actual searchable
+condition set the generator draws from — contains exactly **93 conditions
+across 4 families** (BB 32, HMA 21, KAMA-incl-FastKAMA 22, ER 18), matching
+the PDF, not the QuickStart. It also reports 8 candlestick-pattern
+functions that are computed and applied to the dataframe but never added
+to `all_columns` — dead code from the generator's own perspective, and a
+plausible source of the "6 families" QuickStart figure if whoever wrote
+QuickStart counted every indicator family present in the code rather than
+only the ones actually wired into the search.
+
+**Which one is more likely correct:** the new analysis, and it isn't
+close. A direct read of the shipped script's own `all_columns` list is
+strictly stronger evidence than an inference from packaging-file naming
+conventions — the packaging match told me which *docs* were shipped
+together, not what the *script* actually does. I don't have the script in
+this session either, so I can't independently re-verify the 93/4 count
+myself — but I have no basis to doubt a claim of direct code inspection
+over my own admittedly-weaker inference, and the new analysis's account is
+internally consistent (it explains *why* QuickStart's 63/6 numbers exist —
+a stale or miscounted doc — rather than just asserting a different number).
+
+**Correction, stated plainly:** the real Kryptera Lite script most likely
+ships **93 conditions across 4 wired-in families** (BB, HMA, KAMA, ER),
+with 8 unused candlestick functions as dead code, matching the PDF. The
+QuickStart's 63/6 breakdown is the stale/inaccurate document, not the
+shipped code — the reverse of what this file originally concluded. The
+`/builds/kryptera-strategy-lab-pro/strategy_generator_pro.py` build was
+written from the QuickStart spec (63/6, beat-benchmark, 35/35/30 split) at
+a time when this was the only spec-level information available; its
+pass-criterion and split-ratio choices remain reasonable Pro-tier design
+decisions on their own merits, but its condition *count* should not be
+read as a claim about what the original Lite script contains.
+
+The new analysis's other finding — the unmitigated multiple-comparisons /
+data-snooping problem, with no attempt-count disclosure anywhere in the
+original — is the single highest-severity finding across both analyses,
+and is what the 10X build (`/builds/kryptera-strategy-generator-10x/`)
+is built to address directly. See that build's README for the five
+concrete fixes (attempt-count disclosure, Sharpe+max-DD gate, multi-symbol
+validation, walk-forward folds, cost-stress test).

@@ -98,6 +98,69 @@ yourself every time.
   `code-structure`, `evidence-driven-testing`, `review-loop`) — see
   "Software Factory method" under TECHNIQUES below. Not yet exercised
   on a real build.
+- Two new builds shipped this round, both stemming from a 5-file upload
+  (`README_10X.md`, `strategy_generator_analysis.html`, a huge
+  concatenated `.txt`, plus Trading Jarvis originals needing no action —
+  same pattern as Addendum 4, re-verified via grep):
+  - **`/builds/kryptera-strategy-generator-10x`** — the "10X" structural
+    upgrade of Kryptera Lite (attempt-count disclosure, Sharpe+max-DD
+    gate, multi-symbol validation, walk-forward folds, cost-stress
+    test). `indicators.py` and the already-complete alternative engine
+    `ruthless_strategy_lab_10x.py` came from the upload; `conditions.py`
+    and `data_pipeline_10x.py` were the missing core files (same
+    "referenced but never uploaded" pattern as every Trading Jarvis
+    round) and were written here — `conditions.py` builds 144 fixed
+    conditions across 12 conceptual indicator families (14 distinct
+    name-prefixes — a real, documented discrepancy between "families"
+    counted conceptually vs. by column-name prefix, see the build's
+    README). Ships **two engines on purpose**: the official
+    `strategy_generator_10x.py` (breadth — fixed condition library,
+    multi-symbol, walk-forward, vectorbt-dependent) and
+    `ruthless_strategy_lab_10x.py` (depth — per-trial randomized
+    parameters, single-symbol, no vectorbt dependency), documented as a
+    deliberate tradeoff rather than merged into one. Found and fixed a
+    real bug while testing the alternative engine: `run_backtest`'s
+    `win_rate` counted profitable bars-in-a-position rather than
+    profitable trades, producing values above 1.0 (reproduced with
+    synthetic data: `win_rate == 6.16`) — fixed to a proper per-trade
+    win rate. Also found and fixed the same `vectorbt`/`plotly` 6.x
+    theme-init crash from the Kryptera Pro build recurring here
+    (`plotly==5.24.1` now pinned). Proven end-to-end: pinned-venv
+    install, `indicators.py`+`conditions.py` against synthetic OHLCV
+    (144 conditions, all correctly shaped), `Generator10X.search()`
+    both pass and `RuntimeError`-exhaustion paths on synthetic
+    multi-symbol data, `run_10x.py`'s full CLI wiring against a mocked
+    `yfinance` (real vectorbt backtests, exhaustion path fired
+    correctly after 400 real attempts), `data_pipeline_10x.fetch_basket`
+    against a mocked `yfinance` (full basket / partial-skip /
+    all-fail paths), and `ruthless_strategy_lab_10x.py`'s registry +
+    backtest + full search (found and not-found paths) + standalone
+    script rendering. No live yfinance access from this sandbox — same
+    egress restriction as every other build here, called out rather
+    than faked.
+  - **`/builds/prop-firm-sizing`** — a self-contained TPT funded-account
+    toolkit (no missing imports, unlike everything else this round):
+    `prop_firm_position_sizing.py` (simple point-risk/25%-rule/ADR
+    check), `prop_firm_sizing.py` (full account/session model —
+    surfaces the EOD trailing-drawdown floor following the high-water
+    mark rather than the starting balance, the key insight the source
+    playbook under-explains), `prop_pass_simulator.py` (Monte Carlo
+    pass-probability simulator + sizing-strategy comparison). Proven by
+    actually running all three scripts end-to-end (not just reading
+    them) against a pinned venv — the trailing-DD-floor scenarios and
+    the Monte Carlo output were inspected for correctness, not just
+    "ran without crashing." Only unverified piece: `fetch_recent_adr()`
+    needs EODHD, blocked in this sandbox.
+  - Addendum 1 written to `/notes/kryptera-strategy-lab-analysis.md`:
+    the new `strategy_generator_analysis.html` (built from a claimed
+    direct read of the real 1,354-line Kryptera Lite script) reports
+    93 conditions/4 families, matching the original PDF — contradicting
+    this project's own earlier analysis, which had adopted
+    README_QuickStart.md's 63/6 figures as authoritative purely from
+    packaging-naming inference, never having seen the actual script.
+    Resolved in favor of the new analysis (direct code read beats
+    inference from doc naming) and corrected in place, stated plainly
+    as a self-correction rather than silently overwritten.
 
 ---
 

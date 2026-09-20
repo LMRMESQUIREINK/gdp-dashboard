@@ -1,0 +1,12 @@
+# ============================================================
+# Prop-Firm Sizing Toolkit — Requirements
+# ============================================================
+# No vectorbt/pandas-version constraint here — this toolkit's core
+# math (prop_firm_sizing.py, prop_pass_simulator.py) is pure
+# dataclasses/numpy, and prop_firm_position_sizing.py's optional
+# fetch_recent_adr() is the only network-dependent piece.
+# ============================================================
+
+numpy==2.4.6
+pandas==3.0.6
+requests==2.34.2
