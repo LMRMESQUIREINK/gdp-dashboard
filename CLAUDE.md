@@ -161,6 +161,25 @@ yourself every time.
     Resolved in favor of the new analysis (direct code read beats
     inference from doc naming) and corrected in place, stated plainly
     as a self-correction rather than silently overwritten.
+- Follow-up round: re-upload of the same 5-file set (huge `.txt`, both
+  `README.md` variants, `README_10X.md`, and the PDF) confirmed
+  byte-identical to the prior round via direct `diff` — no code
+  changes needed, same "verify precisely before touching anything"
+  discipline as every Trading Jarvis round. One genuinely new file:
+  `tpt_analysis.html`, the previously-missing source analysis that
+  `prop_firm_position_sizing.py`'s own docstring had referenced by
+  name (`tpt_funded_accounts_analysis.html`) several rounds before it
+  actually arrived. Cross-checked line-by-line against the already-
+  shipped `/builds/prop-firm-sizing/` toolkit — every concrete claim
+  matches (the trailing-DD-follows-high-water-mark fix, the
+  intraday-loss-aware daily-limit fix, the 50%/25%/0% warning
+  thresholds, the Monte Carlo DD-vs-profit-target framing) since the
+  toolkit was built from the real uploaded code, not from this
+  analysis. Wrote the retroactive write-up as
+  `/notes/prop-firm-sizing-analysis.md`, including one honestly-flagged
+  small gap versus the analysis's aspirational spec (multi-contract-
+  type sizing recommendations for one account — not built, not asked
+  for, noted rather than silently ignored or silently added).
 
 ---
 

@@ -2,7 +2,13 @@
 
 Three tools operationalizing "The Secrets of Trading Funded Accounts"
 (Take Profit Trader) into math you can actually run, rather than a table
-of one firm's numbers to copy by hand.
+of one firm's numbers to copy by hand. Full source-document analysis:
+`/notes/prop-firm-sizing-analysis.md` — arrived after this toolkit was
+already built and cross-checked against it retroactively; every concrete,
+checkable claim in the analysis matches the shipped code (see that note's
+"Verification" section), with one small, undone gap flagged honestly
+(multi-contract-type sizing recommendations for one account) rather than
+silently built or silently ignored.
 
 ## Files
 
