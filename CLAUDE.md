@@ -227,6 +227,35 @@ yourself every time.
   malformed-`--prop-compare-size` cases (wrong field count, non-numeric
   field) both giving a plain-English format error instead of a raw
   parse exception.
+- **Fourth build shipped: `/builds/prop-firm-dashboard`** — a Streamlit
+  web dashboard, four tabs mirroring the four `--prop-*` CLI flags
+  (Size Check, Session Report, Pass Probability, Compare Sizes), same
+  RUTHLESS TRADING GOLD black/gold branding as every HTML analysis
+  dashboard and CLI banner in this project (Cinzel Decorative + Cormorant
+  Garamond + IBM Plex Mono, one gold brand colour — per
+  `design-rules.md`'s "derive the palette from one brand colour" rule,
+  with the explicit user-named RUTHLESS scheme overriding that file's
+  own unset placeholder green, exactly the case that rule anticipates).
+  Calls `PropFirmAccount`/`AccountRules`/`SessionState`/`PassSimulator`
+  directly — the same classes every other interface uses, not a
+  reimplementation; the Compare Sizes tab loops `PassSimulator` per row
+  rather than calling `compare_sizing_strategies()` directly, since
+  that function prints to stdout instead of returning data a Streamlit
+  table/chart can use. Followed the screenshot-before-done rule
+  properly: served locally, screenshotted with Playwright/Chromium (the
+  sandbox's pre-installed browser), found and fixed two real bugs in
+  the first pass — CSS leaking as literal visible text above the header
+  (a blank line inside the injected `<style>` block broke CommonMark's
+  raw-HTML-block passthrough) and an empty orphan `<div>` box (Streamlit
+  doesn't let one `st.markdown` open a tag that a later separate call
+  closes — each call is an isolated fragment) — then re-screenshotted
+  clean on a second pass, plus two targeted edge-case checks (an
+  oversized-contracts + thin-ADR warning state, a CRITICAL trailing-DD
+  session state) with every number cross-checked against this project's
+  own previously-verified figures, not just eyeballed for "looks
+  right." Also fixed two `use_container_width` deprecation warnings
+  (Streamlit 1.64 wants `width="stretch"`) surfaced by actually running
+  the app. Not yet deployed anywhere — local-only so far.
 
 ---
 
