@@ -34,8 +34,9 @@ Full writeup, all three rounds: `/notes/trading-jarvis-analysis.md`.
 | `jarvis_swamp_bridge.py` | **The actual uploaded file**, hardened. Routes a Jarvis objective through Swamp Intelligence, then hands off to the real modules above |
 | `positions_store.py` | Local open-positions ledger — the missing wire into `existing_positions` |
 | `live_monitor.py` | Polling loop → signal → alert. **Never places an order.** |
-| `jarvis_orchestrator.py` | Claude API tool-calling front end — now includes a `swamp_decompose` tool |
+| `jarvis_orchestrator.py` | Claude API tool-calling front end — now includes a `swamp_decompose` tool plus the three prop-firm tools below |
 | `run_strategy.py` | CLI entry point — one-shot check, `--swamp` reasoning mode, live monitor, NL query, or position tracking |
+| `prop_firm_sizing.py`, `prop_firm_position_sizing.py`, `prop_pass_simulator.py` | Copied in from `/builds/prop-firm-sizing/` (same files, unmodified) — TPT funded-account sizing, wired into `jarvis_orchestrator.py` as three separate tools, see below |
 
 ## What changed, across all three rounds
 
@@ -102,6 +103,30 @@ agent reassignment, revenue-ranked decision logic) have no corresponding
 code — true of the uploaded file already, not a regression here, and
 building them out for a single-objective-shape domain would be scope
 expansion beyond what's needed, not a bug fix.
+
+## Prop-firm account tools
+
+Three tools from `/builds/prop-firm-sizing/` are wired into
+`jarvis_orchestrator.py` as a fully separate flow from the EODHD/FMP
+symbol-trading tools above — the system prompt tells Claude not to mix
+the two: no `swamp_decompose`/`check_signal`/`check_risk` for a funded-
+account sizing question, and no prop-firm tool for an ordinary symbol
+question.
+
+- **`prop_firm_size_check`** — static, start-of-day check: point-risk at
+  a given contract count, the 25%-of-max-contracts rule, and an optional
+  stop-room-vs-ADR check.
+- **`prop_firm_session_report`** — the trailing-drawdown-aware live
+  session state: the floor follows the high-water mark, not the starting
+  balance (a good morning shrinks room, it doesn't grow it), plus a
+  SAFE/WARNING/CRITICAL/BREACHED status. Use this over the static check
+  whenever the user has given today's P&L.
+- **`prop_firm_pass_probability`** — Monte Carlo eval pass probability,
+  requiring the trader's own `avg_daily_pnl`/`daily_pnl_std` as input
+  (never estimated by the tool or by Claude).
+
+Full source-document analysis these were built and cross-checked
+against: `/notes/prop-firm-sizing-analysis.md`.
 
 ## What's deliberately out of scope, and why
 
@@ -196,6 +221,16 @@ Proven in this build environment, without live EODHD/FMP/Anthropic keys
 - `jarvis_orchestrator._run_tool()` proven for all four tools including
   the new `swamp_decompose`, and `check_risk`'s code-level gate proven to
   correctly refuse a non-BUY signal rather than trusting the caller.
+- The three prop-firm tools proven directly via `_run_tool()` — including
+  the exact "peaked at $51,500 then gave back to $50,200" trailing-DD
+  scenario (floor correctly at $49,500, `WARNING` status) and a Monte
+  Carlo pass-probability call, both matching the standalone
+  `/builds/prop-firm-sizing/` toolkit's own verified output — then proven
+  again through the **full `ask_jarvis()` tool-dispatch loop** with a
+  mocked Anthropic client: Claude "calls" `prop_firm_session_report`,
+  the real computation runs, the JSON result round-trips back through
+  `messages`, and the mocked second turn asserts the correct numbers
+  arrived before producing a final answer.
 - `run_strategy.py --add-position/--positions/--remove-position` and
   `--help` (now showing `--swamp`/`--equity`/`--risk-pct` too) proven
   end-to-end.

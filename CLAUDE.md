@@ -180,6 +180,24 @@ yourself every time.
   small gap versus the analysis's aspirational spec (multi-contract-
   type sizing recommendations for one account — not built, not asked
   for, noted rather than silently ignored or silently added).
+- The three `/builds/prop-firm-sizing/` tools wired into
+  `/builds/trading-jarvis/jarvis_orchestrator.py` as a new, separate
+  tool category (`prop_firm_size_check`, `prop_firm_session_report`,
+  `prop_firm_pass_probability`) — TPT funded-account sizing, kept
+  independent of the existing EODHD/FMP symbol-trading flow, with the
+  system prompt explicitly telling Claude not to mix the two. The
+  three prop-firm `.py` files were copied into `trading-jarvis/`
+  unmodified (its `requirements.txt` already pinned the exact same
+  `numpy`/`pandas`/`requests` versions, so no dependency changes were
+  needed). Proven two ways: `_run_tool()` called directly for all
+  three (the "peaked then gave back" trailing-DD scenario and a Monte
+  Carlo pass-probability call both matched the standalone toolkit's
+  own previously-verified output exactly), then the full
+  `ask_jarvis()` tool-dispatch loop proven end-to-end against a mocked
+  Anthropic client — a simulated `prop_firm_session_report` call,
+  real computation, JSON round-trip back through `messages`, and an
+  assertion on the second turn that the correct numbers arrived before
+  the final answer was produced.
 
 ---
 
