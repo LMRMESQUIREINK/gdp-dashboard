@@ -1,0 +1,30 @@
+# ============================================================
+# Kryptera Strategy Generator 10X — Requirements
+# ============================================================
+# Exact pins, not floors/ceilings — same lesson as
+# /builds/kryptera-strategy-lab-pro/requirements.txt: an open range
+# (pandas>=2.0.0,<3.0.0) empirically resolved to pandas 3.0.6 in this
+# sandbox, which breaks vectorbt==0.28.5. Only an exact pin prevents
+# that for every future install, not just the one already sitting in
+# a populated .venv. See /notes/kryptera-strategy-lab-analysis.md.
+#
+# plotly is pinned for the same reason it's pinned in kryptera-pro:
+# `import vectorbt` runs its theme-init at import time, which crashes
+# on plotly 6.x (removed a property vectorbt's Template setup depends
+# on) — reproduced live in this sandbox before pinning it here too.
+#
+# ruthless_strategy_lab_10x.py (the alternative engine in this folder)
+# does not depend on vectorbt at all — its backtest loop is hand-
+# rolled — so it will still run even if the vectorbt/numba install
+# below fails on an unsupported platform.
+# ============================================================
+
+vectorbt==0.28.5
+yfinance==0.2.66
+pandas==2.2.3
+numpy==1.26.4
+numba==0.60.0
+plotly==5.24.1
+scipy==1.17.1
+tqdm==4.70.1
+pytz==2026.3.post1

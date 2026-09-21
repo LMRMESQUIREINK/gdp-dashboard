@@ -1,0 +1,21 @@
+# ============================================================
+# Kryptera Strategy Lab — Requirements (PRO build)
+# ============================================================
+# Every version below is an EXACT pin, not a floor/ceiling. This is a
+# deliberate fix: the original requirements.txt used open ranges
+# (pandas>=2.0.0,<3.0.0, plotly>=5.0.0) and both were empirically confirmed
+# in testing this build to resolve to versions that break vectorbt 0.28.5 —
+# pandas to 3.0.6, plotly to a 6.x release that removed properties
+# vectorbt's theme setup depends on. Exact pins are the only thing that
+# actually prevents this. See /notes/kryptera-strategy-lab-analysis.md.
+# ============================================================
+
+vectorbt==0.28.5
+yfinance==0.2.66
+pandas==2.2.3
+numpy==1.26.4
+numba==0.60.0
+plotly==5.24.1
+scipy==1.17.1
+tqdm==4.70.1
+pytz==2026.3.post1
