@@ -1,0 +1,11 @@
+# ============================================================
+# Prop-Firm Dashboard — Requirements
+# ============================================================
+# Same numpy pin as /builds/prop-firm-sizing/ and /builds/trading-jarvis/
+# (PassSimulator's Monte Carlo core) — pandas/streamlit versions below
+# are what this build actually installed and ran against.
+# ============================================================
+
+streamlit==1.64.0
+pandas==3.0.6
+numpy==2.4.6
