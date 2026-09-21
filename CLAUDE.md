@@ -198,6 +198,23 @@ yourself every time.
   real computation, JSON round-trip back through `messages`, and an
   assertion on the second turn that the correct numbers arrived before
   the final answer was produced.
+- Added `--prop-size-check`/`--prop-session`/`--prop-pass-prob` (plus
+  their `--prop-tier`/`--prop-symbol`/`--prop-contracts`/`--prop-adr`/
+  `--prop-pnl`/`--prop-hwm`/`--prop-start-balance`/`--prop-balance`/
+  `--prop-days`/`--prop-avg-pnl`/`--prop-pnl-std` parameters) to
+  `run_strategy.py` — CLI access to the same three prop-firm tools
+  `jarvis_orchestrator.py` exposes to Claude, no Anthropic key needed.
+  Reuses `SessionState.report()`/`PassSimulator.report()` directly
+  rather than re-implementing their formatting. Proven as real
+  subprocess CLI calls (not just function calls): all three reproduce
+  the standalone toolkit's exact numbers, `--help` renders cleanly,
+  missing-flag calls give a clean `argparse` error. Caught and fixed a
+  real rough edge while testing: an invalid `--prop-tier`/`--prop-symbol`
+  initially surfaced as a raw Python traceback (`PropFirmAccount`'s
+  `ValueError` and `CONTRACT_SPECS`'s bare `KeyError` were both
+  unhandled at the CLI layer) — now caught and printed as a one-line
+  plain-English error listing the valid values, per this file's own
+  non-coder communication rule.
 
 ---
 

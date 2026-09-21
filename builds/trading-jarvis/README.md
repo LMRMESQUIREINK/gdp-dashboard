@@ -111,19 +111,28 @@ Three tools from `/builds/prop-firm-sizing/` are wired into
 symbol-trading tools above — the system prompt tells Claude not to mix
 the two: no `swamp_decompose`/`check_signal`/`check_risk` for a funded-
 account sizing question, and no prop-firm tool for an ordinary symbol
-question.
+question. Reachable two ways — through Claude (`--ask`) or directly via
+CLI flags on `run_strategy.py`, no Anthropic key required for the latter:
 
-- **`prop_firm_size_check`** — static, start-of-day check: point-risk at
-  a given contract count, the 25%-of-max-contracts rule, and an optional
-  stop-room-vs-ADR check.
-- **`prop_firm_session_report`** — the trailing-drawdown-aware live
-  session state: the floor follows the high-water mark, not the starting
-  balance (a good morning shrinks room, it doesn't grow it), plus a
-  SAFE/WARNING/CRITICAL/BREACHED status. Use this over the static check
-  whenever the user has given today's P&L.
-- **`prop_firm_pass_probability`** — Monte Carlo eval pass probability,
-  requiring the trader's own `avg_daily_pnl`/`daily_pnl_std` as input
-  (never estimated by the tool or by Claude).
+- **`prop_firm_size_check`** / **`--prop-size-check`** — static,
+  start-of-day check: point-risk at a given contract count, the
+  25%-of-max-contracts rule, and an optional stop-room-vs-ADR check.
+- **`prop_firm_session_report`** / **`--prop-session`** — the
+  trailing-drawdown-aware live session state: the floor follows the
+  high-water mark, not the starting balance (a good morning shrinks
+  room, it doesn't grow it), plus a SAFE/WARNING/CRITICAL/BREACHED
+  status. Use this over the static check whenever the user has given
+  today's P&L.
+- **`prop_firm_pass_probability`** / **`--prop-pass-prob`** — Monte
+  Carlo eval pass probability, requiring the trader's own
+  `avg_daily_pnl`/`daily_pnl_std` as input (never estimated by the tool,
+  by Claude, or by the CLI).
+
+The CLI flags reuse `SessionState.report()` and `PassSimulator.report()`
+directly for output — same formatting, same code path, as the tool
+functions Claude calls. A bad `--prop-tier`/`--prop-symbol` prints a
+one-line plain-English error (valid tiers/symbols listed) instead of a
+raw Python traceback.
 
 Full source-document analysis these were built and cross-checked
 against: `/notes/prop-firm-sizing-analysis.md`.
@@ -176,6 +185,13 @@ Optional: `JARVIS_MODEL` to pin a specific Claude model (defaults to
 ./run_jarvis.sh --add-position AAPL.US 100 150.25 145.00
 ./run_jarvis.sh --positions
 ./run_jarvis.sh --remove-position AAPL.US
+
+# Prop-firm account tools (TPT) — CLI access to the same three tools
+# jarvis_orchestrator.py exposes to Claude, no Anthropic key needed:
+./run_jarvis.sh --prop-size-check --prop-tier 50K --prop-contracts 1 --prop-adr 78
+./run_jarvis.sh --prop-session --prop-tier 50K --prop-pnl 200 --prop-hwm 51500
+./run_jarvis.sh --prop-pass-prob --prop-tier 50K --prop-balance 50800 \
+    --prop-hwm 51200 --prop-days 8 --prop-avg-pnl 180 --prop-pnl-std 550
 ```
 (Windows: `run_jarvis.bat` with the same arguments.)
 
@@ -234,6 +250,15 @@ Proven in this build environment, without live EODHD/FMP/Anthropic keys
 - `run_strategy.py --add-position/--positions/--remove-position` and
   `--help` (now showing `--swamp`/`--equity`/`--risk-pct` too) proven
   end-to-end.
+- `run_strategy.py --prop-size-check/--prop-session/--prop-pass-prob`
+  proven as real subprocess CLI calls (not just direct function calls):
+  all three reproduce the standalone `/builds/prop-firm-sizing/`
+  toolkit's exact previously-verified numbers, `--help` renders all the
+  new flags correctly, missing-required-flag calls produce a clean
+  `argparse` error naming exactly what's missing, and an invalid
+  `--prop-tier`/`--prop-symbol` — which initially surfaced as a raw
+  Python traceback — was caught and fixed to print a one-line
+  plain-English error listing the valid values instead.
 - `data_pipeline.fetch_eod()` fails fast and locally on a missing/
   placeholder API key, before any request goes out.
 
