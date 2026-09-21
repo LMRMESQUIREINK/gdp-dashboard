@@ -127,12 +127,20 @@ CLI flags on `run_strategy.py`, no Anthropic key required for the latter:
   Carlo eval pass probability, requiring the trader's own
   `avg_daily_pnl`/`daily_pnl_std` as input (never estimated by the tool,
   by Claude, or by the CLI).
+- **`--prop-compare`** (CLI only — not a Claude tool) — wraps
+  `compare_sizing_strategies()`, comparing pass probability across
+  several contract sizes at once via one or more
+  `--prop-compare-size CONTRACTS:AVG_PNL:PNL_STD` entries. Not exposed
+  to Claude: its input is a `{contracts: (avg_pnl, pnl_std)}` dict,
+  which fits a CLI's repeated-flag list better than a single-turn NL
+  tool call.
 
 The CLI flags reuse `SessionState.report()` and `PassSimulator.report()`
-directly for output — same formatting, same code path, as the tool
-functions Claude calls. A bad `--prop-tier`/`--prop-symbol` prints a
-one-line plain-English error (valid tiers/symbols listed) instead of a
-raw Python traceback.
+(including `compare_sizing_strategies()`) directly for output — same
+formatting, same code path, as the tool functions Claude calls. A bad
+`--prop-tier`/`--prop-symbol`/`--prop-compare-size` prints a one-line
+plain-English error (valid tiers/symbols listed, or the expected
+`CONTRACTS:AVG_PNL:PNL_STD` format) instead of a raw Python traceback.
 
 Full source-document analysis these were built and cross-checked
 against: `/notes/prop-firm-sizing-analysis.md`.
@@ -192,6 +200,8 @@ Optional: `JARVIS_MODEL` to pin a specific Claude model (defaults to
 ./run_jarvis.sh --prop-session --prop-tier 50K --prop-pnl 200 --prop-hwm 51500
 ./run_jarvis.sh --prop-pass-prob --prop-tier 50K --prop-balance 50800 \
     --prop-hwm 51200 --prop-days 8 --prop-avg-pnl 180 --prop-pnl-std 550
+./run_jarvis.sh --prop-compare --prop-tier 50K --prop-balance 50000 --prop-hwm 50000 \
+    --prop-days 11 --prop-compare-size 1:90:275 2:165:490 3:230:700 6:400:1400
 ```
 (Windows: `run_jarvis.bat` with the same arguments.)
 
@@ -259,6 +269,13 @@ Proven in this build environment, without live EODHD/FMP/Anthropic keys
   `--prop-tier`/`--prop-symbol` — which initially surfaced as a raw
   Python traceback — was caught and fixed to print a one-line
   plain-English error listing the valid values instead.
+- `run_strategy.py --prop-compare` proven the same way, including
+  reproducing `prop_pass_simulator.py`'s own `__main__` example numbers
+  exactly (1.7%/27.1%/49.7%/70.8% pass probability across 1/2/3/6
+  contracts) — plus a missing-`--prop-compare-size` `argparse` error and
+  two malformed-spec cases (wrong field count, non-numeric field), both
+  producing a plain-English message naming the expected
+  `CONTRACTS:AVG_PNL:PNL_STD` format rather than a raw parse exception.
 - `data_pipeline.fetch_eod()` fails fast and locally on a missing/
   placeholder API key, before any request goes out.
 

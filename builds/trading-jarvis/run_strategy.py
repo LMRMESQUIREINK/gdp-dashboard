@@ -32,6 +32,8 @@ Usage:
     python run_strategy.py --prop-session --prop-tier 50K --prop-pnl 200 --prop-hwm 51500
     python run_strategy.py --prop-pass-prob --prop-tier 50K --prop-balance 50800 \
         --prop-hwm 51200 --prop-days 8 --prop-avg-pnl 180 --prop-pnl-std 550
+    python run_strategy.py --prop-compare --prop-tier 50K --prop-balance 50000 --prop-hwm 50000 \
+        --prop-days 11 --prop-compare-size 1:90:275 2:165:490 3:230:700 6:400:1400
 
 WHAT CHANGED IN THIS BUILD
     Added --add-position/--positions/--remove-position (positions_store.py)
@@ -47,6 +49,14 @@ WHAT CHANGED IN THIS BUILD
     needing an Anthropic key or NL mode. Reuses SessionState.report()
     and PassSimulator.report()'s existing formatting rather than
     re-implementing it here.
+
+    Added --prop-compare, wiring prop_pass_simulator.compare_sizing_
+    strategies() — not exposed as a Claude tool (it takes a dict of
+    {contracts: (avg_pnl, pnl_std)}, awkward as a single-turn NL ask;
+    the CLI's --prop-compare-size CONTRACTS:AVG_PNL:PNL_STD [...] list
+    fits it more naturally). Parses and validates each entry itself
+    with a plain-English error on a malformed one, rather than letting
+    a bad split()/int() surface as a raw traceback.
 """
 
 import argparse
@@ -57,7 +67,7 @@ from risk_manager import evaluate_trade
 import positions_store as positions
 from prop_firm_sizing import PropFirmAccount, SessionState, TPT_TIERS, CONTRACT_SPECS
 from prop_firm_position_sizing import AccountRules, evaluate_size
-from prop_pass_simulator import PassSimulator
+from prop_pass_simulator import PassSimulator, compare_sizing_strategies
 
 
 def run_once(symbol: str, equity: float = 50_000, risk_pct: float = 1.0) -> None:
@@ -149,6 +159,37 @@ def prop_pass_probability(tier: str, symbol: str, current_balance: float, high_w
     print(sim.report())
 
 
+def _parse_compare_sizes(specs: list) -> dict:
+    """Parse ["1:90:275", "2:165:490", ...] into {contracts: (avg_pnl, std_pnl)}."""
+    avg_daily_pnl_by_size = {}
+    for spec in specs:
+        parts = spec.split(":")
+        if len(parts) != 3:
+            raise ValueError(
+                f"--prop-compare-size '{spec}' isn't in CONTRACTS:AVG_PNL:PNL_STD "
+                f"format (e.g. '2:165:490') — 3 colon-separated numbers, got {len(parts)}."
+            )
+        try:
+            contracts = int(parts[0])
+            avg_pnl = float(parts[1])
+            pnl_std = float(parts[2])
+        except ValueError:
+            raise ValueError(
+                f"--prop-compare-size '{spec}': CONTRACTS must be a whole number, "
+                f"AVG_PNL/PNL_STD must be numbers (e.g. '2:165:490')."
+            )
+        avg_daily_pnl_by_size[contracts] = (avg_pnl, pnl_std)
+    return avg_daily_pnl_by_size
+
+
+def prop_compare(tier: str, symbol: str, current_balance: float, high_water_mark: float,
+                  days_remaining: int, size_specs: list) -> None:
+    account = PropFirmAccount(tier=tier, symbol=symbol)
+    avg_daily_pnl_by_size = _parse_compare_sizes(size_specs)
+    compare_sizing_strategies(account, current_balance, high_water_mark,
+                               days_remaining, avg_daily_pnl_by_size)
+
+
 def print_positions() -> None:
     open_positions = positions.load_positions()
     if not open_positions:
@@ -186,6 +227,9 @@ if __name__ == "__main__":
     prop.add_argument("--prop-pass-prob", action="store_true",
                        help="Monte Carlo eval pass probability. Needs --prop-tier, --prop-balance, --prop-hwm, "
                             "--prop-days, --prop-avg-pnl, --prop-pnl-std.")
+    prop.add_argument("--prop-compare", action="store_true",
+                       help="Compare pass probability across contract sizes. Needs --prop-tier, --prop-balance, "
+                            "--prop-hwm, --prop-days, --prop-compare-size (one or more).")
     prop.add_argument("--prop-tier", type=str, default=None,
                        help=f"TPT account tier: one of {list(TPT_TIERS.keys())}")
     prop.add_argument("--prop-symbol", type=str, default="ES",
@@ -205,10 +249,13 @@ if __name__ == "__main__":
                        help="Trader's OWN recent average daily P&L — never estimated, for --prop-pass-prob")
     prop.add_argument("--prop-pnl-std", type=float, default=None,
                        help="Trader's OWN recent daily P&L std dev — never estimated, for --prop-pass-prob")
+    prop.add_argument("--prop-compare-size", nargs="+", metavar="CONTRACTS:AVG_PNL:PNL_STD", default=None,
+                       help="One entry per contract size to compare, e.g. "
+                            "1:90:275 2:165:490 3:230:700 — for --prop-compare")
 
     args = parser.parse_args()
 
-    if args.prop_size_check or args.prop_session or args.prop_pass_prob:
+    if args.prop_size_check or args.prop_session or args.prop_pass_prob or args.prop_compare:
         if args.prop_size_check and args.prop_contracts is None:
             parser.error("--prop-size-check needs --prop-tier and --prop-contracts")
         if args.prop_pass_prob:
@@ -219,6 +266,13 @@ if __name__ == "__main__":
             ) if val is None]
             if missing:
                 parser.error(f"--prop-pass-prob needs {', '.join(missing)}")
+        if args.prop_compare:
+            missing = [flag for flag, val in (
+                ("--prop-balance", args.prop_balance), ("--prop-hwm", args.prop_hwm),
+                ("--prop-days", args.prop_days), ("--prop-compare-size", args.prop_compare_size),
+            ) if val is None]
+            if missing:
+                parser.error(f"--prop-compare needs {', '.join(missing)}")
         if not args.prop_tier:
             parser.error("Prop-firm tools need --prop-tier")
 
@@ -228,11 +282,15 @@ if __name__ == "__main__":
             elif args.prop_session:
                 prop_session_report(args.prop_tier, args.prop_symbol, args.prop_pnl,
                                      args.prop_hwm, args.prop_start_balance)
-            else:
+            elif args.prop_pass_prob:
                 prop_pass_probability(args.prop_tier, args.prop_symbol, args.prop_balance, args.prop_hwm,
                                        args.prop_days, args.prop_avg_pnl, args.prop_pnl_std)
+            else:
+                prop_compare(args.prop_tier, args.prop_symbol, args.prop_balance, args.prop_hwm,
+                             args.prop_days, args.prop_compare_size)
         except ValueError as exc:
-            # PropFirmAccount's own ValueError already names the valid tiers.
+            # PropFirmAccount's own ValueError already names the valid tiers;
+            # _parse_compare_sizes' own ValueError already explains the format.
             print(f"♛ Prop-firm input error: {exc}")
         except KeyError:
             # CONTRACT_SPECS[symbol] raising is a bare KeyError with just the

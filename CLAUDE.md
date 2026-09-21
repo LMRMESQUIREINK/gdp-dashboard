@@ -215,6 +215,18 @@ yourself every time.
   unhandled at the CLI layer) — now caught and printed as a one-line
   plain-English error listing the valid values, per this file's own
   non-coder communication rule.
+- Added `--prop-compare` (plus `--prop-compare-size`, repeatable
+  `CONTRACTS:AVG_PNL:PNL_STD` entries) to `run_strategy.py`, wiring
+  `prop_pass_simulator.compare_sizing_strategies()` — deliberately
+  CLI-only, not added as a fourth Claude tool, since its
+  `{contracts: (avg_pnl, pnl_std)}` input shape fits a CLI's
+  repeated-flag list more naturally than a single NL tool call. Proven
+  as a real subprocess CLI call reproducing `prop_pass_simulator.py`'s
+  own `__main__` example numbers exactly (1.7%/27.1%/49.7%/70.8% across
+  1/2/3/6 contracts), plus a missing-flag `argparse` error and two
+  malformed-`--prop-compare-size` cases (wrong field count, non-numeric
+  field) both giving a plain-English format error instead of a raw
+  parse exception.
 
 ---
 
