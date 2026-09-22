@@ -103,6 +103,11 @@ produces a visual artifact, so it's not done until served locally,
 screenshotted, and checked against `design-rules.md`/DNA Lock, same as
 any other page in this project.
 
+Full skill with the complete page skeleton, design/copy rules, and a
+self-check list: `.claude/skills/sales-page-engine`. Invoke it directly
+once Stages 3–4 are done, rather than re-deriving the page structure
+from this summary each time.
+
 ### 6. Launch Pad — ad assets + a launch plan
 
 **Input:** Stages 3–5.

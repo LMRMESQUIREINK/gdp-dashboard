@@ -276,7 +276,27 @@ yourself every time.
   plumbing bug in whatever exports that wizard's state), and a lazy-
   interview-answers-still-produce-confident-specific-output risk, both
   folded into the new template as explicit warnings/fixes rather than
-  silently carried forward. Not yet exercised on a real build.
+  silently carried forward.
+- **Build Brain Stage 5 built out as a real skill**:
+  `.claude/skills/sales-page-engine`, matching the format of the
+  existing Software Factory skills (YAML frontmatter + trigger
+  phrases). Covers the full direct-response page skeleton (hero → pain
+  → mechanism → offer stack → pricing → guarantee → who-for/not-for →
+  FAQ), a pre-flight check that DNA Lock/One Shot Engine actually ran
+  before writing anything (refuses to invent a palette or price that
+  `design-rules.md`/the offer don't already have), design rules pulled
+  straight from `design-rules.md` plus sales-page-specific anti-patterns
+  (fake countdown timers, fabricated social-proof counters, unbacked
+  urgency language), a "copy honesty" rule extending the earlier lazy-
+  interview warning to its actual failure mode (fabricated-sounding
+  specificity papering over a thin `business-brain.md`), and a
+  screenshot-before-done self-check that adds a literal grep of the
+  rendered copy against `design-rules.md`'s don't-say list — the "turn
+  a style guideline into an actual check" idea flagged as the best
+  piece of the original source export. `build-brain-method.md` and
+  `CLAUDE.md`'s TECHNIQUES entry both updated to point to it. Not yet
+  exercised on a real build — Launch Pad (Stage 6) is the one remaining
+  stage with no project file or skill behind it yet.
 
 ---
 
@@ -441,9 +461,10 @@ in six stages, each one feeding the next: **Interview** (fills
 aside, with why) → **DNA Lock** (fills `design-rules.md` — colour,
 fonts, voice do-say/don't-say, brand name/tagline) → **One Shot Engine**
 (the build prompt, then actually built via the Software Factory method
-above) → **Sales Page Engine** (a real page built from the same DNA,
-screenshot-before-done applies) → **Launch Pad** (ad assets + a launch
-plan with a specific first-customer target).
+above) → **Sales Page Engine** (`.claude/skills/sales-page-engine` — a
+real page built from the same DNA, screenshot-before-done applies) →
+**Launch Pad** (ad assets + a launch plan with a specific first-customer
+target).
 
 Sits *before* Software Factory in the sequence — Build Brain decides
 what to build and how it should look/sound; Software Factory is how
