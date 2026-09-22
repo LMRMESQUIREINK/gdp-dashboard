@@ -1,0 +1,12 @@
+# ============================================================
+# Recovery Desk — Requirements
+# ============================================================
+# decision_engine.py and data_pipeline.py's synthetic path need only
+# the standard library. requests is for the real Oura/Whoop fetchers
+# (untested live in this sandbox — no network access to either API).
+# twilio is imported lazily inside sms_dispatch.send_decision_text()
+# so the module loads fine without it until an actual send is needed.
+# ============================================================
+
+requests==2.34.2
+twilio==9.11.1
