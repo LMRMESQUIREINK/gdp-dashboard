@@ -256,6 +256,137 @@ yourself every time.
   right." Also fixed two `use_container_width` deprecation warnings
   (Streamlit 1.64 wants `width="stretch"`) surfaced by actually running
   the app. Not yet deployed anywhere — local-only so far.
+- **New technique added: Build Brain method** — an uploaded export of a
+  six-stage "RUTHLESS AFFILIATE GOLD" SaaS-idea-to-launch wizard
+  (Interview Builder → Idea Engine → DNA Lock → One Shot Engine →
+  Sales Page Engine → Launch Pad), demoed with placeholder interview
+  answers producing a fictional "RemixForge" video-remix SaaS. Per this
+  round's explicit instruction, RemixForge itself was **not** built —
+  the wizard's stage structure was analyzed
+  (`/notes/ruthless-affiliate-gold-build-brain-analysis.md`) and
+  generalized into a reusable, domain-agnostic template
+  (`/prompts/build-brain-method.md`), added as this project's third
+  named TECHNIQUE alongside Goal/Loop and Software Factory. The
+  analysis found this project already has equivalents for 3 of the 6
+  stages (Interview→`business-brain.md`, DNA Lock→`design-rules.md`,
+  One Shot Engine→Software Factory) and was missing the other 3 (Idea,
+  Sales Page Engine, Launch Pad) — the template fills that gap. Also
+  flagged two real issues in the source export: a `palette` field that
+  serialized as `[object Object]` instead of real hex values (a
+  plumbing bug in whatever exports that wizard's state), and a lazy-
+  interview-answers-still-produce-confident-specific-output risk, both
+  folded into the new template as explicit warnings/fixes rather than
+  silently carried forward.
+- **Build Brain Stage 5 built out as a real skill**:
+  `.claude/skills/sales-page-engine`, matching the format of the
+  existing Software Factory skills (YAML frontmatter + trigger
+  phrases). Covers the full direct-response page skeleton (hero → pain
+  → mechanism → offer stack → pricing → guarantee → who-for/not-for →
+  FAQ), a pre-flight check that DNA Lock/One Shot Engine actually ran
+  before writing anything (refuses to invent a palette or price that
+  `design-rules.md`/the offer don't already have), design rules pulled
+  straight from `design-rules.md` plus sales-page-specific anti-patterns
+  (fake countdown timers, fabricated social-proof counters, unbacked
+  urgency language), a "copy honesty" rule extending the earlier lazy-
+  interview warning to its actual failure mode (fabricated-sounding
+  specificity papering over a thin `business-brain.md`), and a
+  screenshot-before-done self-check that adds a literal grep of the
+  rendered copy against `design-rules.md`'s don't-say list — the "turn
+  a style guideline into an actual check" idea flagged as the best
+  piece of the original source export. `build-brain-method.md` and
+  `CLAUDE.md`'s TECHNIQUES entry both updated to point to it.
+- **Build Brain Stage 6 built out as a real skill, completing all six
+  stages**: `.claude/skills/launch-pad`. No worked example existed for
+  this stage (the source wizard export hadn't run it), so it was built
+  directly from this project's own rules instead of distilled from an
+  upload, matching `sales-page-engine`'s structure: a pre-flight check
+  that DNA Lock and the sales page actually exist (ad copy must reuse
+  the sales page's own hooks, never reinvent the pitch), ad-copy formats
+  by channel/length (short social/paid, medium cold-DM, long email) each
+  required to reuse Stage 3's do-say phrases, a launch-plan structure
+  that forces a specific channel-first choice grounded in
+  `business-brain.md`'s actual stated assets, a dated/ordered sequence,
+  a real first-customer number pulled from the 90-day goal (flagging it
+  if that's still the unfilled placeholder), and a "what counts as
+  working vs. not" decision point so a launch doesn't drift
+  indefinitely. Same anti-fabrication rules as Stage 5 (no fake
+  urgency/social proof, same don't-say-list grep) plus a rule against
+  ad copy promising anything the actual offer/build doesn't have. Notes
+  that finishing this stage means writing `## Launch Plan` into
+  `business-brain.md`, closing the full interview→idea→brand→build→
+  sales-page→launch arc in one place. `build-brain-method.md` and
+  `CLAUDE.md`'s TECHNIQUES entry both updated to point to it — Build
+  Brain's six stages all have a real project file or skill behind them
+  now.
+- **Build Brain run end-to-end for real, first time: `/builds/recovery-desk`**
+  (Recovery Desk — a daily wearable-recovery decision text service),
+  from an uploaded IdeaBrowser opportunity report. Unlike the RemixForge
+  demo, this was explicitly "run it for real" — `business-brain.md` and
+  `design-rules.md` are genuinely filled in now, not templates. All six
+  stages:
+  - **Interview/Idea** (`business-brain.md`): filled from the report's
+    real sourced data (Reddit pain quotes, Rock Health/App Store stats,
+    competitor pricing) — but "Who I am" is flagged explicitly as
+    unconfirmed, not assumed: the report states an ideal-founder profile
+    (endurance athlete, owns both Oura and Whoop, active in the target
+    communities) that was never actually checked against the real
+    person building this. Idea alternatives are the report's own
+    surfaced options (CGM variant, broad multi-wearable coach, chat-led
+    upsell), labeled as such rather than presented as independent
+    brainstorming.
+  - **DNA Lock** (`design-rules.md`): a new locked brand — deep
+    recovery green `#3E7C5C` on near-black, Space Grotesk/Inter,
+    deliberately distinct from Whoop's neon lime and Oura's teal/white.
+    Coexists with the unrelated RUTHLESS TRADING GOLD portfolio under
+    `/builds/` (that work keeps its own pre-existing black/gold
+    branding; this file governs new Recovery Desk work going forward).
+  - **One Shot Engine** (`/builds/recovery-desk/`): a real, tested MVP —
+    `decision_engine.py` (deliberately rules-based, not LLM-generated —
+    logged as a real product decision, not an implementation detail:
+    the source report itself says the moat is a trusted decision, not
+    model intelligence), `data_pipeline.py` (real Oura/Whoop API
+    adapters, untested live — no sandbox network access, same
+    restriction as every other build here — plus `synthetic_reading()`,
+    what every test actually runs against), `sms_dispatch.py` (Twilio,
+    same fail-fast-on-placeholder-credential pattern as `data_pipeline.py`
+    elsewhere in this project), a hard code-level safety gate
+    (`_check_anomaly`) that overrides any training recommendation with
+    "see a doctor" on an illness-like data pattern, never just a prompt
+    instruction. `test_decision_engine.py`, 7/7 passing, caught two real
+    bugs: the `train_hard` and `back_off` synthetic fixtures didn't
+    actually cross their own thresholds (`back_off` silently fell
+    through to the `TRAIN_HARD` catch-all) — fixed by recalculating the
+    fixtures against the real thresholds, not by loosening the
+    thresholds.
+  - **Sales Page Engine** (`/builds/recovery-desk/sales-page/`): built
+    via `.claude/skills/sales-page-engine`, screenshotted with
+    Playwright (desktop + mobile), every stat/quote traced to the
+    source report (no fabricated numbers), the offer's real
+    cancel-by-texting-STOP policy used instead of inventing a guarantee.
+    Two real findings from actually testing it: Google Fonts don't load
+    in this sandbox (confirmed as a genuine network block, not a
+    cert-trust artifact, via a second check with cert errors ignored) —
+    flagged as unverified rather than claimed working; and the
+    don't-say-list grep flagged "diagnose"/"treat" as false positives —
+    both hits are the disclaimer's correct negated usage ("doesn't
+    diagnose or treat anything"), confirmed by reading them in context
+    rather than stripping medically-necessary language to satisfy a
+    naive grep.
+  - **Launch Pad** (`/builds/recovery-desk/launch/ad-copy.md` +
+    `business-brain.md`'s new `## Launch Plan`): built via
+    `.claude/skills/launch-pad`. Ad copy reframed to match the source
+    report's own actual distribution plan — reply-in-existing-thread,
+    not cold DM, since r/ouraring/r/whoop's own norms (and the report's
+    own stated channel strategy) rule out unsolicited outreach. Launch
+    plan uses a real near-term target (one paying subscriber within 45
+    days, the low end of the report's own 45–90-day estimate) and a
+    real "what counts as not working" trigger, not "post and see."
+  - Not deployed anywhere — local-only, same as `/builds/prop-firm-dashboard`.
+    When it is, the sales page (static HTML) fits Netlify/Cloudflare
+    Pages and the daily-check script fits a scheduled job rather than a
+    long-running server; not recorded as this project's actual
+    Deployment default in the section below since nothing's live yet —
+    that note is for the first real deployment, not a plan for one.
 
 ---
 
@@ -411,6 +542,32 @@ doesn't replace the screenshot-before-done or Goal/Loop rules above — it's
 the same discipline, organized as four named, reusable stations instead
 of one general instruction, so the same workflow runs consistently across
 different builds and different sessions.
+
+### Build Brain method (idea → brand → build → sales page → launch)
+
+For taking a vague business idea all the way to a launch-ready product,
+in six stages, each one feeding the next: **Interview** (fills
+`business-brain.md`) → **Idea** (one chosen concept + alternatives set
+aside, with why) → **DNA Lock** (fills `design-rules.md` — colour,
+fonts, voice do-say/don't-say, brand name/tagline) → **One Shot Engine**
+(the build prompt, then actually built via the Software Factory method
+above) → **Sales Page Engine** (`.claude/skills/sales-page-engine` — a
+real page built from the same DNA, screenshot-before-done applies) →
+**Launch Pad** (`.claude/skills/launch-pad` — ad assets + a launch plan
+with a specific first-customer target).
+
+All six stages now have a real project file or skill behind them.
+
+Sits *before* Software Factory in the sequence — Build Brain decides
+what to build and how it should look/sound; Software Factory is how
+Stage 4's build prompt actually gets executed. Use it whenever the work
+starts from an idea rather than a defined spec (the opposite case —
+someone hands you a build brief already written — skips straight to
+Software Factory).
+
+Full template and copy-paste starter prompt: `/prompts/build-brain-method.md`.
+Source analysis this was generalized from:
+`/notes/ruthless-affiliate-gold-build-brain-analysis.md`.
 
 ---
 

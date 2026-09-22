@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Recovery Desk — One text. Know what to do.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #101210; --card: #1B1E1B;
+    --green: #3E7C5C; --green-bright: #4E9871;
+    --amber: #D98B3E; --red: #C24B3F;
+    --text: #F0F0EC; --text-secondary: #9A9A94;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 17px; line-height: 1.6; }
+  h1, h2, h3, .wordmark { font-family: 'Space Grotesk', sans-serif; line-height: 1.2; }
+  h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700; }
+  h2 { font-size: clamp(1.4rem, 3.6vw, 2.1rem); font-weight: 700; margin-bottom: 1rem; }
+  h3 { font-size: 1.05rem; font-weight: 500; color: var(--green-bright); margin-bottom: .4rem; }
+  a { color: var(--green-bright); text-decoration: none; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 1.25rem; }
+  section { padding: 4.5rem 0; }
+  .tag { display: inline-block; background: var(--card); color: var(--green-bright); font-family: 'Space Grotesk', sans-serif; font-size: .78rem; font-weight: 500; padding: .35rem .85rem; border-radius: 50px; margin-bottom: 1.2rem; }
+  .btn { display: inline-block; background: var(--green); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem; padding: .9rem 2.1rem; border-radius: 8px; border: none; cursor: pointer; transition: transform .2s, background .2s; }
+  .btn:hover { background: var(--green-bright); transform: translateY(-2px); }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1.3rem 1.25rem; max-width: 760px; margin: 0 auto; }
+  .wordmark { font-weight: 700; font-size: 1.25rem; color: var(--text); }
+  .hero { text-align: center; padding: 4.5rem 0 3.5rem; }
+  .hero p.sub { font-size: 1.12rem; color: var(--text-secondary); max-width: 520px; margin: 1rem auto 2rem; }
+  .trust-line { margin-top: .9rem; font-size: .85rem; color: var(--text-secondary); }
+  ul.bullets { list-style: none; margin: 1.4rem 0; }
+  ul.bullets li { padding: .55rem 0 .55rem 1.7rem; position: relative; border-bottom: 1px solid var(--card); }
+  ul.bullets li:before { content: "—"; color: var(--green-bright); position: absolute; left: 0; }
+  .quote-card { background: var(--card); border-left: 3px solid var(--green); border-radius: 6px; padding: 1.3rem 1.6rem; margin-bottom: 1rem; font-style: italic; color: var(--text-secondary); }
+  .quote-card cite { display: block; margin-top: .6rem; font-style: normal; font-size: .82rem; color: var(--green-bright); font-family: 'Space Grotesk', sans-serif; }
+  .stat-row { display: flex; gap: 1.2rem; flex-wrap: wrap; margin: 2rem 0; }
+  .stat { background: var(--card); border-radius: 8px; padding: 1.3rem 1.5rem; flex: 1; min-width: 160px; }
+  .stat .num { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--green-bright); }
+  .stat .label { font-size: .82rem; color: var(--text-secondary); margin-top: .3rem; }
+  .mechanism-step { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid var(--card); }
+  .mechanism-step:last-child { border: none; }
+  .step-num { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--green-bright); font-size: 1.1rem; flex-shrink: 0; width: 2rem; }
+  .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin: 2rem 0; }
+  @media (max-width: 600px) { .price-grid { grid-template-columns: 1fr; } .stat-row { flex-direction: column; } }
+  .price-card { background: var(--card); border: 1px solid #2A2E2A; border-radius: 10px; padding: 1.8rem; text-align: center; }
+  .price-card.featured { border-color: var(--green); }
+  .price-big { font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; color: var(--green-bright); }
+  .price-note { font-size: .82rem; color: var(--text-secondary); margin: .3rem 0 1.1rem; }
+  .cancel-note { background: var(--card); border-left: 4px solid var(--green-bright); border-radius: 8px; padding: 1.3rem 1.7rem; margin: 2rem 0; }
+  .faq-item { border-bottom: 1px solid var(--card); padding: 1.15rem 0; }
+  .faq-item h3 { color: var(--text); font-family: 'Inter', sans-serif; font-weight: 600; font-size: .98rem; margin-bottom: .35rem; }
+  .final { text-align: center; background: var(--card); border-radius: 14px; padding: 3.2rem 2rem; }
+  footer { text-align: center; padding: 2rem; font-size: .8rem; color: #5A5D58; }
+  .disclaimer { font-size: .78rem; color: #5A5D58; max-width: 480px; margin: 1rem auto 0; }
+</style>
+</head>
+<body>
+<header>
+<nav>
+  <div class="wordmark">Recovery Desk</div>
+  <a href="#offer" class="btn" style="padding:.55rem 1.3rem;font-size:.9rem">Start free</a>
+</nav>
+</header>
+
+<section class="hero">
+<div class="wrap">
+  <div class="tag">For Oura &amp; Whoop owners</div>
+  <h1>One text. Know what to do.</h1>
+  <p class="sub">Recovery Desk reads your Oura or Whoop overnight and sends one decision before you open anything: train hard, back off, eat more, or sleep earlier — plus one line on why.</p>
+  <a href="#offer" class="btn">Try the free 7-day Morning Read</a>
+  <p class="trust-line">No card required. Cancel anytime by texting STOP.</p>
+</div>
+</section>
+
+<section style="padding: 2.5rem 0">
+<div class="wrap">
+  <h2>The dashboard was never the product.</h2>
+  <p style="color: var(--text-secondary); margin-bottom: 1.2rem;">You already paid for the ring or the strap. You already have the data. What you don't have is someone willing to just tell you what to do with it.</p>
+  <div class="quote-card">"I'm not taking out my 2nd year with whoop partially because of how useless the AI is. For £27 a month id expect it to know what day of the...”<cite>— r/whoop member</cite></div>
+  <div class="quote-card">"responses are useless most of the times, the guard rails are too tight, and Oura screen grabs into chatGPT provides a more detailed analysis.”<cite>— r/ouraring member</cite></div>
+  <div class="quote-card">"I've tried a lot. For me it ended up being too much focus on data. Dashboards, diary, analysis with AI, spreadsheets with way too many variables.”<cite>— r/QuantifiedSelf member</cite></div>
+  <div class="stat-row">
+    <div class="stat"><div class="num">46%</div><div class="label">of US adults now own a wearable (Rock Health, 2025)</div></div>
+    <div class="stat"><div class="num">83%</div><div class="label">of owners wear it 5+ days a week</div></div>
+    <div class="stat"><div class="num">$1.13M/mo</div><div class="label">Bevel's estimated App Store revenue selling an AI coach on this same data</div></div>
+  </div>
+  <p style="color: var(--text-secondary);">People already pay for an AI coach on wearable data — including you, probably, whether or not you trust the one you have.</p>
+</div>
+</section>
+
+<section>
+<div class="wrap">
+  <div class="tag">How it works</div>
+  <h2>No app to open. No dashboard to read.</h2>
+  <div class="mechanism-step"><div class="step-num">01</div><div><h3>Connect your Oura or Whoop</h3><p style="color:var(--text-secondary)">One-time setup. Recovery Desk reads your overnight data — nothing else.</p></div></div>
+  <div class="mechanism-step"><div class="step-num">02</div><div><h3>We compare it to your own baseline</h3><p style="color:var(--text-secondary)">HRV, resting heart rate, and sleep — checked against your last two weeks, not a generic target.</p></div></div>
+  <div class="mechanism-step"><div class="step-num">03</div><div><h3>One decision text, every morning</h3><p style="color:var(--text-secondary)">Train hard, back off, eat more, or sleep earlier — with the one number behind the call. No login required to read it.</p></div></div>
+</div>
+</section>
+
+<section id="offer" style="padding: 2.5rem 0">
+<div class="wrap">
+  <div class="tag">Pricing</div>
+  <h2>You're already paying for a coach. This is the one you'll actually listen to.</h2>
+  <p style="color:var(--text-secondary); margin-bottom:1.5rem;">Oura Advisor is $5.99/mo, Whoop's coach is bundled into $199–359/yr, Google's is $9.99/mo — all three are the exact "useless" coaches quoted above. Recovery Desk is a second opinion, not a cheaper one.</p>
+  <div class="price-grid">
+    <div class="price-card">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;margin-bottom:.5rem">Recovery Desk Daily</div>
+      <div class="price-big">$29<span style="font-size:.95rem;color:var(--text-secondary)">/mo</span></div>
+      <div class="price-note">One decision text every morning + 1 free follow-up reply/day + Sunday summary</div>
+      <a href="#" class="btn" style="width:100%;display:block">Start free trial</a>
+    </div>
+    <div class="price-card featured">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;margin-bottom:.5rem">Recovery Desk Annual</div>
+      <div class="price-big">$290<span style="font-size:.95rem;color:var(--text-secondary)">/yr</span></div>
+      <div class="price-note">Same product, 17% off</div>
+      <a href="#" class="btn" style="width:100%;display:block">Start free trial</a>
+    </div>
+  </div>
+  <div class="cancel-note">
+    <h3 style="color:var(--green-bright)">Free 7-day Morning Read, no card required</h3>
+    <p style="color:var(--text-secondary)">Connect your ring or strap, get one real decision text every morning for a week. See the product before you pay for it. Cancel anytime after — just text STOP.</p>
+  </div>
+</div>
+</section>
+
+<section>
+<div class="wrap">
+  <div class="tag">Is this for you?</div>
+  <h2>This is for you if:</h2>
+  <ul class="bullets">
+    <li>You already own an Oura ring or a Whoop strap</li>
+    <li>You check the app most mornings, out of habit more than trust</li>
+    <li>You'd rather get a straight answer than explore a dashboard</li>
+    <li>You train seriously enough that "should I go hard today" is a real question, most days</li>
+  </ul>
+  <h2 style="margin-top: 2.2rem">This is NOT for you if:</h2>
+  <ul class="bullets">
+    <li>You don't have a wearable yet — Recovery Desk reads data, it doesn't collect it</li>
+    <li>You want a dashboard to dig into trends yourself — that's what your ring/strap app is already for</li>
+    <li>You want live, in-workout coaching — this is one text, once a morning, not real-time guidance</li>
+  </ul>
+</div>
+</section>
+
+<section style="padding: 2.5rem 0">
+<div class="wrap">
+  <div class="tag">FAQ</div>
+  <h2>Straight answers</h2>
+  <div class="faq-item"><h3>Do I stop using my Oura/Whoop app?</h3><p style="color:var(--text-secondary)">No. Recovery Desk reads the same data your ring or strap already collects — it doesn't replace the app, it replaces the part where you have to open it and interpret it yourself.</p></div>
+  <div class="faq-item"><h3>What if the text says to see a doctor?</h3><p style="color:var(--text-secondary)">That only happens when the overnight pattern looks more like illness than training fatigue — depressed HRV together with an elevated resting heart rate or breathing rate and poor sleep, not any one signal alone. On those mornings we never recommend training, full stop.</p></div>
+  <div class="faq-item"><h3>Is this medical advice?</h3><p style="color:var(--text-secondary)">No. Recovery Desk is not a medical device and doesn't diagnose or treat anything — every message says so. It's a training-decision tool built on your own wearable data.</p></div>
+  <div class="faq-item"><h3>Which wearables work?</h3><p style="color:var(--text-secondary)">Oura and Whoop at launch.</p></div>
+  <div class="faq-item"><h3>Can I cancel any time?</h3><p style="color:var(--text-secondary)">Yes — text STOP, any time, no phone call, no retention flow.</p></div>
+</div>
+</section>
+
+<section style="padding: 2rem 0 4rem">
+<div class="wrap">
+  <div class="final">
+    <h2>Before you open anything tomorrow morning</h2>
+    <p style="color:var(--text-secondary); margin-bottom:1.5rem;">Try the free 7-day Morning Read. No card, no install, no dashboard — just the text.</p>
+    <a href="#offer" class="btn">Start free trial</a>
+    <p class="disclaimer">Recovery Desk is not a medical device and doesn't diagnose or treat anything. If a reading looks unusual, we'll always tell you to check in with a doctor rather than guess.</p>
+  </div>
+</div>
+</section>
+
+<footer>Recovery Desk — built from real Oura/Whoop community research, not assumptions.</footer>
+</body>
+</html>
