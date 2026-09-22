@@ -104,3 +104,37 @@ sandbox. See "Deployment" in `CLAUDE.md` for hosting options once
 that's wanted (Streamlit Community Cloud is the natural first choice
 for a Streamlit app specifically, ahead of the Netlify/Vercel/Supabase
 options listed there, which don't run Python servers).
+
+## Build Brain, Stages 3–6: The Pass Line
+
+This tool has a locked brand, a sales page, and launch copy — run via
+`/prompts/build-brain-method.md` Stages 3–6 directly on this existing
+build, skipping Interview/Idea since the product/audience context was
+given inline.
+
+- **DNA Lock** — `/design-rules.md`, "Brand: The Pass Line" section.
+  Name: **The Pass Line**. Tagline: **"Feed it your real numbers, or it
+  doesn't run."** Confirms the palette/type already in `streamlit_app.py`
+  as this product's locked DNA rather than re-deciding it; adds the
+  name/tagline/voice that didn't exist before.
+- **Sales page** — `sales-page/index.html`. Screenshot-verified (desktop
+  1440px + mobile 375px, Playwright/Chromium), clean on the first pass.
+  Google Fonts confirmed network-blocked in this sandbox (same finding
+  as `/builds/recovery-desk`'s sales page) — flagged, not claimed as
+  rendering. Don't-say-list grep: zero matches. **Priced at $0** — a
+  real call, not an invented number: this build has no billing/auth
+  code, so free-and-local is the only honest price; Stage 4 (offer/
+  pricing) was never actually run.
+- **Launch copy + plan** — `launch/ad-copy.md`. Short/medium/long ad
+  variants (medium is a reply-inside-an-existing-thread format, same
+  community-norms reasoning as Recovery Desk's), plus a launch plan:
+  channel #1 is prop-firm eval Discords (highest-intent audience, not a
+  pre-existing owned asset — this build has none), a dated sequence, and
+  a stated-assumption first-customer-equivalent target (25 people
+  requesting/running the tool within 30 days, since there's no billing
+  or analytics to count real subscribers against).
+
+Written to a build-local file rather than `business-brain.md` — this
+build is part of the unrelated RUTHLESS portfolio, which `CLAUDE.md`
+and `business-brain.md` both already note isn't the business that file
+tracks.

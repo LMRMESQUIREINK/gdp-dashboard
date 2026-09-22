@@ -387,6 +387,37 @@ yourself every time.
     long-running server; not recorded as this project's actual
     Deployment default in the section below since nothing's live yet —
     that note is for the first real deployment, not a plan for one.
+- **Build Brain Stages 3–6 run on the existing `/builds/prop-firm-dashboard`**,
+  explicitly skipping Interview/Idea (context given inline this round: a
+  Monte Carlo pass-probability tool for TPT/Topstep/Apex evals, honest
+  hook is it refuses to run without the trader's own journal avg/std
+  daily P&L). New brand, **The Pass Line** ("Feed it your real numbers,
+  or it doesn't run."), locked in `design-rules.md` as a second, scoped
+  brand alongside Recovery Desk's — confirming the existing RUTHLESS
+  black/gold/Cinzel-Cormorant-IBM-Plex-Mono palette already baked into
+  `streamlit_app.py` rather than re-deciding it, and adding the
+  name/tagline/voice do-say-don't-say that didn't exist yet. Since this
+  build is part of the unrelated RUTHLESS portfolio (not the business
+  `business-brain.md` tracks per this file's own note), Stage 6's launch
+  plan was written to a build-local `/builds/prop-firm-dashboard/launch/ad-copy.md`
+  instead of `business-brain.md`, matching every other RUTHLESS build's
+  self-contained-README convention rather than conflating two unrelated
+  businesses in one file. Sales page built and screenshot-verified
+  (desktop 1440px + mobile 375px, Playwright/Chromium) — clean on the
+  first pass, no CSS-leak or orphan-div bugs this time; confirmed (again)
+  that Google Fonts are network-blocked in this sandbox, same finding as
+  Recovery Desk's sales page, flagged rather than claimed as rendering.
+  Don't-say-list grep clean on the sales page; one false-positive hit on
+  the launch copy ("guaranteed pass") that's the negated meta-statement
+  in the scope note, not an actual violation — same false-positive class
+  already documented for Recovery Desk's "diagnose"/"treat" hits. Real
+  call made and stated plainly rather than invented: this build has no
+  billing/auth code at all, so the sales page prices it **$0, free,
+  local-only** — Stage 4 (offer/pricing) was never actually run this
+  round. Launch plan's first-customer target substitutes a real, stated
+  assumption for the usual paying-subscriber number, since this is free
+  with no analytics: 25 people requesting/running the tool within 30
+  days, tracked via thread replies/DMs (the only mechanism that exists).
 
 ---
 
