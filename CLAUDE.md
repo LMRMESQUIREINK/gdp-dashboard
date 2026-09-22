@@ -294,9 +294,30 @@ yourself every time.
   rendered copy against `design-rules.md`'s don't-say list — the "turn
   a style guideline into an actual check" idea flagged as the best
   piece of the original source export. `build-brain-method.md` and
-  `CLAUDE.md`'s TECHNIQUES entry both updated to point to it. Not yet
-  exercised on a real build — Launch Pad (Stage 6) is the one remaining
-  stage with no project file or skill behind it yet.
+  `CLAUDE.md`'s TECHNIQUES entry both updated to point to it.
+- **Build Brain Stage 6 built out as a real skill, completing all six
+  stages**: `.claude/skills/launch-pad`. No worked example existed for
+  this stage (the source wizard export hadn't run it), so it was built
+  directly from this project's own rules instead of distilled from an
+  upload, matching `sales-page-engine`'s structure: a pre-flight check
+  that DNA Lock and the sales page actually exist (ad copy must reuse
+  the sales page's own hooks, never reinvent the pitch), ad-copy formats
+  by channel/length (short social/paid, medium cold-DM, long email) each
+  required to reuse Stage 3's do-say phrases, a launch-plan structure
+  that forces a specific channel-first choice grounded in
+  `business-brain.md`'s actual stated assets, a dated/ordered sequence,
+  a real first-customer number pulled from the 90-day goal (flagging it
+  if that's still the unfilled placeholder), and a "what counts as
+  working vs. not" decision point so a launch doesn't drift
+  indefinitely. Same anti-fabrication rules as Stage 5 (no fake
+  urgency/social proof, same don't-say-list grep) plus a rule against
+  ad copy promising anything the actual offer/build doesn't have. Notes
+  that finishing this stage means writing `## Launch Plan` into
+  `business-brain.md`, closing the full interview→idea→brand→build→
+  sales-page→launch arc in one place. `build-brain-method.md` and
+  `CLAUDE.md`'s TECHNIQUES entry both updated to point to it — Build
+  Brain's six stages all have a real project file or skill behind them
+  now. Neither stage has been exercised on a real build yet.
 
 ---
 
@@ -463,8 +484,10 @@ fonts, voice do-say/don't-say, brand name/tagline) → **One Shot Engine**
 (the build prompt, then actually built via the Software Factory method
 above) → **Sales Page Engine** (`.claude/skills/sales-page-engine` — a
 real page built from the same DNA, screenshot-before-done applies) →
-**Launch Pad** (ad assets + a launch plan with a specific first-customer
-target).
+**Launch Pad** (`.claude/skills/launch-pad` — ad assets + a launch plan
+with a specific first-customer target).
+
+All six stages now have a real project file or skill behind them.
 
 Sits *before* Software Factory in the sequence — Build Brain decides
 what to build and how it should look/sound; Software Factory is how

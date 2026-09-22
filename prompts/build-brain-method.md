@@ -117,12 +117,16 @@ and Stage 5's core pain/offer framing, not reinvented copy) + a launch
 plan: where to post first, in what order, and what the first-customer
 target looks like (a specific number, not "get some sales").
 
-**No existing project file for this stage either** — new territory for
-this project, same as Stage 2. Write it as `## Launch Plan` in
-`business-brain.md` once a real build reaches this stage, so the whole
-arc (interview → idea → brand → build → sales page → launch) lives in
-one place per business, the same way `business-brain.md` was already
-meant to be the shared source of truth.
+Full skill with ad-copy formats by channel/length, the launch-plan
+structure, and the same don't-say-list check as Stage 5:
+`.claude/skills/launch-pad`.
+
+Write the finished plan as `## Launch Plan` in `business-brain.md` once
+a real build reaches this stage, so the whole arc (interview → idea →
+brand → build → sales page → launch) lives in one place per business,
+the same way `business-brain.md` was already meant to be the shared
+source of truth. With this stage built out, all six Build Brain stages
+now have a real project file or skill behind them.
 
 ## Copy-paste starter prompt
 
