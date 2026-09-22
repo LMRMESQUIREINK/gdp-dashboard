@@ -256,6 +256,27 @@ yourself every time.
   right." Also fixed two `use_container_width` deprecation warnings
   (Streamlit 1.64 wants `width="stretch"`) surfaced by actually running
   the app. Not yet deployed anywhere — local-only so far.
+- **New technique added: Build Brain method** — an uploaded export of a
+  six-stage "RUTHLESS AFFILIATE GOLD" SaaS-idea-to-launch wizard
+  (Interview Builder → Idea Engine → DNA Lock → One Shot Engine →
+  Sales Page Engine → Launch Pad), demoed with placeholder interview
+  answers producing a fictional "RemixForge" video-remix SaaS. Per this
+  round's explicit instruction, RemixForge itself was **not** built —
+  the wizard's stage structure was analyzed
+  (`/notes/ruthless-affiliate-gold-build-brain-analysis.md`) and
+  generalized into a reusable, domain-agnostic template
+  (`/prompts/build-brain-method.md`), added as this project's third
+  named TECHNIQUE alongside Goal/Loop and Software Factory. The
+  analysis found this project already has equivalents for 3 of the 6
+  stages (Interview→`business-brain.md`, DNA Lock→`design-rules.md`,
+  One Shot Engine→Software Factory) and was missing the other 3 (Idea,
+  Sales Page Engine, Launch Pad) — the template fills that gap. Also
+  flagged two real issues in the source export: a `palette` field that
+  serialized as `[object Object]` instead of real hex values (a
+  plumbing bug in whatever exports that wizard's state), and a lazy-
+  interview-answers-still-produce-confident-specific-output risk, both
+  folded into the new template as explicit warnings/fixes rather than
+  silently carried forward. Not yet exercised on a real build.
 
 ---
 
@@ -411,6 +432,29 @@ doesn't replace the screenshot-before-done or Goal/Loop rules above — it's
 the same discipline, organized as four named, reusable stations instead
 of one general instruction, so the same workflow runs consistently across
 different builds and different sessions.
+
+### Build Brain method (idea → brand → build → sales page → launch)
+
+For taking a vague business idea all the way to a launch-ready product,
+in six stages, each one feeding the next: **Interview** (fills
+`business-brain.md`) → **Idea** (one chosen concept + alternatives set
+aside, with why) → **DNA Lock** (fills `design-rules.md` — colour,
+fonts, voice do-say/don't-say, brand name/tagline) → **One Shot Engine**
+(the build prompt, then actually built via the Software Factory method
+above) → **Sales Page Engine** (a real page built from the same DNA,
+screenshot-before-done applies) → **Launch Pad** (ad assets + a launch
+plan with a specific first-customer target).
+
+Sits *before* Software Factory in the sequence — Build Brain decides
+what to build and how it should look/sound; Software Factory is how
+Stage 4's build prompt actually gets executed. Use it whenever the work
+starts from an idea rather than a defined spec (the opposite case —
+someone hands you a build brief already written — skips straight to
+Software Factory).
+
+Full template and copy-paste starter prompt: `/prompts/build-brain-method.md`.
+Source analysis this was generalized from:
+`/notes/ruthless-affiliate-gold-build-brain-analysis.md`.
 
 ---
 
