@@ -661,6 +661,27 @@ Netlify or Cloudflare Pages; anything needing a database/auth →
 Supabase; Next.js-shaped apps → Vercel) and note the choice here once
 the first real deployment happens, so it becomes the project default.
 
+### Git / PR workflow (standing instruction)
+
+**Always open a pull request right after pushing to the working branch,
+and give the merge link in the same message** — this is a standing,
+explicit ask for every push in this project, not a one-time request, so
+it overrides the general default of only opening a PR when asked. Applies
+whether the push is brand new work or a follow-up commit onto a branch
+that already has one:
+
+- If no open PR exists for the branch yet (including when a prior PR on
+  the same branch was closed/merged and the branch got recreated), open
+  a new one and hand back its URL.
+- If an open PR already exists for the branch, don't open a duplicate —
+  just confirm the push landed and give that PR's existing link.
+- Check for a PR template (`.github/pull_request_template.md`, etc.)
+  before writing the description, per this project's own repo
+  conventions — same as always.
+- This doesn't change anything else about git safety: still no
+  force-push, no history rewriting, no skipping hooks, without being
+  asked for that specifically.
+
 ---
 
 ## WHAT NOT TO DO
