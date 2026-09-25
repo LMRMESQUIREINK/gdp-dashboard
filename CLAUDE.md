@@ -418,6 +418,68 @@ yourself every time.
   assumption for the usual paying-subscriber number, since this is free
   with no analytics: 25 people requesting/running the tool within 30
   days, tracked via thread replies/DMs (the only mechanism that exists).
+- **The Pass Line's sales page rebuilt** on a trading-course-lead-magnet
+  structure per this round's explicit request (cold-open hook → honest
+  reframe with no invented failure-rate stat → mechanism → a new "win
+  rate isn't the whole story" teaching beat on expectancy/variance vs.
+  the drawdown floor → the labeled example run → offer stack →
+  who-for/not-for → a free email-signup CTA as the RUTHLESS TRADING
+  GOLD front door), keeping every hard rule from round one (no invented
+  results, no guarantees, unchanged tagline). Don't-say-list grep clean.
+  **A real bug found and fixed**: the Example Run `<table>` element
+  triggered a genuine Chromium full-page-screenshot bug — bottom-of-page
+  content bled into the top of every stitched capture, reproducibly,
+  and specific to this page (Recovery Desk's similarly tall sales page
+  stayed clean under the identical capture method). Isolated by
+  bisecting five other hypotheses (sticky nav, `backdrop-filter`,
+  smooth-scroll, `<pre>`, `box-shadow`) before finding it; fixed by
+  rebuilding the table as an accessible CSS Grid. A second, smaller
+  real bug surfaced in the same investigation — the nav's
+  `backdrop-filter` blur could show a stale ghost of prior content
+  during fast scrolling — fixed by dropping it for a solid background.
+  Final verification used scroll-segmented real-position screenshots
+  across the full page (not a single stitched capture, since that mode
+  is where the first bug lived), desktop and mobile, both clean.
+  Full writeup in `/builds/prop-firm-dashboard/README.md`.
+- **New build, `/builds/outage-alert`**: a silent-failure detector
+  (`outage_alert.py`) for an entirely separate local project the user runs
+  (`C:\trading_system\` — a multi-agent LangGraph stock/options paper-
+  trading system, not part of RUTHLESS TRADING GOLD). Flagged clearly
+  before doing anything: a first message referencing these files was
+  actually meant for that other, local session (Windows path, files that
+  don't exist anywhere in this repo) — asked for clarification rather than
+  guessing, then the user pasted the real `outage_alert.py` source and
+  both wired runners. Reviewed all three against `outage_alert.py`'s own
+  three touch points (create tracker / record per-ticker outcome / check-
+  and-alert after the equity snapshot) — all three correct as wired,
+  including the `record()` outcome-mapping (`parsed['signal']` for stocks,
+  `strategy` for options). **Found and fixed a real bug** by tracing
+  control flow (couldn't execute the runners themselves — this sandbox
+  has none of their dependency modules): in both runners, the unguarded
+  `log_trade()`/position-opening calls sit inside the same function
+  `main()` wraps in a blanket per-ticker `try/except`, so a downstream
+  storage/logging failure unrelated to the trading pipeline could
+  double-record that ticker's outcome. Reproduced standalone against the
+  real `outage_alert.py` (which has zero external dependencies, so it
+  could be run for real here): a perfectly healthy 5-ticker HOLD day with
+  2 tickers hitting an unrelated `"rate_limit"`-flavored storage error
+  false-triggered a full outage alert. Fixed by wrapping those calls in
+  their own try/except that warns instead of propagating. Verified via
+  `py_compile` (clean before/after, diff is exactly the two guards) and a
+  standalone integration test replicating the fixed control flow, which
+  asserted exactly one record per ticker and no false alert. Couldn't run
+  `--report-only` against the actual runners here (no environment); said
+  so plainly instead of faking it — the user then ran both fixed runners
+  for real (stronger than `--report-only`, a full 13-ticker pipeline run)
+  and pasted the output: stock (11 signals + 2 holds = 13) and options
+  (7 signals + 6 holds = 13) both matched their ticker counts exactly,
+  confirming no double-record in the wild. No downstream failure occurred
+  in that run, so the fix's guard itself (vs. just the happy path) is
+  still only proven by the standalone test, not live fire — noted as a
+  worthwhile follow-up in the README. Added to `/builds/` (rather than
+  left unpushed) at the user's explicit request for a commit/push/merge-link,
+  with a Decisions-log note that this is a one-off, not a new pattern for
+  unrelated local projects landing in this repo.
 
 ---
 
@@ -660,6 +722,27 @@ Netlify / Supabase / Vercel / Cloudflare fits the build (static site →
 Netlify or Cloudflare Pages; anything needing a database/auth →
 Supabase; Next.js-shaped apps → Vercel) and note the choice here once
 the first real deployment happens, so it becomes the project default.
+
+### Git / PR workflow (standing instruction)
+
+**Always open a pull request right after pushing to the working branch,
+and give the merge link in the same message** — this is a standing,
+explicit ask for every push in this project, not a one-time request, so
+it overrides the general default of only opening a PR when asked. Applies
+whether the push is brand new work or a follow-up commit onto a branch
+that already has one:
+
+- If no open PR exists for the branch yet (including when a prior PR on
+  the same branch was closed/merged and the branch got recreated), open
+  a new one and hand back its URL.
+- If an open PR already exists for the branch, don't open a duplicate —
+  just confirm the push landed and give that PR's existing link.
+- Check for a PR template (`.github/pull_request_template.md`, etc.)
+  before writing the description, per this project's own repo
+  conventions — same as always.
+- This doesn't change anything else about git safety: still no
+  force-push, no history rewriting, no skipping hooks, without being
+  asked for that specifically.
 
 ---
 
