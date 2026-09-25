@@ -441,6 +441,39 @@ yourself every time.
   across the full page (not a single stitched capture, since that mode
   is where the first bug lived), desktop and mobile, both clean.
   Full writeup in `/builds/prop-firm-dashboard/README.md`.
+- **New build, `/builds/outage-alert`**: a silent-failure detector
+  (`outage_alert.py`) for an entirely separate local project the user runs
+  (`C:\trading_system\` — a multi-agent LangGraph stock/options paper-
+  trading system, not part of RUTHLESS TRADING GOLD). Flagged clearly
+  before doing anything: a first message referencing these files was
+  actually meant for that other, local session (Windows path, files that
+  don't exist anywhere in this repo) — asked for clarification rather than
+  guessing, then the user pasted the real `outage_alert.py` source and
+  both wired runners. Reviewed all three against `outage_alert.py`'s own
+  three touch points (create tracker / record per-ticker outcome / check-
+  and-alert after the equity snapshot) — all three correct as wired,
+  including the `record()` outcome-mapping (`parsed['signal']` for stocks,
+  `strategy` for options). **Found and fixed a real bug** by tracing
+  control flow (couldn't execute the runners themselves — this sandbox
+  has none of their dependency modules): in both runners, the unguarded
+  `log_trade()`/position-opening calls sit inside the same function
+  `main()` wraps in a blanket per-ticker `try/except`, so a downstream
+  storage/logging failure unrelated to the trading pipeline could
+  double-record that ticker's outcome. Reproduced standalone against the
+  real `outage_alert.py` (which has zero external dependencies, so it
+  could be run for real here): a perfectly healthy 5-ticker HOLD day with
+  2 tickers hitting an unrelated `"rate_limit"`-flavored storage error
+  false-triggered a full outage alert. Fixed by wrapping those calls in
+  their own try/except that warns instead of propagating. Verified via
+  `py_compile` (clean before/after, diff is exactly the two guards) and a
+  standalone integration test replicating the fixed control flow, which
+  asserted exactly one record per ticker and no false alert. Explicitly
+  **not** run `--report-only` against the actual runners — no environment
+  for that here; said so rather than faking it, with the exact commands
+  to run locally in the README. Added to `/builds/` (rather than left
+  unpushed) at the user's explicit request for a commit/push/merge-link,
+  with a Decisions-log note that this is a one-off, not a new pattern for
+  unrelated local projects landing in this repo.
 
 ---
 
