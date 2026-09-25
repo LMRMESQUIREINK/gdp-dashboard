@@ -467,11 +467,17 @@ yourself every time.
   their own try/except that warns instead of propagating. Verified via
   `py_compile` (clean before/after, diff is exactly the two guards) and a
   standalone integration test replicating the fixed control flow, which
-  asserted exactly one record per ticker and no false alert. Explicitly
-  **not** run `--report-only` against the actual runners — no environment
-  for that here; said so rather than faking it, with the exact commands
-  to run locally in the README. Added to `/builds/` (rather than left
-  unpushed) at the user's explicit request for a commit/push/merge-link,
+  asserted exactly one record per ticker and no false alert. Couldn't run
+  `--report-only` against the actual runners here (no environment); said
+  so plainly instead of faking it — the user then ran both fixed runners
+  for real (stronger than `--report-only`, a full 13-ticker pipeline run)
+  and pasted the output: stock (11 signals + 2 holds = 13) and options
+  (7 signals + 6 holds = 13) both matched their ticker counts exactly,
+  confirming no double-record in the wild. No downstream failure occurred
+  in that run, so the fix's guard itself (vs. just the happy path) is
+  still only proven by the standalone test, not live fire — noted as a
+  worthwhile follow-up in the README. Added to `/builds/` (rather than
+  left unpushed) at the user's explicit request for a commit/push/merge-link,
   with a Decisions-log note that this is a one-off, not a new pattern for
   unrelated local projects landing in this repo.
 

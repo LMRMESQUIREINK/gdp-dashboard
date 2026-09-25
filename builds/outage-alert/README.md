@@ -136,21 +136,30 @@ in this sandbox, so nothing here could actually *execute* the pipelines:
      case alerts, quiet-HOLD-day case stays silent, isolated-single-error
      case stays silent. All three matched the file's own stated design.
 
-- **`--report-only` on the actual runners**: **not run**, and said so
-  rather than claimed. This sandbox has none of `agent_state.py`,
-  `agents/`, `papertrade/`, `options_agents/`, `options_papertrade/`, or
-  `tickers.txt` — the real trading-system codebase lives only on the user's
-  machine at `C:\trading_system\`. `--report-only` on both files (in the
-  fixed versions here) is the next real step, to be run there:
-  ```
-  cd C:\trading_system
-  python papertrade_run.py --report-only
-  python options_papertrade_run.py --report-only
-  ```
-  Both should print the existing report and exit cleanly without touching
-  the tracker (per the touch-point-1/3 review above) — but that's a
-  prediction from reading the code, not a proof, until it's actually run
-  there.
+- **Real run against the actual runners — confirmed by the user**: this
+  sandbox has none of `agent_state.py`, `agents/`, `papertrade/`,
+  `options_agents/`, `options_papertrade/`, or `tickers.txt` — the real
+  trading-system codebase lives only on the user's machine at
+  `C:\trading_system\` — so `--report-only` couldn't be run here, and this
+  README said so plainly rather than faking it. The user then ran both
+  fixed runners for real (a full 13-ticker run, stronger evidence than
+  `--report-only` would have been, since it exercises the whole pipeline
+  including `record()` and `check_and_alert()`) and pasted the output:
+  - Stock runner: 11 signals + 2 holds (HYG, GLD) = 13 tickers exactly,
+    `[outage-check] stock: OK - 11 signals, 2 holds, 0/13 failed (0.0%).
+    No outage.` — the count matches the ticker list exactly, confirming no
+    double-record occurred.
+  - Options runner: 7 signals + 6 holds (NO_TRADE) = 13 tickers exactly,
+    `[outage-check] options: OK - 7 signals, 6 holds, 0/13 failed (0.0%).
+    No outage.` — same exact-match confirmation.
+  - No `[WARN] Trade log failed` / `[WARN] Position open failed` lines
+    appeared in either run, meaning the double-record guard added by the
+    fix wasn't exercised by an actual downstream failure this time — the
+    real-world proof that a genuine bookkeeping failure gets caught by the
+    guard instead of double-counting is still only the standalone test
+    above, not this live run. Worth a deliberate real-failure test later
+    (e.g. temporarily pointing `trades.csv` at a read-only path) if that
+    guard needs to be trusted under fire rather than just in theory.
 
 ## Files
 
