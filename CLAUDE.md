@@ -418,6 +418,29 @@ yourself every time.
   assumption for the usual paying-subscriber number, since this is free
   with no analytics: 25 people requesting/running the tool within 30
   days, tracked via thread replies/DMs (the only mechanism that exists).
+- **The Pass Line's sales page rebuilt** on a trading-course-lead-magnet
+  structure per this round's explicit request (cold-open hook → honest
+  reframe with no invented failure-rate stat → mechanism → a new "win
+  rate isn't the whole story" teaching beat on expectancy/variance vs.
+  the drawdown floor → the labeled example run → offer stack →
+  who-for/not-for → a free email-signup CTA as the RUTHLESS TRADING
+  GOLD front door), keeping every hard rule from round one (no invented
+  results, no guarantees, unchanged tagline). Don't-say-list grep clean.
+  **A real bug found and fixed**: the Example Run `<table>` element
+  triggered a genuine Chromium full-page-screenshot bug — bottom-of-page
+  content bled into the top of every stitched capture, reproducibly,
+  and specific to this page (Recovery Desk's similarly tall sales page
+  stayed clean under the identical capture method). Isolated by
+  bisecting five other hypotheses (sticky nav, `backdrop-filter`,
+  smooth-scroll, `<pre>`, `box-shadow`) before finding it; fixed by
+  rebuilding the table as an accessible CSS Grid. A second, smaller
+  real bug surfaced in the same investigation — the nav's
+  `backdrop-filter` blur could show a stale ghost of prior content
+  during fast scrolling — fixed by dropping it for a solid background.
+  Final verification used scroll-segmented real-position screenshots
+  across the full page (not a single stitched capture, since that mode
+  is where the first bug lived), desktop and mobile, both clean.
+  Full writeup in `/builds/prop-firm-dashboard/README.md`.
 
 ---
 
