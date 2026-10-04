@@ -117,14 +117,41 @@ given inline.
   doesn't run."** Confirms the palette/type already in `streamlit_app.py`
   as this product's locked DNA rather than re-deciding it; adds the
   name/tagline/voice that didn't exist before.
-- **Sales page** — `sales-page/index.html`. Screenshot-verified (desktop
-  1440px + mobile 375px, Playwright/Chromium), clean on the first pass.
-  Google Fonts confirmed network-blocked in this sandbox (same finding
-  as `/builds/recovery-desk`'s sales page) — flagged, not claimed as
-  rendering. Don't-say-list grep: zero matches. **Priced at $0** — a
-  real call, not an invented number: this build has no billing/auth
-  code, so free-and-local is the only honest price; Stage 4 (offer/
-  pricing) was never actually run.
+- **Sales page** — `sales-page/index.html`. Rebuilt in a second round on
+  a trading-course-lead-magnet structure (cold-open hook naming the real
+  frustration → honest reframe, no invented failure-rate stat → mechanism
+  → one honest teaching beat on expectancy/variance vs. win rate → the
+  labeled example run → offer stack → who-for/not-for → a free email
+  signup as the front door to the rest of RUTHLESS TRADING GOLD), while
+  keeping every hard rule from round one: no invented results, no
+  guarantees, tagline unchanged. Don't-say-list grep: zero matches (one
+  false-positive on a negated meta-statement, read in context). Google
+  Fonts confirmed network-blocked in this sandbox again (same finding as
+  `/builds/recovery-desk`'s sales page) — flagged, not claimed as
+  rendering. The email signup form is a real-looking UI with no backend
+  wired to it (this build has no server) — submitting it shows an
+  inline note saying so rather than silently pretending to capture the
+  address; the `pip install` path below it is the actual, working way to
+  get the tool today.
+  - **A real bug found and fixed while re-screenshotting**: the page's
+    literal `<table>` element (the Example Run stat table) triggered a
+    genuine Chromium full-page-screenshot rendering bug — content from
+    the bottom of the page bled into the top of every `fullPage: true`
+    capture, reproducibly. Confirmed as a real, page-specific issue (not
+    sandbox-wide flakiness) by cross-checking against
+    `/builds/recovery-desk`'s sales page, which renders clean under the
+    identical capture method. Isolated by bisecting through five other
+    hypotheses (sticky nav, `backdrop-filter`, `scroll-behavior: smooth`,
+    `<pre>`, `box-shadow`) before finding it; fixed by rebuilding the
+    table as a CSS Grid with proper `role="table"`/`role="cell"`
+    attributes instead of a literal `<table>`. A second, smaller real bug
+    surfaced during the same investigation — the sticky nav's
+    `backdrop-filter: blur(6px)` could show a stale, ghosted blur of
+    content from a moment earlier during a fast scroll — fixed by
+    dropping the blur for a solid nav background. Final verification used
+    scroll-segmented, real-position screenshots (not a single stitched
+    full-page capture) across the entire page, desktop and mobile, since
+    the stitched capture mode itself is what the first bug lived in.
 - **Launch copy + plan** — `launch/ad-copy.md`. Short/medium/long ad
   variants (medium is a reply-inside-an-existing-thread format, same
   community-norms reasoning as Recovery Desk's), plus a launch plan:
@@ -132,7 +159,8 @@ given inline.
   pre-existing owned asset — this build has none), a dated sequence, and
   a stated-assumption first-customer-equivalent target (25 people
   requesting/running the tool within 30 days, since there's no billing
-  or analytics to count real subscribers against).
+  or analytics to count real subscribers against). Still $0/free — this
+  build has no billing/auth code, so that hasn't changed in the rebuild.
 
 Written to a build-local file rather than `business-brain.md` — this
 build is part of the unrelated RUTHLESS portfolio, which `CLAUDE.md`
