@@ -480,6 +480,43 @@ yourself every time.
   left unpushed) at the user's explicit request for a commit/push/merge-link,
   with a Decisions-log note that this is a one-off, not a new pattern for
   unrelated local projects landing in this repo.
+- **Deep analysis + new build from an uploaded Factory.ai white paper**
+  ("Software Factory: An Autonomy Maturity Model for the Enterprise") —
+  full writeup in `/notes/software-factory-autonomy-maturity-model-analysis.md`.
+  Named clearly as vendor marketing (every capability in its own
+  Capability Map ties to a paid Factory.ai product, page ends on "CONTACT
+  SALES") with a genuinely useful framework inside it — binary automatable
+  signals, non-linear per-level point weights (1/2/4/8/16), and a
+  "% of repos at Level 3+" headline metric chosen over an averaged score
+  for board legibility. Flagged what doesn't check out: the paper's "10×
+  code-gen ≈ +10% overall" claim is asserted, not sourced to any shown
+  data; an "Outcomes from enterprise deployments" chart exists only as an
+  unreadable image (pypdf extracted zero body text from that page), so no
+  numbers from it are quoted anywhere; the full signal-to-point mapping
+  for Levels 3–5 isn't disclosed, so nothing here claims to reproduce
+  Factory.ai's actual proprietary scorer. **Built**, per this project's
+  established pattern of extracting a vendor wizard's generalizable
+  structure without building the vendor's own branded instance (same move
+  as Build Brain method from the RUTHLESS AFFILIATE GOLD export —
+  RemixForge was never built): `/builds/agent-readiness-scorecard/` —
+  a real, dependency-free Python scorer implementing an original,
+  locally-checkable signal set (not Factory.ai's undisclosed rubric)
+  across Levels 1–3 only, since Level 4/5 signals in the source paper are
+  operational telemetry (sub-minute feedback, auto-picked-up tickets,
+  multi-day mission reliability) that cannot be observed from files on
+  disk — reported as "not assessable" rather than faked. Actually run
+  against this repo for real: Level 1 (14/37 assessable points), read
+  honestly in the README as an accurate reflection of this being a
+  multi-build workspace rather than one deployable service (no repo-wide
+  CI/linter/type-checker because it was never built as a single
+  codebase), not a verdict on work quality. Also run against a
+  `/builds/` subproject (`recovery-desk`, scored lower still, with the
+  limitation of a repo-level framework applied one subfolder at a time
+  stated plainly) and in `--json` mode. Every `pass`/`fail` result in the
+  root-repo run spot-checked by hand against the actual files (confirmed
+  no `.flake8`/CI workflows exist before trusting a `fail`; confirmed
+  `CLAUDE.md`, `.github/CODEOWNERS`, `.devcontainer/` really exist before
+  trusting a `pass`) rather than taking the tool's own output on faith.
 
 ---
 
