@@ -517,6 +517,62 @@ yourself every time.
   no `.flake8`/CI workflows exist before trusting a `fail`; confirmed
   `CLAUDE.md`, `.github/CODEOWNERS`, `.devcontainer/` really exist before
   trusting a `pass`) rather than taking the tool's own output on faith.
+- **Deep analysis + new build from an uploaded Fareed Khan Medium article**
+  ("Building the 11 Layers of a Production-Grade MCP Server + Agentic
+  System") — asked which of analysis-only vs. analysis-plus-build was
+  wanted rather than guessing on a 12-component "production-grade" scope
+  with no instruction attached; the user chose **analysis + a real
+  build**. Full critique in
+  `/notes/production-grade-mcp-server-analysis.md`: what's genuinely
+  well-reasoned (the Structured Error Framework, retryable-only circuit-
+  breaker counting, the tiered tool hierarchy, DB-layer tenant isolation
+  via Postgres RLS, the deliberate `NotImplementedError` stub guarding
+  long-term-memory writes from becoming a policy/audit back door) versus
+  three specific uncited statistics and, flagged most pointedly, a
+  twice-repeated, uncited claim that "Asana's MCP-powered feature leaked
+  customer data across 1,000 organisations" — not repeated as fact
+  anywhere in this project's own writeup. **Built**:
+  `/builds/prop-firm-mcp-server/` — a real MCP server, using the actual
+  official `mcp` Python SDK over stdio (not a hand-rolled approximation),
+  exposing the already-proven `/builds/prop-firm-sizing/` toolkit as four
+  tools (`prop_firm_size_check`, `prop_firm_session_report`,
+  `prop_firm_pass_probability`, `prop_firm_compare_sizes`) — a fifth
+  interface on the same classes every other interface in this project
+  already uses, not a reimplementation. Hit and resolved a real
+  environment issue first (`pip install mcp` initially failed on a
+  PyJWT/debian-package conflict; fixed via `pip install --ignore-installed
+  pyjwt` then a clean `mcp` install, landing on 2.3.0), then discovered —
+  by writing and running a real probe server+client over actual stdio
+  before trusting anything — that the installed SDK's real API
+  (`mcp.server.mcpserver.MCPServer`, `ToolError` returning a plain-text
+  `CallToolResult` with `isError=True`) diverges materially from the
+  source article's code samples (which target an older SDK with a
+  structured `error.data` channel); `errors.py`'s SERF-lite
+  implementation and its module docstring document this divergence
+  explicitly rather than silently papering over it. Applied this
+  project's established "extract the generalizable pattern, build only
+  what the scale warrants, state every cut with a one-line reason"
+  discipline (same move as Build Brain and the Agent Readiness
+  Scorecard): built SERF-lite, the atomic tier of the three-tier tool
+  hierarchy, structured JSON-lines audit logging (SHA-256'd arguments),
+  and in-process token-bucket rate limiting (with the exact trigger
+  condition for needing Redis instead stated plainly); explicitly cut
+  OAuth/JWT, Postgres RLS multi-tenancy, Redis, circuit
+  breakers/retry/ATBA (no upstream network call exists to protect
+  against), OpenTelemetry/Prometheus/Grafana, and the four-agent LLM
+  copilot (wrapping a deterministic Monte Carlo calculator in an agent
+  pipeline would be pure over-engineering), each with its reason recorded
+  in the build's README. Proven via a real end-to-end test
+  (`test_client.py`) spawning the server as a subprocess and driving it
+  with a genuine `mcp.ClientSession` over real stdio — not a unit test
+  that imports the tool functions directly — with every numeric result
+  checked against both a direct call to the same underlying class/
+  function in the same script (exact match, exploiting `PassSimulator`'s
+  fixed `seed=42`) and against this project's own previously-verified
+  dashboard figures (36.7% pass probability; 1.7/27.1/49.7/70.8% across
+  the compare-sizes scenarios), plus a deliberately triggered SERF
+  validation error and a deliberately tripped rate limit, both asserted
+  on their actual SERF-coded output. All checks passed on the real run.
 
 ---
 
