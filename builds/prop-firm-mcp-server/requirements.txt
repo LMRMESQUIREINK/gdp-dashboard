@@ -1,2 +1,6 @@
 mcp==2.3.0
 pydantic==2.14.0
+
+# Optional — only needed for `--transport http` with Redis-backed rate
+# limiting (see ratelimit.py). stdio transport never needs this.
+redis==8.1.0

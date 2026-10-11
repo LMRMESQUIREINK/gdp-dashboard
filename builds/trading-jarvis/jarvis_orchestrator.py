@@ -80,6 +80,22 @@ WHAT CHANGED IN THIS BUILD (on top of the patch above)
       prop_firm_pass_probability (Monte Carlo eval pass probability).
       These never touch EODHD/FMP or the signal/risk pipeline — a
       fully separate tool category for TPT funded-account questions.
+
+ALTERNATE INTERFACE — the same prop-firm math, over MCP instead of here
+    The three prop_firm_* tools above are Claude-tool-use wrappers around
+    /builds/prop-firm-sizing/'s functions, reached by asking this file's
+    ask_jarvis() a natural-language question. /builds/prop-firm-mcp-server/
+    wraps the SAME underlying functions a different way: as a real MCP
+    server (official `mcp` SDK), for any MCP-speaking host (Claude Desktop,
+    another agent, etc.) rather than only this script's own Anthropic-
+    client loop. It's a fifth tool-surface on this project's prop-firm
+    code, not a second implementation — same classes, same numbers,
+    verified to match in that build's own test suite. Reach for it when
+    the caller is an MCP host instead of a Python process importing this
+    file directly; reach for prop_firm_* here when you're already inside
+    ask_jarvis()'s tool-dispatch loop. See that build's README for the
+    stdio vs. Streamable-HTTP transport choice and what server.py's
+    --transport/--redis-url flags do.
 """
 
 import os

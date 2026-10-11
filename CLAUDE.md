@@ -573,6 +573,36 @@ yourself every time.
   the compare-sizes scenarios), plus a deliberately triggered SERF
   validation error and a deliberately tripped rate limit, both asserted
   on their actual SERF-coded output. All checks passed on the real run.
+- **`/builds/prop-firm-mcp-server` extended with the three same-day
+  follow-ups requested after it shipped**: (1) HTTP transport — `server.py`
+  now takes `--transport stdio|http`, using the SDK's real
+  `run_streamable_http_async`, so more than one MCP client can talk to one
+  running process instead of only one subprocess per client. (2) Redis
+  rate limiting, built for real rather than left as a stated-but-unbuilt
+  trigger condition — `ratelimit.py` gained `RedisTokenBucket`, an atomic
+  refill+check+decrement Lua script (same pattern the source article
+  uses), auto-selected whenever `--redis-url`/`$REDIS_URL` points at a
+  reachable Redis, with a clean fallback to the original in-process
+  bucket (printed reason, not silent) when it doesn't — stdio keeps the
+  in-process bucket by default since it's still correct there. Proven via
+  a new `test_http_client.py`: spawns the server over real HTTP, drains
+  `prop_firm_compare_sizes`'s 5-token bucket from one client session, then
+  shows a brand-new second session (fresh TCP connection) is still
+  rate-limited — the only way that's possible if the quota is real shared
+  Redis state rather than per-connection memory. All checks passed with a
+  real local `redis-server`; the original stdio `test_client.py` was
+  re-run afterward and still passes unmodified. (3) Documented the server
+  as a fifth tool-surface inside `/builds/trading-jarvis/jarvis_orchestrator.py`'s
+  own docstring (a new "ALTERNATE INTERFACE" section) pointing at it
+  alongside the existing CLI/Claude-tool-use/Streamlit interfaces, same
+  classes and numbers, not a second implementation. Also added a real,
+  correct Claude Desktop `claude_desktop_config.json` snippet to the
+  build's README and documented how to use it — but flagged plainly
+  rather than faked: this sandbox has no Desktop GUI and no live
+  Anthropic API access (same restriction every other build here states),
+  so the config is built from the SDK's actual stdio contract and
+  verified against it, but hasn't been clicked through in a real Desktop
+  window from inside this session.
 
 ---
 
