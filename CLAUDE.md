@@ -603,6 +603,61 @@ yourself every time.
   so the config is built from the SDK's actual stdio contract and
   verified against it, but hasn't been clicked through in a real Desktop
   window from inside this session.
+- **Deep analysis + new build from an uploaded Fareed Khan article,
+  "Building Fast Computer Agents to Solve Complex Tasks"** (interface
+  lifting: replace screenshot-driven GUI agents with typed tools that
+  drive each program's own native interface — file format, CLI, COM/
+  scripting, API, accessibility tree last). Full critique in
+  `/notes/interface-lifting-fast-computer-agents-analysis.md`: what's
+  genuinely well-reasoned (the tool contract's mandatory verifier, the
+  five-interfaces-in-order claim backed by a checkable ScreenSpot-Pro
+  figure, the reversibility-based approval-gate reasoning, the hard-coded
+  prompt-injection safety classifier) versus what doesn't check out —
+  the entire quantitative case resting on one anecdotal weak baseline
+  (the author's own early, admittedly-struggling screen agent, one run),
+  a curated best-case ledger with no failure rows for the new
+  architecture, and an unsourced "180 of 180" test-suite claim flagged on
+  sight the same way this project flagged the Factory.ai paper's
+  unreadable chart and the MCP-server article's uncited stats two rounds
+  ago — not repeated as fact here. Unlike those two articles, this one
+  shows real code for nearly every mechanism, which is a materially
+  stronger evidentiary bar, reflected in the critique leaning toward
+  "unverifiable/cherry-picked measurement" rather than "invented
+  mechanism." **Built**: `/builds/interface-lift-toolkit/` — the
+  article's generalizable architecture (tool registry with schema derived
+  from type hints + docstring, a `{ok, summary, files, checks}` result
+  contract, a regex-based tool-group shortlist scorer, `run_chain` for
+  one-call dependent tool-call planning with `$id` references, a real
+  local/outward approval gate, a measurement ledger, and a skill compiler
+  that turns one successful chain into a new parametrized tool) — built
+  for real, not the article's own specific instance (118 Windows
+  desktop-program integrations: Photoshop/Excel-COM/AutoCAD/Blender/
+  CapCut/UI-Automation), which doesn't transfer to this sandbox at all —
+  a platform mismatch (no Windows, no GUI programs installed, nothing to
+  lift), stated plainly rather than silently worked around, same
+  discipline as every other sandbox-network-restriction note in this
+  file. Two deliberate adaptations recorded in the build's README: tool
+  schemas come out in Anthropic's native shape (matching
+  `jarvis_orchestrator.py`'s established `TOOLS` convention, not the
+  article's OpenAI-shaped one), and the skill compiler operates one layer
+  down from the article's (compiles a recorded `run_chain` step list
+  instead of a screen-agent run, since there's no screen loop here to
+  compile from). Demonstrated against this project's own already-proven
+  `prop_firm_sizing.py`/`prop_firm_position_sizing.py`/`prop_pass_simulator.py`
+  (copied in unmodified, same convention as every other interface on this
+  toolkit) rather than toy stand-ins. Proven two ways: `test_toolkit.py`
+  (pure mechanics, no network — registry schema derivation, the result
+  contract's `ok`-from-checks rule, the shortlist scorer, `run_chain`'s
+  `$id` resolution and its stop-at-first-failed-check rule, the approval
+  gate holding an outward call and enforcing single-use approval, and the
+  skill compiler replaying a compiled tool with new parameters matching a
+  direct call exactly) and `test_agent_loop.py` (the real dispatch loop
+  against a mocked Anthropic client, same established mocking convention
+  as every other tool-dispatch-loop test in this project, since this
+  sandbox has no live Anthropic access — proving the registry really
+  dispatches to the real prop-firm-sizing code and the approval gate
+  really holds the outward call rather than executing it inline). All
+  checks passed on both real runs.
 
 ---
 
