@@ -658,6 +658,57 @@ yourself every time.
   dispatches to the real prop-firm-sizing code and the approval gate
   really holds the outward call rather than executing it inline). All
   checks passed on both real runs.
+- **Deep analysis + new build from six uploaded transcripts/articles about
+  "Jev"** (TypeSafe AI's non-generative "judgment model" — state + typed
+  Choice/Noul/Score questions in, calibrated probabilities out, no text
+  generation). Full critique in
+  `/notes/jev-typesafe-judgment-model-analysis.md`: the widest spread of
+  source quality analyzed in this project to date, from pure hype recap to
+  a genuinely reproduced mechanism (one source independently rebuilt Jev's
+  restricted-softmax trick on an open model with real logits, verified by
+  hand). Credited as well-reasoned: the mandatory code-side policy layer,
+  never-use-this-as-authorization, confidence-gated thresholds set by what
+  a wrong answer costs, and one source's own honestly-reported negative
+  result (a Bitcoin buy/hold/sell test that "does not seem to be doing
+  well"). Flagged as not holding up: TypeSafe's own benchmark graph scores
+  against reference answers averaged from two competitor models it also
+  competes with; marketing speed/cost multiples that are inconsistent
+  across the sources' own talking points; and, the single most important
+  finding, an independent calibration check in one source's own lab
+  showing Jev's Expected Calibration Error (~0.164) is actually *worse*
+  than Claude's (0.093) and Gemini's (0.094) on the same dataset — a
+  quantified contradiction of the vendor's stated "RLCD" calibration
+  training objective, reported by a user of the product, not a
+  competitor. A LangChain comparison and an OpenRouter benchmark cited
+  inside the sources are repeated as "a source cites this," not as
+  verified fact, same discipline applied to every previously-flagged
+  uncited claim in this project. **Built**: `/builds/jev-pattern-router/` —
+  the real, generalizable architecture (Choice/Noul/Score primitives,
+  probabilities restricted to the declared answer space, a margin-based
+  confidence and probability-weighted Score verified by hand, a policy
+  layer kept in plain code) applied as a cheap pre-router in front of
+  `/builds/trading-jarvis/jarvis_orchestrator.py`'s real tool categories —
+  not Jev's actual transformer, which is closed, and not a downloaded
+  open model either: `curl -I https://huggingface.co` from this sandbox
+  returned a real HTTP 403, checked directly as part of this build, same
+  egress restriction already documented for Yahoo Finance/EODHD/FMP/
+  Anthropic now extended to Hugging Face. Built instead on a real
+  TF-IDF+logistic-regression classifier trained on ~40 labeled examples —
+  a genuinely different, much weaker model, with the semantic-
+  generalization gap against real Jev stated plainly rather than hidden.
+  Found and documented a real instance of that gap while testing: a
+  destructive request reworded just enough ("every position on file" vs.
+  "all my positions") drops from 0.77 to 0.50 probability, under the
+  policy's 0.70 escalation threshold — reported as an honest finding in
+  both the test output and the README rather than hidden by only testing
+  phrasings the classifier already handles well. Proven via a real test
+  suite against a held-out test split never seen during training: category
+  routing correct on 7/7 held-out examples, Score verified by hand to be
+  the exact probability-weighted average, confidence verified by hand to
+  be the exact top1-vs-top2 margin, Noul's missing confidence field
+  checked structurally (not just unset), the destructive-escalation and
+  low-confidence-escalation policy paths both exercised for real, and an
+  honestly-caveated small-sample calibration check. All checks passed.
 
 ---
 
