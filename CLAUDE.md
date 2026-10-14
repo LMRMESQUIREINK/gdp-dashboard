@@ -709,6 +709,53 @@ yourself every time.
   checked structurally (not just unset), the destructive-escalation and
   low-confidence-escalation policy paths both exercised for real, and an
   honestly-caveated small-sample calibration check. All checks passed.
+- **Deep analysis + new build from an uploaded Medium survey article,
+  "AI Agents (07): Agentic Harness (Frameworks)"** (a five-layer taxonomy
+  — Orchestration, Tools, RAG, Observability, Cloud/model ecosystem — for
+  comparing agent frameworks like LangGraph, CrewAI, Mastra, Google ADK).
+  Full critique in `/notes/agentic-harness-frameworks-analysis.md`: named
+  as the weakest-evidence source analyzed in this project's run of deep
+  analyses to date — no code beyond one illustrative snippet, no
+  benchmark, no named source for any comparative claim about a specific
+  framework, self-promotional banner and crypto tip-jar included. Flagged
+  as imprecise: "OpenAI's SDK tightly integrates with the Azure-ChatGPT
+  ecosystem" conflates OpenAI's own API with the separately-operated
+  Azure OpenAI Service; the closing "ROOTS" mnemonic reorders its own
+  five layers and appends a sixth ("Skills") the article explicitly
+  didn't cover. Credited as genuinely useful: the taxonomy itself is a
+  reasonable, checkable-in-principle structure, and the orchestration
+  layer's checkpoint/pause/resume six-step list (persist state under a
+  UUID, surface a partial result, find the run later by that UUID,
+  reinstate it, resume, loop back to the same gate if still unapproved)
+  is a concrete, correct, implementable spec — which the article calls
+  non-negotiable. Checked directly rather than assumed: this project's
+  own `jarvis_swamp_bridge.py` has nothing like it — its
+  `approval_required=True` gate just raises `GovernanceError` and the run
+  is gone, with no persistence anywhere in the repo (grepped for
+  `checkpoint`/`sqlite3`/`resume`/`pause` project-wide to confirm). **Built**:
+  `/builds/agent-checkpoint-layer/` — a real, durable SQLite-backed
+  checkpoint/pause/resume layer implementing the article's six-step
+  pattern literally, applied to a real multi-stage workflow shaped like
+  `jarvis_swamp_bridge.py`'s own risk-gated step (built on the
+  already-proven `prop_firm_sizing.py`/`prop_firm_position_sizing.py`,
+  copied in unmodified). Two senses of "WAL" deliberately both real:
+  SQLite's own write-ahead-log journal mode, and an app-level `wal` table
+  logging every stage transition. Proven via genuine subprocess-boundary
+  crash recovery, not a mocked one: a `--crash-after-stage` flag calls
+  `os._exit(1)` right after a stage's result is computed but before its
+  checkpoint write — exactly what a real `kill -9` does — and a resume
+  from a fresh process recovers correctly. **Found and fixed a real bug
+  while writing that test**: the "last completed stage" bookkeeping was
+  computed once at the top of `advance()` from where a resume started,
+  never updated as the loop progressed, so a resume completing more than
+  one stage before the next pause point would record the wrong
+  last-completed stage — harmless only because every stage here is
+  side-effect-free and idempotent; in a workflow with a non-idempotent
+  stage this would have silently re-run already-completed work, the
+  exact failure a checkpoint layer exists to prevent. Fixed by tracking
+  it as a loop-local variable instead. All 16 checks passed on the real
+  run, including a WAL-ordering check that would catch a regression of
+  that exact bug.
 
 ---
 
