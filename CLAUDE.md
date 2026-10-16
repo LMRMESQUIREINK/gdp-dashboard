@@ -810,6 +810,59 @@ yourself every time.
   (clean working tree, no unique local commits) before `git reset --hard`
   to the real remote tip. All 25 checks passed on the real test run,
   including the payload-tamper rejection and replay-rejection properties.
+- **Deep analysis + new build from four uploaded "Interactive Flowchart
+  Generator" master prompts** (plus two unrelated PowerPoint-generator
+  prompts and a research-copilot prompt uploaded in the same round,
+  which turned out to be from the same external GitHub repo of
+  unrelated reusable prompts — asked which one was wanted rather than
+  guessing; user chose the flowchart generator). Full comparison in
+  `/notes/flowchart-generator-analysis.md`: the four specs share one
+  identical visual system (evidence they're iterations of one spec),
+  but their actual feature surface ranges from a full editor
+  (`final_interactive_flowchart_master_prompt.md`, direction-cycling +
+  reconnect + delete + keyboard shortcuts) down to a bare add-node-and-
+  export skeleton (`interactive_prompt_system.md`), and
+  `Locked_HTML_Flowchart_Generator_Prompt.md` is a different
+  architecture entirely (static export-only SVG, no JS state, no
+  editing) rather than a variant. Flagged three real gaps shared by
+  the three interactive specs: no drag/click/double-click
+  disambiguation threshold specified; PNG export of `foreignObject`
+  editable text is a known cross-browser rasterization problem that
+  the specs only partially address (fixed for SVG export, never
+  applied to PNG); and `connectionMode`/`reconnectMode` could collide
+  with nothing specified to prevent it. **Built**:
+  `/builds/flowchart-generator/` — the FINAL spec's feature set
+  (named as the authoritative version), instantiated with one example
+  diagram (a literature-review research workflow with a decision
+  branch and a feedback loop) rather than left as an abstract
+  template, since the specs' own deliverable is "shell stays fixed,
+  only nodes/edges change." All three identified gaps fixed: a
+  drag-distance threshold, `foreignObject` made strictly transient
+  (committed and removed before every `render()`/export, which
+  sidesteps the PNG bug architecturally instead of needing the specs'
+  own proposed conversion step), and mutual-exclusion between
+  connection/reconnect modes. Stage 1 (AI-generated reference image)
+  not run — no image-generation tool in this sandbox, flagged rather
+  than faked. Proven via Playwright end-to-end (served locally,
+  screenshotted before/after per the screenshot-before-done rule,
+  minimum two passes) driving the FINAL spec's own 27-step required
+  functional test (add node → edit → drag → connect → cycle direction
+  → relabel → reconnect → toggle orientation → delete → export).
+  **Found and fixed two real layout bugs during that testing**, not
+  present in the specs' prose: a feedback-loop edge label clipped off
+  the fixed canvas edge (no label space was reserved in the routing
+  corridor), and — more seriously — toggling to horizontal orientation
+  produced heavily overlapping nodes, because the original layout
+  spaced levels using a row-gap computed from canvas height regardless
+  of orientation and never adjusted node width for the horizontal flow
+  axis (columns ~170px apart, nodes still ~300–340px wide). Rewrote
+  the flow-axis spacing to size each level from actual node extent
+  with a single scale-down factor when the ideal spacing doesn't fit,
+  matching the specs' own "scale rather than overlap or resize the
+  canvas" layout-safety rule. Re-verified with a second screenshot
+  pass (vertical, horizontal, and a mobile-width check) after the fix.
+  `Locked_HTML_Flowchart_Generator_Prompt.md` deliberately not merged
+  in — a different tool, not a variant of this one.
 
 ---
 
