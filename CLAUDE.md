@@ -863,6 +863,57 @@ yourself every time.
   pass (vertical, horizontal, and a mobile-width check) after the fix.
   `Locked_HTML_Flowchart_Generator_Prompt.md` deliberately not merged
   in — a different tool, not a variant of this one.
+- **Flowchart generator extended with the three follow-ups suggested
+  after it shipped** (all three picked, not a subset). (1)
+  `/builds/flowchart-generator/examples/business-process.html` —
+  same shell/engine as `index.html`, only nodes/edges/title differ,
+  instantiated with a deliberately non-linear support-ticket-triage
+  diagram (two decisions, a merge, a feedback loop, and a `group`-type
+  node never exercised by the first example) to pressure-test the
+  layout engine on a genuinely different topology than the one chain-
+  with-one-detour shape already proven. Also switched this example to
+  call `recalculateLayout()` before the first `render()`, so initial
+  coordinates come from the auto-layout engine itself instead of
+  hand-placed numbers — actually exercising the specs' "Automatic
+  Initial Layout" requirement on load, not only via Toggle Orientation.
+  Verified via DOM-geometry assertions (every node inside the 1200×900
+  canvas, no significant overlap, both orientations) plus a screenshot
+  pass — clean on the first try. (2)
+  `/builds/flowchart-generator/from-notes.html` — a real
+  `parseFlowchartText()` interpreter fulfilling the specs' own "paste
+  rough notes, ASCII diagram, or process you want visualized" promise
+  instead of leaving it as a hand-authored example: sequential lines
+  auto-chain, `A -> B [label]` for explicit/labeled connections, a
+  trailing `?` auto-types a decision, a `feedback:` prefix routes a
+  line as a loop-back, and nodes with no incoming/outgoing edges
+  auto-type start/end. Once generated, the result is a fully normal
+  diagram on the same engine (draggable, editable, exportable).
+  **Found and fixed a real bug while testing**: re-mentioning an
+  already-defined node on its own bare line fabricated a spurious edge
+  from wherever the parser's cursor happened to be, since the
+  sequential auto-chain logic never checked whether the node was
+  actually new — caught by an edge-count assertion (expected 8, got 9)
+  against the interpreter's own worked example, not by inspection.
+  Fixed so a bare line only auto-chains when it creates a genuinely new
+  node. Verified against both that worked example and a fully freeform
+  payment-flow input never seen during development, to prove it's a
+  real interpreter rather than overfit to one canned case. (3) New,
+  separate build `/builds/flowchart-static-export/` — the
+  `Locked_HTML_Flowchart_Generator_Prompt.md` variant built literally
+  rather than folded into the interactive editor, since it's a
+  genuinely different architecture (hand-authored static SVG with
+  semantic IDs like `node-research-question`/`connector-feedback-loop`
+  matching the spec's own example naming, no JS state, no editing,
+  toolbar with only Download SVG/PNG) — building it as a mode of the
+  other shell would have meant either faking state nothing uses or
+  faking a locked shell secretly hiding an editor. Same
+  research-workflow content as `index.html` for direct comparison.
+  Verified by serving locally and screenshotting (desktop + mobile,
+  clean on the first pass) and by actually downloading both exports:
+  the SVG retains every semantic ID and real text content with no
+  `foreignObject` anywhere (nothing is ever editable in the browser
+  here, so there's nothing transient to clean up before export), and
+  the PNG is a real correctly-sized file.
 
 ---
 

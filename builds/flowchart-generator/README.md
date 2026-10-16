@@ -100,4 +100,62 @@ bugs that only showed up once the diagram was actually rendered:
 - Reference-image generation (Stage 1) — no image tool in this
   sandbox, noted above.
 - The `Locked_HTML_Flowchart_Generator_Prompt.md` static/export-only
-  variant — a different tool, see analysis note.
+  variant — a different tool, built separately as
+  `/builds/flowchart-static-export/`.
+
+## `examples/business-process.html` — pressure-testing the layout engine
+
+The exact same shell/engine as `index.html` (nodes/edges/title are the
+only parts that differ, proving the "shell stays fixed" principle for
+real rather than just asserting it), instantiated with a deliberately
+non-linear support-ticket-triage diagram: two decisions, a merge (two
+edges converging on one node), a feedback loop, and a `group`-type node
+(listed as a required minimum type by the specs but never exercised by
+the research-workflow example). Also switched the init sequence to call
+`recalculateLayout()` before the first `render()`, so initial
+coordinates come from the auto-layout engine itself rather than
+hand-placed numbers — the specs' own "Automatic Initial Layout"
+requirement, now actually exercised on load instead of only via the
+Toggle Orientation button.
+
+Verified with both DOM-geometry assertions (every node's bounding box
+inside the 1200×900 canvas, no two nodes overlapping by more than a
+trivial margin, checked in both orientations) and a screenshot pass —
+clean on the first try, no bugs found this time.
+
+## `from-notes.html` — rough notes → real nodes/edges
+
+A real interpreter (`parseFlowchartText()`), not a toy regex: paste
+plain text and click **Generate Flowchart**. Supported syntax (shown in
+the textarea placeholder too):
+- one step per line, auto-chained sequentially to the line before it
+- `A -> B` (or `A -> B -> C`) for an explicit connection
+- `A -> B [label]` to label that edge
+- a line ending in `?` is auto-typed as a decision
+- a `feedback:` prefix routes that line's edge as a loop-back
+  (perimeter routing) instead of a normal forward connector
+- a node with no incoming edges auto-types `start`; one with no
+  outgoing edges auto-types `end`
+
+This is the piece that actually fulfills the specs' own "paste rough
+notes, ASCII diagram, or process you want visualized" promise, rather
+than leaving it as a hand-authored example. Once generated, the result
+is a completely normal diagram on the same engine — fully draggable,
+editable, exportable via the regular toolbar.
+
+**A real bug found and fixed while testing**: re-mentioning an
+already-defined node on its own bare line (e.g. referencing "Synthesize
+Findings" again after it was already created via an arrow line)
+fabricated a spurious edge from wherever the parser's "current cursor"
+happened to be, because the sequential auto-chain logic didn't check
+whether the node was actually new. Fixed so a bare line only auto-chains
+when it creates a *new* node — re-mentioning an existing one just moves
+the cursor there without inventing a connection. Caught by an edge-count
+assertion (expected 8, got 9) while testing the parser against its own
+worked example, not by inspection.
+
+Verified against two inputs: the worked example (reproducing the
+research-workflow diagram from text, with Yes/No/retry labels and
+correct start/decision/end auto-typing) and a fully freeform
+payment-flow example never seen during development, to prove it's a
+real interpreter and not overfit to one canned input.

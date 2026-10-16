@@ -102,6 +102,11 @@ button.active {
     stroke-dasharray: 5 3;
 }
 
+.node-shape.type-group {
+    fill: #f4f4f2;
+    stroke-dasharray: 6 4;
+}
+
 .connector {
     fill: none;
     stroke: #242424;
@@ -516,6 +521,7 @@ button.active {
             const g = svgEl("g", { "data-node-id": node.id, class: "node-group" });
 
             let shapeClass = "node-shape";
+            if (node.type === "group") shapeClass += " type-group";
             if (node.id === selectedNodeId) shapeClass += " selected";
             if (connectionMode && node.id === connectionSourceId) shapeClass += " connection-source";
             if (reconnectMode && reconnectStage === "target" && node.id === reconnectNewSource) shapeClass += " connection-source";
