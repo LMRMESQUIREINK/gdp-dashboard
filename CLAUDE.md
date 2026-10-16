@@ -756,6 +756,60 @@ yourself every time.
   it as a loop-local variable instead. All 16 checks passed on the real
   run, including a WAL-ordering check that would catch a regression of
   that exact bug.
+- **Deep analysis + new build from four uploaded Medium articles**: "Building
+  an Enterprise AI Control Plane for Agentic AI" (ACP) and a three-part
+  "Multi-Tenant LLM Systems" series. Full critique in
+  `/notes/ai-control-plane-and-multitenant-llm-analysis.md`. The ACP piece
+  describes (with no shown code or repo) a three-state policy model
+  (`ALLOW`/`DENY`/`REQUIRES_APPROVAL`) with deterministic priority+effect-
+  precedence resolution and payload-hash-bound human approval; credited
+  as the best-stated idea across everything analyzed this round — "if the
+  agent holds the provider credential and the tool credential, then the
+  agent itself becomes the enforcement point. That is not really
+  enforcement. It is advice" — while flagging that "I built an AI Control
+  Plane" is itself unverified from the pasted text (no code, no repo,
+  every diagram an inaccessible placeholder), same category as every
+  other unverified "I built X" claim this project states rather than
+  silently repeats. The multi-tenant series' Part 3 capacity-planning math
+  (Little's Law worker sizing, a 3× burst/backlog/drain-time calculation,
+  a token-cost invoice) was independently recomputed line by line and
+  every number checks out — the first fully-verifiable arithmetic in this
+  family of sources — while flagging one real imprecision: the burst
+  section's "M/M/c-inspired" label describes a plain deterministic
+  arrival-minus-capacity calculation with none of M/M/c's actual
+  stochastic machinery, a hedge the author states but a label that still
+  borrows more queueing-theory credibility than the math underneath it
+  uses. **Built**: `/builds/policy-control-plane/` — the ACP article's
+  policy-evaluation and payload-hash-bound-approval model, implemented
+  for real against this project's own already-proven prop-firm-sizing
+  tool, not a toy example: a safe, non-`eval()` nested-dict condition
+  evaluator (deliberately stated as a security choice the article itself
+  never addresses), a `PolicyEvaluator` reproducing the article's exact
+  deterministic resolution rules, and a `governed_call`/
+  `resume_governed_call` enforcement boundary where the real tool is
+  provably unreachable on `DENY` or while `REQUIRES_APPROVAL` is pending
+  (checked with a call counter, not just a status string). Extends,
+  rather than duplicates, the HITL approval work built last round in
+  `/builds/agent-checkpoint-layer/` with the one property that work
+  didn't have: canonical-JSON+SHA-256 payload binding, closing a real,
+  concrete attack this project hadn't previously defended against —
+  approving one request's parameters and having a *different* request
+  execute under that same approval. A concrete policy set mirrors the
+  article's own worked example exactly in shape (`Billing Agent → Telco
+  Billing MCP → createRefund → amount > 1000 → REQUIRES_APPROVAL →
+  Finance` becomes `trading-jarvis → prop-firm-mcp-server →
+  prop_firm_size_check → contracts > 5 → REQUIRES_APPROVAL → Risk Desk`,
+  same operation, different governance outcome by parameter). Also fixed
+  a real environment issue found at the very start of this round, unrelated
+  to the build itself: this session's local git checkout had gone stale
+  relative to `origin/claude/code-stack-analysis-awnea1` (a merge-commit
+  divergence from an earlier round), silently hiding four already-shipped
+  builds (`prop-firm-mcp-server`, `interface-lift-toolkit`,
+  `jev-pattern-router`, `agent-checkpoint-layer`) from the local working
+  tree; diagnosed via `git merge-base` before resetting, confirmed safe
+  (clean working tree, no unique local commits) before `git reset --hard`
+  to the real remote tip. All 25 checks passed on the real test run,
+  including the payload-tamper rejection and replay-rejection properties.
 
 ---
 
