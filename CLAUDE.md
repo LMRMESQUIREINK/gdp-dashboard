@@ -418,6 +418,561 @@ yourself every time.
   assumption for the usual paying-subscriber number, since this is free
   with no analytics: 25 people requesting/running the tool within 30
   days, tracked via thread replies/DMs (the only mechanism that exists).
+- **The Pass Line's sales page rebuilt** on a trading-course-lead-magnet
+  structure per this round's explicit request (cold-open hook → honest
+  reframe with no invented failure-rate stat → mechanism → a new "win
+  rate isn't the whole story" teaching beat on expectancy/variance vs.
+  the drawdown floor → the labeled example run → offer stack →
+  who-for/not-for → a free email-signup CTA as the RUTHLESS TRADING
+  GOLD front door), keeping every hard rule from round one (no invented
+  results, no guarantees, unchanged tagline). Don't-say-list grep clean.
+  **A real bug found and fixed**: the Example Run `<table>` element
+  triggered a genuine Chromium full-page-screenshot bug — bottom-of-page
+  content bled into the top of every stitched capture, reproducibly,
+  and specific to this page (Recovery Desk's similarly tall sales page
+  stayed clean under the identical capture method). Isolated by
+  bisecting five other hypotheses (sticky nav, `backdrop-filter`,
+  smooth-scroll, `<pre>`, `box-shadow`) before finding it; fixed by
+  rebuilding the table as an accessible CSS Grid. A second, smaller
+  real bug surfaced in the same investigation — the nav's
+  `backdrop-filter` blur could show a stale ghost of prior content
+  during fast scrolling — fixed by dropping it for a solid background.
+  Final verification used scroll-segmented real-position screenshots
+  across the full page (not a single stitched capture, since that mode
+  is where the first bug lived), desktop and mobile, both clean.
+  Full writeup in `/builds/prop-firm-dashboard/README.md`.
+- **New build, `/builds/outage-alert`**: a silent-failure detector
+  (`outage_alert.py`) for an entirely separate local project the user runs
+  (`C:\trading_system\` — a multi-agent LangGraph stock/options paper-
+  trading system, not part of RUTHLESS TRADING GOLD). Flagged clearly
+  before doing anything: a first message referencing these files was
+  actually meant for that other, local session (Windows path, files that
+  don't exist anywhere in this repo) — asked for clarification rather than
+  guessing, then the user pasted the real `outage_alert.py` source and
+  both wired runners. Reviewed all three against `outage_alert.py`'s own
+  three touch points (create tracker / record per-ticker outcome / check-
+  and-alert after the equity snapshot) — all three correct as wired,
+  including the `record()` outcome-mapping (`parsed['signal']` for stocks,
+  `strategy` for options). **Found and fixed a real bug** by tracing
+  control flow (couldn't execute the runners themselves — this sandbox
+  has none of their dependency modules): in both runners, the unguarded
+  `log_trade()`/position-opening calls sit inside the same function
+  `main()` wraps in a blanket per-ticker `try/except`, so a downstream
+  storage/logging failure unrelated to the trading pipeline could
+  double-record that ticker's outcome. Reproduced standalone against the
+  real `outage_alert.py` (which has zero external dependencies, so it
+  could be run for real here): a perfectly healthy 5-ticker HOLD day with
+  2 tickers hitting an unrelated `"rate_limit"`-flavored storage error
+  false-triggered a full outage alert. Fixed by wrapping those calls in
+  their own try/except that warns instead of propagating. Verified via
+  `py_compile` (clean before/after, diff is exactly the two guards) and a
+  standalone integration test replicating the fixed control flow, which
+  asserted exactly one record per ticker and no false alert. Couldn't run
+  `--report-only` against the actual runners here (no environment); said
+  so plainly instead of faking it — the user then ran both fixed runners
+  for real (stronger than `--report-only`, a full 13-ticker pipeline run)
+  and pasted the output: stock (11 signals + 2 holds = 13) and options
+  (7 signals + 6 holds = 13) both matched their ticker counts exactly,
+  confirming no double-record in the wild. No downstream failure occurred
+  in that run, so the fix's guard itself (vs. just the happy path) is
+  still only proven by the standalone test, not live fire — noted as a
+  worthwhile follow-up in the README. Added to `/builds/` (rather than
+  left unpushed) at the user's explicit request for a commit/push/merge-link,
+  with a Decisions-log note that this is a one-off, not a new pattern for
+  unrelated local projects landing in this repo.
+- **Deep analysis + new build from an uploaded Factory.ai white paper**
+  ("Software Factory: An Autonomy Maturity Model for the Enterprise") —
+  full writeup in `/notes/software-factory-autonomy-maturity-model-analysis.md`.
+  Named clearly as vendor marketing (every capability in its own
+  Capability Map ties to a paid Factory.ai product, page ends on "CONTACT
+  SALES") with a genuinely useful framework inside it — binary automatable
+  signals, non-linear per-level point weights (1/2/4/8/16), and a
+  "% of repos at Level 3+" headline metric chosen over an averaged score
+  for board legibility. Flagged what doesn't check out: the paper's "10×
+  code-gen ≈ +10% overall" claim is asserted, not sourced to any shown
+  data; an "Outcomes from enterprise deployments" chart exists only as an
+  unreadable image (pypdf extracted zero body text from that page), so no
+  numbers from it are quoted anywhere; the full signal-to-point mapping
+  for Levels 3–5 isn't disclosed, so nothing here claims to reproduce
+  Factory.ai's actual proprietary scorer. **Built**, per this project's
+  established pattern of extracting a vendor wizard's generalizable
+  structure without building the vendor's own branded instance (same move
+  as Build Brain method from the RUTHLESS AFFILIATE GOLD export —
+  RemixForge was never built): `/builds/agent-readiness-scorecard/` —
+  a real, dependency-free Python scorer implementing an original,
+  locally-checkable signal set (not Factory.ai's undisclosed rubric)
+  across Levels 1–3 only, since Level 4/5 signals in the source paper are
+  operational telemetry (sub-minute feedback, auto-picked-up tickets,
+  multi-day mission reliability) that cannot be observed from files on
+  disk — reported as "not assessable" rather than faked. Actually run
+  against this repo for real: Level 1 (14/37 assessable points), read
+  honestly in the README as an accurate reflection of this being a
+  multi-build workspace rather than one deployable service (no repo-wide
+  CI/linter/type-checker because it was never built as a single
+  codebase), not a verdict on work quality. Also run against a
+  `/builds/` subproject (`recovery-desk`, scored lower still, with the
+  limitation of a repo-level framework applied one subfolder at a time
+  stated plainly) and in `--json` mode. Every `pass`/`fail` result in the
+  root-repo run spot-checked by hand against the actual files (confirmed
+  no `.flake8`/CI workflows exist before trusting a `fail`; confirmed
+  `CLAUDE.md`, `.github/CODEOWNERS`, `.devcontainer/` really exist before
+  trusting a `pass`) rather than taking the tool's own output on faith.
+- **Deep analysis + new build from an uploaded Fareed Khan Medium article**
+  ("Building the 11 Layers of a Production-Grade MCP Server + Agentic
+  System") — asked which of analysis-only vs. analysis-plus-build was
+  wanted rather than guessing on a 12-component "production-grade" scope
+  with no instruction attached; the user chose **analysis + a real
+  build**. Full critique in
+  `/notes/production-grade-mcp-server-analysis.md`: what's genuinely
+  well-reasoned (the Structured Error Framework, retryable-only circuit-
+  breaker counting, the tiered tool hierarchy, DB-layer tenant isolation
+  via Postgres RLS, the deliberate `NotImplementedError` stub guarding
+  long-term-memory writes from becoming a policy/audit back door) versus
+  three specific uncited statistics and, flagged most pointedly, a
+  twice-repeated, uncited claim that "Asana's MCP-powered feature leaked
+  customer data across 1,000 organisations" — not repeated as fact
+  anywhere in this project's own writeup. **Built**:
+  `/builds/prop-firm-mcp-server/` — a real MCP server, using the actual
+  official `mcp` Python SDK over stdio (not a hand-rolled approximation),
+  exposing the already-proven `/builds/prop-firm-sizing/` toolkit as four
+  tools (`prop_firm_size_check`, `prop_firm_session_report`,
+  `prop_firm_pass_probability`, `prop_firm_compare_sizes`) — a fifth
+  interface on the same classes every other interface in this project
+  already uses, not a reimplementation. Hit and resolved a real
+  environment issue first (`pip install mcp` initially failed on a
+  PyJWT/debian-package conflict; fixed via `pip install --ignore-installed
+  pyjwt` then a clean `mcp` install, landing on 2.3.0), then discovered —
+  by writing and running a real probe server+client over actual stdio
+  before trusting anything — that the installed SDK's real API
+  (`mcp.server.mcpserver.MCPServer`, `ToolError` returning a plain-text
+  `CallToolResult` with `isError=True`) diverges materially from the
+  source article's code samples (which target an older SDK with a
+  structured `error.data` channel); `errors.py`'s SERF-lite
+  implementation and its module docstring document this divergence
+  explicitly rather than silently papering over it. Applied this
+  project's established "extract the generalizable pattern, build only
+  what the scale warrants, state every cut with a one-line reason"
+  discipline (same move as Build Brain and the Agent Readiness
+  Scorecard): built SERF-lite, the atomic tier of the three-tier tool
+  hierarchy, structured JSON-lines audit logging (SHA-256'd arguments),
+  and in-process token-bucket rate limiting (with the exact trigger
+  condition for needing Redis instead stated plainly); explicitly cut
+  OAuth/JWT, Postgres RLS multi-tenancy, Redis, circuit
+  breakers/retry/ATBA (no upstream network call exists to protect
+  against), OpenTelemetry/Prometheus/Grafana, and the four-agent LLM
+  copilot (wrapping a deterministic Monte Carlo calculator in an agent
+  pipeline would be pure over-engineering), each with its reason recorded
+  in the build's README. Proven via a real end-to-end test
+  (`test_client.py`) spawning the server as a subprocess and driving it
+  with a genuine `mcp.ClientSession` over real stdio — not a unit test
+  that imports the tool functions directly — with every numeric result
+  checked against both a direct call to the same underlying class/
+  function in the same script (exact match, exploiting `PassSimulator`'s
+  fixed `seed=42`) and against this project's own previously-verified
+  dashboard figures (36.7% pass probability; 1.7/27.1/49.7/70.8% across
+  the compare-sizes scenarios), plus a deliberately triggered SERF
+  validation error and a deliberately tripped rate limit, both asserted
+  on their actual SERF-coded output. All checks passed on the real run.
+- **`/builds/prop-firm-mcp-server` extended with the three same-day
+  follow-ups requested after it shipped**: (1) HTTP transport — `server.py`
+  now takes `--transport stdio|http`, using the SDK's real
+  `run_streamable_http_async`, so more than one MCP client can talk to one
+  running process instead of only one subprocess per client. (2) Redis
+  rate limiting, built for real rather than left as a stated-but-unbuilt
+  trigger condition — `ratelimit.py` gained `RedisTokenBucket`, an atomic
+  refill+check+decrement Lua script (same pattern the source article
+  uses), auto-selected whenever `--redis-url`/`$REDIS_URL` points at a
+  reachable Redis, with a clean fallback to the original in-process
+  bucket (printed reason, not silent) when it doesn't — stdio keeps the
+  in-process bucket by default since it's still correct there. Proven via
+  a new `test_http_client.py`: spawns the server over real HTTP, drains
+  `prop_firm_compare_sizes`'s 5-token bucket from one client session, then
+  shows a brand-new second session (fresh TCP connection) is still
+  rate-limited — the only way that's possible if the quota is real shared
+  Redis state rather than per-connection memory. All checks passed with a
+  real local `redis-server`; the original stdio `test_client.py` was
+  re-run afterward and still passes unmodified. (3) Documented the server
+  as a fifth tool-surface inside `/builds/trading-jarvis/jarvis_orchestrator.py`'s
+  own docstring (a new "ALTERNATE INTERFACE" section) pointing at it
+  alongside the existing CLI/Claude-tool-use/Streamlit interfaces, same
+  classes and numbers, not a second implementation. Also added a real,
+  correct Claude Desktop `claude_desktop_config.json` snippet to the
+  build's README and documented how to use it — but flagged plainly
+  rather than faked: this sandbox has no Desktop GUI and no live
+  Anthropic API access (same restriction every other build here states),
+  so the config is built from the SDK's actual stdio contract and
+  verified against it, but hasn't been clicked through in a real Desktop
+  window from inside this session.
+- **Deep analysis + new build from an uploaded Fareed Khan article,
+  "Building Fast Computer Agents to Solve Complex Tasks"** (interface
+  lifting: replace screenshot-driven GUI agents with typed tools that
+  drive each program's own native interface — file format, CLI, COM/
+  scripting, API, accessibility tree last). Full critique in
+  `/notes/interface-lifting-fast-computer-agents-analysis.md`: what's
+  genuinely well-reasoned (the tool contract's mandatory verifier, the
+  five-interfaces-in-order claim backed by a checkable ScreenSpot-Pro
+  figure, the reversibility-based approval-gate reasoning, the hard-coded
+  prompt-injection safety classifier) versus what doesn't check out —
+  the entire quantitative case resting on one anecdotal weak baseline
+  (the author's own early, admittedly-struggling screen agent, one run),
+  a curated best-case ledger with no failure rows for the new
+  architecture, and an unsourced "180 of 180" test-suite claim flagged on
+  sight the same way this project flagged the Factory.ai paper's
+  unreadable chart and the MCP-server article's uncited stats two rounds
+  ago — not repeated as fact here. Unlike those two articles, this one
+  shows real code for nearly every mechanism, which is a materially
+  stronger evidentiary bar, reflected in the critique leaning toward
+  "unverifiable/cherry-picked measurement" rather than "invented
+  mechanism." **Built**: `/builds/interface-lift-toolkit/` — the
+  article's generalizable architecture (tool registry with schema derived
+  from type hints + docstring, a `{ok, summary, files, checks}` result
+  contract, a regex-based tool-group shortlist scorer, `run_chain` for
+  one-call dependent tool-call planning with `$id` references, a real
+  local/outward approval gate, a measurement ledger, and a skill compiler
+  that turns one successful chain into a new parametrized tool) — built
+  for real, not the article's own specific instance (118 Windows
+  desktop-program integrations: Photoshop/Excel-COM/AutoCAD/Blender/
+  CapCut/UI-Automation), which doesn't transfer to this sandbox at all —
+  a platform mismatch (no Windows, no GUI programs installed, nothing to
+  lift), stated plainly rather than silently worked around, same
+  discipline as every other sandbox-network-restriction note in this
+  file. Two deliberate adaptations recorded in the build's README: tool
+  schemas come out in Anthropic's native shape (matching
+  `jarvis_orchestrator.py`'s established `TOOLS` convention, not the
+  article's OpenAI-shaped one), and the skill compiler operates one layer
+  down from the article's (compiles a recorded `run_chain` step list
+  instead of a screen-agent run, since there's no screen loop here to
+  compile from). Demonstrated against this project's own already-proven
+  `prop_firm_sizing.py`/`prop_firm_position_sizing.py`/`prop_pass_simulator.py`
+  (copied in unmodified, same convention as every other interface on this
+  toolkit) rather than toy stand-ins. Proven two ways: `test_toolkit.py`
+  (pure mechanics, no network — registry schema derivation, the result
+  contract's `ok`-from-checks rule, the shortlist scorer, `run_chain`'s
+  `$id` resolution and its stop-at-first-failed-check rule, the approval
+  gate holding an outward call and enforcing single-use approval, and the
+  skill compiler replaying a compiled tool with new parameters matching a
+  direct call exactly) and `test_agent_loop.py` (the real dispatch loop
+  against a mocked Anthropic client, same established mocking convention
+  as every other tool-dispatch-loop test in this project, since this
+  sandbox has no live Anthropic access — proving the registry really
+  dispatches to the real prop-firm-sizing code and the approval gate
+  really holds the outward call rather than executing it inline). All
+  checks passed on both real runs.
+- **Deep analysis + new build from six uploaded transcripts/articles about
+  "Jev"** (TypeSafe AI's non-generative "judgment model" — state + typed
+  Choice/Noul/Score questions in, calibrated probabilities out, no text
+  generation). Full critique in
+  `/notes/jev-typesafe-judgment-model-analysis.md`: the widest spread of
+  source quality analyzed in this project to date, from pure hype recap to
+  a genuinely reproduced mechanism (one source independently rebuilt Jev's
+  restricted-softmax trick on an open model with real logits, verified by
+  hand). Credited as well-reasoned: the mandatory code-side policy layer,
+  never-use-this-as-authorization, confidence-gated thresholds set by what
+  a wrong answer costs, and one source's own honestly-reported negative
+  result (a Bitcoin buy/hold/sell test that "does not seem to be doing
+  well"). Flagged as not holding up: TypeSafe's own benchmark graph scores
+  against reference answers averaged from two competitor models it also
+  competes with; marketing speed/cost multiples that are inconsistent
+  across the sources' own talking points; and, the single most important
+  finding, an independent calibration check in one source's own lab
+  showing Jev's Expected Calibration Error (~0.164) is actually *worse*
+  than Claude's (0.093) and Gemini's (0.094) on the same dataset — a
+  quantified contradiction of the vendor's stated "RLCD" calibration
+  training objective, reported by a user of the product, not a
+  competitor. A LangChain comparison and an OpenRouter benchmark cited
+  inside the sources are repeated as "a source cites this," not as
+  verified fact, same discipline applied to every previously-flagged
+  uncited claim in this project. **Built**: `/builds/jev-pattern-router/` —
+  the real, generalizable architecture (Choice/Noul/Score primitives,
+  probabilities restricted to the declared answer space, a margin-based
+  confidence and probability-weighted Score verified by hand, a policy
+  layer kept in plain code) applied as a cheap pre-router in front of
+  `/builds/trading-jarvis/jarvis_orchestrator.py`'s real tool categories —
+  not Jev's actual transformer, which is closed, and not a downloaded
+  open model either: `curl -I https://huggingface.co` from this sandbox
+  returned a real HTTP 403, checked directly as part of this build, same
+  egress restriction already documented for Yahoo Finance/EODHD/FMP/
+  Anthropic now extended to Hugging Face. Built instead on a real
+  TF-IDF+logistic-regression classifier trained on ~40 labeled examples —
+  a genuinely different, much weaker model, with the semantic-
+  generalization gap against real Jev stated plainly rather than hidden.
+  Found and documented a real instance of that gap while testing: a
+  destructive request reworded just enough ("every position on file" vs.
+  "all my positions") drops from 0.77 to 0.50 probability, under the
+  policy's 0.70 escalation threshold — reported as an honest finding in
+  both the test output and the README rather than hidden by only testing
+  phrasings the classifier already handles well. Proven via a real test
+  suite against a held-out test split never seen during training: category
+  routing correct on 7/7 held-out examples, Score verified by hand to be
+  the exact probability-weighted average, confidence verified by hand to
+  be the exact top1-vs-top2 margin, Noul's missing confidence field
+  checked structurally (not just unset), the destructive-escalation and
+  low-confidence-escalation policy paths both exercised for real, and an
+  honestly-caveated small-sample calibration check. All checks passed.
+- **Deep analysis + new build from an uploaded Medium survey article,
+  "AI Agents (07): Agentic Harness (Frameworks)"** (a five-layer taxonomy
+  — Orchestration, Tools, RAG, Observability, Cloud/model ecosystem — for
+  comparing agent frameworks like LangGraph, CrewAI, Mastra, Google ADK).
+  Full critique in `/notes/agentic-harness-frameworks-analysis.md`: named
+  as the weakest-evidence source analyzed in this project's run of deep
+  analyses to date — no code beyond one illustrative snippet, no
+  benchmark, no named source for any comparative claim about a specific
+  framework, self-promotional banner and crypto tip-jar included. Flagged
+  as imprecise: "OpenAI's SDK tightly integrates with the Azure-ChatGPT
+  ecosystem" conflates OpenAI's own API with the separately-operated
+  Azure OpenAI Service; the closing "ROOTS" mnemonic reorders its own
+  five layers and appends a sixth ("Skills") the article explicitly
+  didn't cover. Credited as genuinely useful: the taxonomy itself is a
+  reasonable, checkable-in-principle structure, and the orchestration
+  layer's checkpoint/pause/resume six-step list (persist state under a
+  UUID, surface a partial result, find the run later by that UUID,
+  reinstate it, resume, loop back to the same gate if still unapproved)
+  is a concrete, correct, implementable spec — which the article calls
+  non-negotiable. Checked directly rather than assumed: this project's
+  own `jarvis_swamp_bridge.py` has nothing like it — its
+  `approval_required=True` gate just raises `GovernanceError` and the run
+  is gone, with no persistence anywhere in the repo (grepped for
+  `checkpoint`/`sqlite3`/`resume`/`pause` project-wide to confirm). **Built**:
+  `/builds/agent-checkpoint-layer/` — a real, durable SQLite-backed
+  checkpoint/pause/resume layer implementing the article's six-step
+  pattern literally, applied to a real multi-stage workflow shaped like
+  `jarvis_swamp_bridge.py`'s own risk-gated step (built on the
+  already-proven `prop_firm_sizing.py`/`prop_firm_position_sizing.py`,
+  copied in unmodified). Two senses of "WAL" deliberately both real:
+  SQLite's own write-ahead-log journal mode, and an app-level `wal` table
+  logging every stage transition. Proven via genuine subprocess-boundary
+  crash recovery, not a mocked one: a `--crash-after-stage` flag calls
+  `os._exit(1)` right after a stage's result is computed but before its
+  checkpoint write — exactly what a real `kill -9` does — and a resume
+  from a fresh process recovers correctly. **Found and fixed a real bug
+  while writing that test**: the "last completed stage" bookkeeping was
+  computed once at the top of `advance()` from where a resume started,
+  never updated as the loop progressed, so a resume completing more than
+  one stage before the next pause point would record the wrong
+  last-completed stage — harmless only because every stage here is
+  side-effect-free and idempotent; in a workflow with a non-idempotent
+  stage this would have silently re-run already-completed work, the
+  exact failure a checkpoint layer exists to prevent. Fixed by tracking
+  it as a loop-local variable instead. All 16 checks passed on the real
+  run, including a WAL-ordering check that would catch a regression of
+  that exact bug.
+- **Deep analysis + new build from four uploaded Medium articles**: "Building
+  an Enterprise AI Control Plane for Agentic AI" (ACP) and a three-part
+  "Multi-Tenant LLM Systems" series. Full critique in
+  `/notes/ai-control-plane-and-multitenant-llm-analysis.md`. The ACP piece
+  describes (with no shown code or repo) a three-state policy model
+  (`ALLOW`/`DENY`/`REQUIRES_APPROVAL`) with deterministic priority+effect-
+  precedence resolution and payload-hash-bound human approval; credited
+  as the best-stated idea across everything analyzed this round — "if the
+  agent holds the provider credential and the tool credential, then the
+  agent itself becomes the enforcement point. That is not really
+  enforcement. It is advice" — while flagging that "I built an AI Control
+  Plane" is itself unverified from the pasted text (no code, no repo,
+  every diagram an inaccessible placeholder), same category as every
+  other unverified "I built X" claim this project states rather than
+  silently repeats. The multi-tenant series' Part 3 capacity-planning math
+  (Little's Law worker sizing, a 3× burst/backlog/drain-time calculation,
+  a token-cost invoice) was independently recomputed line by line and
+  every number checks out — the first fully-verifiable arithmetic in this
+  family of sources — while flagging one real imprecision: the burst
+  section's "M/M/c-inspired" label describes a plain deterministic
+  arrival-minus-capacity calculation with none of M/M/c's actual
+  stochastic machinery, a hedge the author states but a label that still
+  borrows more queueing-theory credibility than the math underneath it
+  uses. **Built**: `/builds/policy-control-plane/` — the ACP article's
+  policy-evaluation and payload-hash-bound-approval model, implemented
+  for real against this project's own already-proven prop-firm-sizing
+  tool, not a toy example: a safe, non-`eval()` nested-dict condition
+  evaluator (deliberately stated as a security choice the article itself
+  never addresses), a `PolicyEvaluator` reproducing the article's exact
+  deterministic resolution rules, and a `governed_call`/
+  `resume_governed_call` enforcement boundary where the real tool is
+  provably unreachable on `DENY` or while `REQUIRES_APPROVAL` is pending
+  (checked with a call counter, not just a status string). Extends,
+  rather than duplicates, the HITL approval work built last round in
+  `/builds/agent-checkpoint-layer/` with the one property that work
+  didn't have: canonical-JSON+SHA-256 payload binding, closing a real,
+  concrete attack this project hadn't previously defended against —
+  approving one request's parameters and having a *different* request
+  execute under that same approval. A concrete policy set mirrors the
+  article's own worked example exactly in shape (`Billing Agent → Telco
+  Billing MCP → createRefund → amount > 1000 → REQUIRES_APPROVAL →
+  Finance` becomes `trading-jarvis → prop-firm-mcp-server →
+  prop_firm_size_check → contracts > 5 → REQUIRES_APPROVAL → Risk Desk`,
+  same operation, different governance outcome by parameter). Also fixed
+  a real environment issue found at the very start of this round, unrelated
+  to the build itself: this session's local git checkout had gone stale
+  relative to `origin/claude/code-stack-analysis-awnea1` (a merge-commit
+  divergence from an earlier round), silently hiding four already-shipped
+  builds (`prop-firm-mcp-server`, `interface-lift-toolkit`,
+  `jev-pattern-router`, `agent-checkpoint-layer`) from the local working
+  tree; diagnosed via `git merge-base` before resetting, confirmed safe
+  (clean working tree, no unique local commits) before `git reset --hard`
+  to the real remote tip. All 25 checks passed on the real test run,
+  including the payload-tamper rejection and replay-rejection properties.
+- **Deep analysis + new build from four uploaded "Interactive Flowchart
+  Generator" master prompts** (plus two unrelated PowerPoint-generator
+  prompts and a research-copilot prompt uploaded in the same round,
+  which turned out to be from the same external GitHub repo of
+  unrelated reusable prompts — asked which one was wanted rather than
+  guessing; user chose the flowchart generator). Full comparison in
+  `/notes/flowchart-generator-analysis.md`: the four specs share one
+  identical visual system (evidence they're iterations of one spec),
+  but their actual feature surface ranges from a full editor
+  (`final_interactive_flowchart_master_prompt.md`, direction-cycling +
+  reconnect + delete + keyboard shortcuts) down to a bare add-node-and-
+  export skeleton (`interactive_prompt_system.md`), and
+  `Locked_HTML_Flowchart_Generator_Prompt.md` is a different
+  architecture entirely (static export-only SVG, no JS state, no
+  editing) rather than a variant. Flagged three real gaps shared by
+  the three interactive specs: no drag/click/double-click
+  disambiguation threshold specified; PNG export of `foreignObject`
+  editable text is a known cross-browser rasterization problem that
+  the specs only partially address (fixed for SVG export, never
+  applied to PNG); and `connectionMode`/`reconnectMode` could collide
+  with nothing specified to prevent it. **Built**:
+  `/builds/flowchart-generator/` — the FINAL spec's feature set
+  (named as the authoritative version), instantiated with one example
+  diagram (a literature-review research workflow with a decision
+  branch and a feedback loop) rather than left as an abstract
+  template, since the specs' own deliverable is "shell stays fixed,
+  only nodes/edges change." All three identified gaps fixed: a
+  drag-distance threshold, `foreignObject` made strictly transient
+  (committed and removed before every `render()`/export, which
+  sidesteps the PNG bug architecturally instead of needing the specs'
+  own proposed conversion step), and mutual-exclusion between
+  connection/reconnect modes. Stage 1 (AI-generated reference image)
+  not run — no image-generation tool in this sandbox, flagged rather
+  than faked. Proven via Playwright end-to-end (served locally,
+  screenshotted before/after per the screenshot-before-done rule,
+  minimum two passes) driving the FINAL spec's own 27-step required
+  functional test (add node → edit → drag → connect → cycle direction
+  → relabel → reconnect → toggle orientation → delete → export).
+  **Found and fixed two real layout bugs during that testing**, not
+  present in the specs' prose: a feedback-loop edge label clipped off
+  the fixed canvas edge (no label space was reserved in the routing
+  corridor), and — more seriously — toggling to horizontal orientation
+  produced heavily overlapping nodes, because the original layout
+  spaced levels using a row-gap computed from canvas height regardless
+  of orientation and never adjusted node width for the horizontal flow
+  axis (columns ~170px apart, nodes still ~300–340px wide). Rewrote
+  the flow-axis spacing to size each level from actual node extent
+  with a single scale-down factor when the ideal spacing doesn't fit,
+  matching the specs' own "scale rather than overlap or resize the
+  canvas" layout-safety rule. Re-verified with a second screenshot
+  pass (vertical, horizontal, and a mobile-width check) after the fix.
+  `Locked_HTML_Flowchart_Generator_Prompt.md` deliberately not merged
+  in — a different tool, not a variant of this one.
+- **Flowchart generator extended with the three follow-ups suggested
+  after it shipped** (all three picked, not a subset). (1)
+  `/builds/flowchart-generator/examples/business-process.html` —
+  same shell/engine as `index.html`, only nodes/edges/title differ,
+  instantiated with a deliberately non-linear support-ticket-triage
+  diagram (two decisions, a merge, a feedback loop, and a `group`-type
+  node never exercised by the first example) to pressure-test the
+  layout engine on a genuinely different topology than the one chain-
+  with-one-detour shape already proven. Also switched this example to
+  call `recalculateLayout()` before the first `render()`, so initial
+  coordinates come from the auto-layout engine itself instead of
+  hand-placed numbers — actually exercising the specs' "Automatic
+  Initial Layout" requirement on load, not only via Toggle Orientation.
+  Verified via DOM-geometry assertions (every node inside the 1200×900
+  canvas, no significant overlap, both orientations) plus a screenshot
+  pass — clean on the first try. (2)
+  `/builds/flowchart-generator/from-notes.html` — a real
+  `parseFlowchartText()` interpreter fulfilling the specs' own "paste
+  rough notes, ASCII diagram, or process you want visualized" promise
+  instead of leaving it as a hand-authored example: sequential lines
+  auto-chain, `A -> B [label]` for explicit/labeled connections, a
+  trailing `?` auto-types a decision, a `feedback:` prefix routes a
+  line as a loop-back, and nodes with no incoming/outgoing edges
+  auto-type start/end. Once generated, the result is a fully normal
+  diagram on the same engine (draggable, editable, exportable).
+  **Found and fixed a real bug while testing**: re-mentioning an
+  already-defined node on its own bare line fabricated a spurious edge
+  from wherever the parser's cursor happened to be, since the
+  sequential auto-chain logic never checked whether the node was
+  actually new — caught by an edge-count assertion (expected 8, got 9)
+  against the interpreter's own worked example, not by inspection.
+  Fixed so a bare line only auto-chains when it creates a genuinely new
+  node. Verified against both that worked example and a fully freeform
+  payment-flow input never seen during development, to prove it's a
+  real interpreter rather than overfit to one canned case. (3) New,
+  separate build `/builds/flowchart-static-export/` — the
+  `Locked_HTML_Flowchart_Generator_Prompt.md` variant built literally
+  rather than folded into the interactive editor, since it's a
+  genuinely different architecture (hand-authored static SVG with
+  semantic IDs like `node-research-question`/`connector-feedback-loop`
+  matching the spec's own example naming, no JS state, no editing,
+  toolbar with only Download SVG/PNG) — building it as a mode of the
+  other shell would have meant either faking state nothing uses or
+  faking a locked shell secretly hiding an editor. Same
+  research-workflow content as `index.html` for direct comparison.
+  Verified by serving locally and screenshotting (desktop + mobile,
+  clean on the first pass) and by actually downloading both exports:
+  the SVG retains every semantic ID and real text content with no
+  `foreignObject` anywhere (nothing is ever editable in the browser
+  here, so there's nothing transient to clean up before export), and
+  the PNG is a real correctly-sized file.
+- **Deep analysis of two uploaded newsletter posts (Week 19/20, a
+  10-project open-source AI-infrastructure survey) plus a third,
+  different-genre post by the same author/newsletter** ("What I
+  Learned Building a GitHub Repo Manager as a Weekend Project") with
+  its linked repo. Week 19/20 full write-up in
+  `/notes/oss-ai-engineering-stack-week19-20-analysis.md`: the ten
+  named projects (vLLM, cmux, Open WebUI, Dify, Hugging Face
+  Transformers, Stable Diffusion WebUI, Harper, Colibrì, Ollama,
+  AnythingLLM) are real and accurately described at the level the
+  posts operate at, but several specific numeric claims (Transformers'
+  "1M+ checkpoints," Harper's "1/50th of LanguageTool's memory," the
+  named Colibrì model list) couldn't be checked against live READMEs
+  from this sandbox — same no-network restriction as every other build
+  here — and are reported as source-stated, not verified. **The
+  weekend-project post got a different treatment**, because unlike the
+  survey posts it makes one specific, checkable claim about the
+  author's own work — so the linked repository
+  (`vijaydeepak-vd/github-repo-manager`) was cloned and read in full
+  rather than taken on the post's word. Full write-up in
+  `/notes/github-repo-manager-weekend-project-analysis.md`: **a real,
+  directly-verifiable discrepancy** — the post's narrative repeatedly
+  centers on building "the interface," "the experience," and handling
+  "loading states," but the actual repository is five standalone
+  Node.js CLI scripts driven entirely by hand-edited `.txt` files, with
+  no UI of any kind anywhere in it; the README itself (otherwise
+  accurate and commendably candid about its own limits) never once
+  uses the word "interface." Also found, by reading `4-delete-repos.js`
+  directly rather than only the README's own stated limitations: the
+  delete/transfer/visibility scripts have no dry-run or confirmation
+  step (a limitation the README does state) *and* nothing stops a
+  target list from accidentally matching the entire `all_repos.txt`
+  inventory (a sharper version of that same gap the README doesn't
+  name). **Built**: `/builds/github-repo-manager-safety-wrapper/` — a
+  standalone companion (read-only access to the external repo, so no
+  fork/PR was made or attempted) implementing the author's own stated
+  "better error handling" / "safer bulk operations" roadmap items for
+  real: `--dry-run`, typed per-repo-count confirmation phrases, a
+  full-wipe guard that refuses a target list matching 100% of
+  `all_repos.txt` unless `--force-full` is passed, and retry-with-
+  backoff that only retries transient-looking errors (5xx, secondary
+  rate limit, network resets) and fails fast on a definitive 404 —
+  applied to the three irreversible/high-impact scripts (delete,
+  transfer, visibility); archive/unarchive was deliberately left
+  unwrapped since it's fully reversible, to keep the wrapper's scope
+  matched to actual risk rather than wrapping everything reflexively.
+  Proven for real, not flagged-as-untestable like most external-API
+  builds here: a self-contained test suite against a mocked
+  Octokit-shaped client needs no GitHub token, so it could be fully
+  exercised in this sandbox (21/21 checks — full-wipe guard, retry/
+  backoff, dry-run, confirmation match/mismatch, the guard firing
+  *before* confirmation is ever prompted, continue-on-error with an
+  accurate summary). Beyond the core module, all three CLI entry
+  points were smoke-tested for real against temporary list files:
+  `--dry-run` on each produced correct zero-network-call output, the
+  full-wipe guard fired correctly end-to-end (exit code 1, no prompt
+  reached) when a target list was made to match `all_repos.txt`
+  exactly, and the real confirmation prompt was driven via piped stdin
+  with a deliberately wrong answer, confirming it aborts before
+  `@octokit/rest` ever constructs a request.
 
 ---
 
@@ -660,6 +1215,27 @@ Netlify / Supabase / Vercel / Cloudflare fits the build (static site →
 Netlify or Cloudflare Pages; anything needing a database/auth →
 Supabase; Next.js-shaped apps → Vercel) and note the choice here once
 the first real deployment happens, so it becomes the project default.
+
+### Git / PR workflow (standing instruction)
+
+**Always open a pull request right after pushing to the working branch,
+and give the merge link in the same message** — this is a standing,
+explicit ask for every push in this project, not a one-time request, so
+it overrides the general default of only opening a PR when asked. Applies
+whether the push is brand new work or a follow-up commit onto a branch
+that already has one:
+
+- If no open PR exists for the branch yet (including when a prior PR on
+  the same branch was closed/merged and the branch got recreated), open
+  a new one and hand back its URL.
+- If an open PR already exists for the branch, don't open a duplicate —
+  just confirm the push landed and give that PR's existing link.
+- Check for a PR template (`.github/pull_request_template.md`, etc.)
+  before writing the description, per this project's own repo
+  conventions — same as always.
+- This doesn't change anything else about git safety: still no
+  force-push, no history rewriting, no skipping hooks, without being
+  asked for that specifically.
 
 ---
 
