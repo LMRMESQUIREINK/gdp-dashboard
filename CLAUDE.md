@@ -914,6 +914,65 @@ yourself every time.
   `foreignObject` anywhere (nothing is ever editable in the browser
   here, so there's nothing transient to clean up before export), and
   the PNG is a real correctly-sized file.
+- **Deep analysis of two uploaded newsletter posts (Week 19/20, a
+  10-project open-source AI-infrastructure survey) plus a third,
+  different-genre post by the same author/newsletter** ("What I
+  Learned Building a GitHub Repo Manager as a Weekend Project") with
+  its linked repo. Week 19/20 full write-up in
+  `/notes/oss-ai-engineering-stack-week19-20-analysis.md`: the ten
+  named projects (vLLM, cmux, Open WebUI, Dify, Hugging Face
+  Transformers, Stable Diffusion WebUI, Harper, Colibrì, Ollama,
+  AnythingLLM) are real and accurately described at the level the
+  posts operate at, but several specific numeric claims (Transformers'
+  "1M+ checkpoints," Harper's "1/50th of LanguageTool's memory," the
+  named Colibrì model list) couldn't be checked against live READMEs
+  from this sandbox — same no-network restriction as every other build
+  here — and are reported as source-stated, not verified. **The
+  weekend-project post got a different treatment**, because unlike the
+  survey posts it makes one specific, checkable claim about the
+  author's own work — so the linked repository
+  (`vijaydeepak-vd/github-repo-manager`) was cloned and read in full
+  rather than taken on the post's word. Full write-up in
+  `/notes/github-repo-manager-weekend-project-analysis.md`: **a real,
+  directly-verifiable discrepancy** — the post's narrative repeatedly
+  centers on building "the interface," "the experience," and handling
+  "loading states," but the actual repository is five standalone
+  Node.js CLI scripts driven entirely by hand-edited `.txt` files, with
+  no UI of any kind anywhere in it; the README itself (otherwise
+  accurate and commendably candid about its own limits) never once
+  uses the word "interface." Also found, by reading `4-delete-repos.js`
+  directly rather than only the README's own stated limitations: the
+  delete/transfer/visibility scripts have no dry-run or confirmation
+  step (a limitation the README does state) *and* nothing stops a
+  target list from accidentally matching the entire `all_repos.txt`
+  inventory (a sharper version of that same gap the README doesn't
+  name). **Built**: `/builds/github-repo-manager-safety-wrapper/` — a
+  standalone companion (read-only access to the external repo, so no
+  fork/PR was made or attempted) implementing the author's own stated
+  "better error handling" / "safer bulk operations" roadmap items for
+  real: `--dry-run`, typed per-repo-count confirmation phrases, a
+  full-wipe guard that refuses a target list matching 100% of
+  `all_repos.txt` unless `--force-full` is passed, and retry-with-
+  backoff that only retries transient-looking errors (5xx, secondary
+  rate limit, network resets) and fails fast on a definitive 404 —
+  applied to the three irreversible/high-impact scripts (delete,
+  transfer, visibility); archive/unarchive was deliberately left
+  unwrapped since it's fully reversible, to keep the wrapper's scope
+  matched to actual risk rather than wrapping everything reflexively.
+  Proven for real, not flagged-as-untestable like most external-API
+  builds here: a self-contained test suite against a mocked
+  Octokit-shaped client needs no GitHub token, so it could be fully
+  exercised in this sandbox (21/21 checks — full-wipe guard, retry/
+  backoff, dry-run, confirmation match/mismatch, the guard firing
+  *before* confirmation is ever prompted, continue-on-error with an
+  accurate summary). Beyond the core module, all three CLI entry
+  points were smoke-tested for real against temporary list files:
+  `--dry-run` on each produced correct zero-network-call output, the
+  full-wipe guard fired correctly end-to-end (exit code 1, no prompt
+  reached) when a target list was made to match `all_repos.txt`
+  exactly, and the real confirmation prompt was driven via piped stdin
+  with a deliberately wrong answer, confirming it aborts before
+  `@octokit/rest` ever constructs a request.
 
 ---
 
