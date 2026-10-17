@@ -3,35 +3,39 @@
 const { Octokit } = require("@octokit/rest");
 require("dotenv").config();
 
-const { loadRepoList, runSafely } = require("./safety-core");
+const { loadRepoList, parseEntries, runSafely } = require("./safety-core");
 
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const allowFullMatch = args.includes("--force-full");
+  const ownerRepoMode = args.includes("--owner-repo");
 
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-  const targetOwner = process.env.GITHUB_USER;
+  const defaultOwner = process.env.GITHUB_USER;
 
-  const repos = loadRepoList("delete.txt");
-  if (!repos) {
+  const rawLines = loadRepoList("delete.txt");
+  if (!rawLines) {
     console.log("❌ delete.txt not found. Please create it and add the repo names to DELETE.");
     return;
   }
-  if (repos.length === 0) {
+  if (rawLines.length === 0) {
     console.log("delete.txt is empty — nothing to do.");
     return;
   }
 
+  const entries = parseEntries(rawLines, defaultOwner, ownerRepoMode);
+
   const result = await runSafely({
     operationName: "DELETE",
-    repos,
+    entries,
     allReposFile: "all_repos.txt",
+    defaultOwner,
     allowFullMatch,
     dryRun,
     destructive: true,
     confirmPhrase: (count) => `DELETE ${count} REPOS`,
-    execute: (repo) => octokit.rest.repos.delete({ owner: targetOwner, repo }),
+    execute: (entry) => octokit.rest.repos.delete({ owner: entry.owner, repo: entry.repo }),
   });
 
   if (result.aborted) process.exitCode = 1;

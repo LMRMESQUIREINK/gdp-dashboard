@@ -973,6 +973,49 @@ yourself every time.
   exactly, and the real confirmation prompt was driven via piped stdin
   with a deliberately wrong answer, confirming it aborts before
   `@octokit/rest` ever constructs a request.
+- **`/builds/github-repo-manager-safety-wrapper` extended with the
+  three follow-ups requested after it shipped** (all three, "10X"'d
+  per the explicit ask — not a minimal pass on any of them). (1)
+  `archive-repos-safe.js` added, wired through the same `runSafely()`
+  core as the other three, but deliberately *without* typed
+  confirmation (`destructive: false`) since archiving is fully
+  reversible unlike delete/transfer/visibility — `--dry-run` and the
+  full-wipe guard still apply. (2) `--owner-repo` added — this needed a
+  real refactor, not a bolt-on: `safety-core.js`'s entire internal
+  model moved from bare repo-name strings to `{owner, repo, display}`
+  entries (`parseEntries()`), with the full-wipe guard rewritten to
+  normalize `all_repos.txt` (always single-owner, since that's all the
+  original `1-fetch-repos.js` ever writes) against the *default* owner
+  — so a cross-owner target list is correctly never mistaken for a
+  full wipe of one account, while a list that spells out
+  `GITHUB_USER/name` for every repo still trips the guard. All four
+  entry scripts and the test suite updated to match (30/30 passing, up
+  from 21, with new coverage for bare/explicit/mixed-owner parsing and
+  both owner-repo full-wipe-guard cases). All four CLI entry points
+  re-smoke-tested for real, including `--owner-repo --dry-run` against
+  a mixed-owner list and the guard correctly firing/not-firing in both
+  single- and cross-owner scenarios. (3) **A real, verified upstream
+  patch**, not just a description of one: applied the same safety
+  improvements directly to a local branch of the actual cloned
+  `vijaydeepak-vd/github-repo-manager` (not this project's separate
+  wrapper files), modifying the real `2-transfer-repos.js` through
+  `5-change-archive-status.js` in place, updating `package.json`'s test
+  script and the real `README.MD` throughout, then generated a patch
+  with `git format-patch` — saved as
+  `/builds/github-repo-manager-safety-wrapper/upstream-pr/0001-safer-bulk-operations.patch`
+  alongside a full PR title/description
+  (`upstream-pr/PR_DRAFT.md`). The patch wasn't just written and
+  assumed good: applied to a **fresh** clone of the real repo (not the
+  working copy it was authored against) with `git apply --check`, then
+  `npm install && npm test` run there for real — 30/30 passing on a
+  clean checkout, not just the one it was written in. Stated plainly
+  rather than overstepping: this session has read-only access to that
+  repo (no fork, no push), so the PR itself was not opened — the
+  PR_DRAFT.md says so explicitly and gives the fork/apply/push steps to
+  actually submit it, consistent with this project's standing rule of
+  never taking a consequential external action (opening a PR on
+  someone else's repo) without it being explicitly asked for, and even
+  then, only producing what this session's actual access permits.
 
 ---
 

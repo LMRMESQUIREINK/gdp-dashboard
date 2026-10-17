@@ -4,9 +4,10 @@ const { Octokit } = require("@octokit/rest");
 require("dotenv").config();
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const { loadRepoList, runSafely } = require("./safety-core");
+const { loadRepoList, parseEntries, runSafely } = require("./safety-core");
 
-async function changeVisibilityOne(octokit, owner, repo, makePrivate) {
+async function changeVisibilityOne(octokit, entry, makePrivate) {
+  const { owner, repo } = entry;
   const { data: repoInfo } = await octokit.rest.repos.get({ owner, repo });
   const wasArchived = repoInfo.archived;
 
@@ -28,30 +29,34 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const allowFullMatch = args.includes("--force-full");
+  const ownerRepoMode = args.includes("--owner-repo");
   const makePrivate = !args.includes("--public");
 
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-  const owner = process.env.GITHUB_USER;
+  const defaultOwner = process.env.GITHUB_USER;
 
-  const repos = loadRepoList("visibility.txt");
-  if (!repos) {
+  const rawLines = loadRepoList("visibility.txt");
+  if (!rawLines) {
     console.log("❌ visibility.txt not found. Please create it and add the repo names.");
     return;
   }
-  if (repos.length === 0) {
+  if (rawLines.length === 0) {
     console.log("visibility.txt is empty — nothing to do.");
     return;
   }
 
+  const entries = parseEntries(rawLines, defaultOwner, ownerRepoMode);
+
   const result = await runSafely({
     operationName: makePrivate ? "MAKE PRIVATE" : "MAKE PUBLIC",
-    repos,
+    entries,
     allReposFile: "all_repos.txt",
+    defaultOwner,
     allowFullMatch,
     dryRun,
     destructive: true,
     confirmPhrase: (count) => `${makePrivate ? "PRIVATE" : "PUBLIC"} ${count} REPOS`,
-    execute: (repo) => changeVisibilityOne(octokit, owner, repo, makePrivate),
+    execute: (entry) => changeVisibilityOne(octokit, entry, makePrivate),
   });
 
   if (result.aborted) process.exitCode = 1;
