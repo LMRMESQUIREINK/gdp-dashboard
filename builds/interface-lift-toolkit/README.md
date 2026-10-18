@@ -20,6 +20,12 @@ follow) — not toy stand-ins, and not the article's own specific 118-
 Windows-program instance (see "What's cut, and why" below for exactly
 why that part doesn't transfer to this sandbox).
 
+A second tool category was added later: `go_buildinfo.py` and
+`rust_cargo_auditable.py` (from `/builds/go-buildinfo-extractor/`,
+copied here unmodified too) are registered as two more
+`effect="local"` tools in `binary_metadata_tools.py` — see "Binary
+metadata tools" below.
+
 ## What's built
 
 | Module | What it does | Adapted from |
@@ -79,6 +85,33 @@ functions, which already are the kind of thing the article argues for —
 a program's actual computation, called directly, with a checked result
 instead of a picture.
 
+## Binary metadata tools
+
+`binary_metadata_tools.py` registers two more `effect="local"` tools —
+reading a binary's own embedded build metadata is pure local
+computation, same as `prop_firm_size_check`:
+
+- **`go_buildinfo_check(binary_path)`** — the Go compiler version,
+  main module, dependencies (including local `replace` directives),
+  and build settings embedded in a compiled Go binary.
+- **`rust_cargo_auditable_check(binary_path)`** — the package/
+  dependency graph embedded by `cargo auditable build`.
+
+Checks semantics here are deliberately not "did we find what we were
+looking for": both underlying readers document that a clean
+`None`/no-section result (the binary just isn't Go, or wasn't built
+with `cargo auditable`) is a normal, successful outcome, not a tool
+failure — so `ok` reflects "did the read complete," and whether the
+binary turned out to carry that metadata is a plain output field
+(`go_binary` / `cargo_auditable`), never folded into `checks`. A
+missing file or the underlying module's own typed error (malformed
+input) is what actually sets `ok=False`.
+
+```python
+from binary_metadata_tools import register_binary_metadata_tools
+register_binary_metadata_tools(registry)
+```
+
 ## Verification — real tests, not just "it imports"
 
 ### `test_toolkit.py` — the mechanics, no network needed
@@ -124,12 +157,39 @@ Real output from this build:
   [PASS] compiled skill replayed with contracts=3 matches a direct call with the same args
   [PASS] missing required param raises TypeError naming it
 
+=== binary metadata tools: schema derivation ===
+  [PASS] go_buildinfo_check schema requires binary_path (string)
+  [PASS] rust_cargo_auditable_check schema requires binary_path (string)
+
+=== binary metadata tools: missing file ===
+  [PASS] go_buildinfo_check on a missing file reports ok=False, doesn't raise
+  [PASS] rust_cargo_auditable_check on a missing file reports ok=False, doesn't raise
+
+=== go_buildinfo_check matches read_go_buildinfo() directly ===
+  [PASS] tool reports go_binary=True for a real Go binary
+  [PASS] module path matches the direct read_go_buildinfo() call
+  [PASS] go_version matches the direct call
+  [PASS] a real non-Go ELF binary reports go_binary=False with ok=True (a correct negative, not a tool failure)
+  [PASS] a non-ELF/PE file reports ok=False with a typed-error message, doesn't raise
+
+=== rust_cargo_auditable_check matches read_cargo_auditable() directly ===
+  [PASS] tool reports cargo_auditable=True for a real cargo-auditable binary
+  [PASS] package list matches the direct read_cargo_auditable() call
+  [PASS] no false-positive dependency cycle on a real single-package binary
+  [PASS] a real non-Rust ELF binary reports cargo_auditable=False with ok=True (a correct negative, not a tool failure)
+
 === ledger ===
   [PASS] ledger renders the recorded row
 
 ============================================================
 ALL CHECKS PASSED
 ```
+
+The binary-metadata checks build real Go and cargo-auditable Rust
+binaries at test time (skipping cleanly if those toolchains aren't on
+`PATH`) and cross-check the tool's output against a **direct call to
+`read_go_buildinfo()`/`read_cargo_auditable()`** — same discipline as
+every other tool in this suite.
 
 Every numeric assertion against the demo tools checks the toolkit's
 output against a **direct call to the same underlying prop-firm-sizing
@@ -164,6 +224,11 @@ python3 test_agent_loop.py
   [PASS] the held call's own pending preview came back, not a stub error
   [PASS] the file was NOT actually written (approval was never granted)
 
+=== run_agent: a local binary-metadata tool call, against a real Go binary ===
+  [PASS] final answer is the scripted text
+  [PASS] exactly 1 real tool call was made
+  [PASS] the real go_buildinfo_check result (not a stub) was fed back to the model
+
 ============================================================
 ALL CHECKS PASSED
 ```
@@ -176,11 +241,13 @@ from toolkit.ledger import TaskCounters
 from toolkit.loop import run_agent
 from toolkit.registry import ToolRegistry
 from tools_demo import register_demo_tools
+from binary_metadata_tools import register_binary_metadata_tools
 import anthropic
 
 registry = ToolRegistry()
 gate = ApprovalGate()
 register_demo_tools(registry)
+register_binary_metadata_tools(registry)
 
 client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
 counters = TaskCounters()

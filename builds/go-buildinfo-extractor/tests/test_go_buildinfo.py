@@ -26,8 +26,32 @@ from go_buildinfo import GoBuildInfoError, _find_magic, read_go_buildinfo  # noq
 HAVE_GO = shutil.which("go") is not None
 HAVE_GCC = shutil.which("gcc") is not None
 
+# Go switched to the "inline" build-info string encoding unconditionally in
+# 1.18; only 1.13-1.17 binaries use the older pointer-based encoding. Go's
+# own toolchain-management machinery (GOTOOLCHAIN=goX.Y.Z) can fetch and run
+# an old compiler on demand via the module proxy, separately from this
+# sandbox's blocked direct go.dev downloads — tried once at import time so
+# pointer-encoding coverage runs for real whenever that's reachable, and
+# skips cleanly (not fails) when it isn't.
+OLD_GO_VERSION = "go1.17.13"
+HAVE_OLD_GO_TOOLCHAIN = False
+if HAVE_GO:
+    try:
+        subprocess.run(
+            ["go", "version"],
+            env={**os.environ, "GOTOOLCHAIN": OLD_GO_VERSION},
+            check=True,
+            capture_output=True,
+            timeout=120,
+        )
+        HAVE_OLD_GO_TOOLCHAIN = True
+    except Exception:
+        HAVE_OLD_GO_TOOLCHAIN = False
+
 _FIXTURES: dict[str, bytes] = {}
 _FIXTURE_DIR: tempfile.TemporaryDirectory | None = None
+_OLD_FIXTURES: dict[str, bytes] = {}
+_OLD_FIXTURE_DIR: tempfile.TemporaryDirectory | None = None
 
 
 def setUpModule() -> None:
@@ -91,6 +115,96 @@ def setUpModule() -> None:
 def tearDownModule() -> None:
     if _FIXTURE_DIR is not None:
         _FIXTURE_DIR.cleanup()
+    if _OLD_FIXTURE_DIR is not None:
+        _OLD_FIXTURE_DIR.cleanup()
+
+
+def setUpModule_old_toolchain() -> None:
+    """Builds real pointer-encoding fixtures with Go 1.17.13. Not run via
+    the usual setUpModule hook (unittest only calls one per module) — invoked
+    lazily from TestPointerEncoding.setUpClass instead, so a failure here
+    only skips that one class rather than the whole file."""
+    global _OLD_FIXTURE_DIR
+    if _OLD_FIXTURE_DIR is not None:
+        return
+    _OLD_FIXTURE_DIR = tempfile.TemporaryDirectory(prefix="go-buildinfo-old-tests-")
+    root = Path(_OLD_FIXTURE_DIR.name)
+
+    dep_dir = root / "depmod"
+    dep_dir.mkdir()
+    (dep_dir / "go.mod").write_text("module example.com/depmod\n\ngo 1.17\n")
+    (dep_dir / "dep.go").write_text("package depmod\n\nfunc Greet() string { return \"hi\" }\n")
+
+    main_dir = root / "mainmod"
+    main_dir.mkdir()
+    (main_dir / "go.mod").write_text(
+        "module example.com/mainmod\n\ngo 1.17\n\n"
+        "require example.com/depmod v0.0.0\n\n"
+        "replace example.com/depmod => ../depmod\n"
+    )
+    (main_dir / "main.go").write_text(
+        'package main\n\nimport (\n\t"fmt"\n\t"example.com/depmod"\n)\n\n'
+        "func main() { fmt.Println(depmod.Greet()) }\n"
+    )
+
+    env = {**os.environ, "GOTOOLCHAIN": OLD_GO_VERSION, "GOFLAGS": "-mod=mod"}
+    subprocess.run(["go", "mod", "tidy"], cwd=main_dir, env=env, check=True, capture_output=True)
+
+    elf_path = root / "mainmod_elf"
+    subprocess.run(["go", "build", "-o", str(elf_path), "."], cwd=main_dir, env=env, check=True, capture_output=True)
+    _OLD_FIXTURES["elf"] = elf_path.read_bytes()
+    _OLD_FIXTURES["go_version_m"] = subprocess.run(
+        ["go", "version", "-m", str(elf_path)], env=env, check=True, capture_output=True, text=True
+    ).stdout
+
+    pe_path = root / "mainmod_pe.exe"
+    subprocess.run(
+        ["go", "build", "-o", str(pe_path), "."],
+        cwd=main_dir,
+        env={**env, "GOOS": "windows", "GOARCH": "amd64"},
+        check=True,
+        capture_output=True,
+    )
+    _OLD_FIXTURES["pe"] = pe_path.read_bytes()
+
+
+@unittest.skipUnless(HAVE_OLD_GO_TOOLCHAIN, "go1.17.13 toolchain not reachable (needs module-proxy network access)")
+class TestPointerEncoding(unittest.TestCase):
+    """Go 1.13-1.17 binaries use the older pointer-based build-info string
+    encoding — the modern `go` on PATH (1.18+) always emits the newer
+    "inline" encoding, so this is the only way to exercise that code path
+    against real compiled output. Fetched via GOTOOLCHAIN rather than a
+    direct go.dev download, which this sandbox's egress proxy blocks.
+
+    Also regression coverage for a real bug found manually before this test
+    existed: the PE pointer-resolution path normalized the outer
+    version/module pointers against ImageBase but not the inner string-data
+    pointer found one indirection further in, so every PE pointer-encoded
+    binary failed to resolve. Fixed by moving the normalization into
+    _AddressMapper itself so every lookup goes through the same path."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        setUpModule_old_toolchain()
+
+    def test_elf_uses_pointer_encoding_and_matches_ground_truth(self) -> None:
+        info = read_go_buildinfo(_OLD_FIXTURES["elf"])
+        self.assertIsNotNone(info)
+        self.assertEqual(info.encoding, "pointer")
+        self.assertIn(info.go_version, _OLD_FIXTURES["go_version_m"])
+        self.assertEqual(info.module.main.path, "example.com/mainmod")
+        self.assertEqual(info.module.dependencies[0].path, "example.com/depmod")
+        self.assertEqual(info.module.dependencies[0].replacement.path, "../depmod")
+
+    def test_pe_uses_pointer_encoding_and_resolves_correctly(self) -> None:
+        info = read_go_buildinfo(_OLD_FIXTURES["pe"])
+        self.assertIsNotNone(info)
+        self.assertEqual(info.format, "pe")
+        self.assertEqual(info.encoding, "pointer")
+        self.assertEqual(info.go_version, "go1.17.13")
+        self.assertEqual(info.module.main.path, "example.com/mainmod")
+        self.assertEqual(info.module.dependencies[0].path, "example.com/depmod")
+        self.assertEqual(info.module.dependencies[0].replacement.path, "../depmod")
 
 
 @unittest.skipUnless(HAVE_GO, "go toolchain not available")

@@ -15,10 +15,15 @@ Run with:
 """
 from __future__ import annotations
 
+import shutil
+import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
+from binary_metadata_tools import register_binary_metadata_tools
 from tools_demo import register_demo_tools
 
 from toolkit.approval import ApprovalGate
@@ -70,6 +75,7 @@ def main() -> None:
     registry = ToolRegistry()
     gate = ApprovalGate()
     register_demo_tools(registry)
+    register_binary_metadata_tools(registry)
 
     # ── scripted turn 1: Claude asks for prop_firm_size_check ───────────
     print("=== run_agent: a local tool call, then a final answer ===")
@@ -124,6 +130,43 @@ def main() -> None:
     import os
     check("the file was NOT actually written (approval was never granted)",
           not os.path.exists("outbox/agent_test.txt"))
+
+    # ── scripted turn: Claude asks for go_buildinfo_check on a real binary ──
+    if shutil.which("go"):
+        print("\n=== run_agent: a local binary-metadata tool call, against a real Go binary ===")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "go.mod").write_text("module example.com/agentlooptest\n\ngo 1.21\n")
+            (root / "main.go").write_text("package main\n\nfunc main() {}\n")
+            bin_path = root / "agentlooptest_bin"
+            subprocess.run(["go", "build", "-o", str(bin_path), "."], cwd=root, check=True, capture_output=True)
+
+            client3 = MockAnthropicClient([
+                FakeResponse(stop_reason="tool_use", content=[
+                    FakeBlock(type="tool_use", name="go_buildinfo_check",
+                              input={"binary_path": str(bin_path)}, id="toolu_3"),
+                ]),
+                FakeResponse(stop_reason="end_turn", content=[
+                    FakeBlock(type="text", text="That binary was built with the Go toolchain."),
+                ]),
+            ])
+            counters3 = TaskCounters()
+            answer3 = run_agent("is this binary built with Go?", client3, "claude-opus-5",
+                                 registry, gate, system="test system prompt", counters=counters3)
+            check("final answer is the scripted text", answer3 == "That binary was built with the Go toolchain.")
+            check("exactly 1 real tool call was made", counters3.tool_calls == 1)
+
+            direct = registry.call("go_buildinfo_check", binary_path=str(bin_path))
+            second_call_messages3 = client3.calls[1]["messages"]
+            tool_result_msg3 = next(
+                m for m in second_call_messages3 if m["role"] == "user" and isinstance(m["content"], list)
+            )
+            tool_result_content3 = tool_result_msg3["content"][0]["content"]
+            check("the real go_buildinfo_check result (not a stub) was fed back to the model",
+                  direct["module_path"] in tool_result_content3 and direct["go_version"] in tool_result_content3,
+                  detail=tool_result_content3)
+    else:
+        print("\n=== run_agent: binary-metadata tool call check: SKIPPED (no go toolchain) ===")
 
     print(f"\n{'='*60}")
     if FAILURES:

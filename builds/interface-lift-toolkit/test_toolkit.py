@@ -12,10 +12,17 @@ Run with:
 """
 from __future__ import annotations
 
+import shutil
+import subprocess
 import sys
+import tempfile
+from pathlib import Path
 
+from binary_metadata_tools import register_binary_metadata_tools
+from go_buildinfo import read_go_buildinfo
 from prop_firm_position_sizing import AccountRules, evaluate_size
 from prop_firm_sizing import PropFirmAccount
+from rust_cargo_auditable import read_cargo_auditable
 from tools_demo import register_demo_tools
 
 from toolkit.approval import ApprovalGate
@@ -40,6 +47,7 @@ def main() -> None:
     registry = ToolRegistry()
     gate = ApprovalGate()
     register_demo_tools(registry)
+    register_binary_metadata_tools(registry)
 
     # ── registry: schema derivation ─────────────────────────────────────
     print("=== registry: schema derivation ===")
@@ -137,6 +145,115 @@ def main() -> None:
         check("missing required param raises", False)
     except TypeError as exc:
         check("missing required param raises TypeError naming it", "contracts" in str(exc), detail=str(exc))
+
+    # ── binary metadata tools: schema derivation ─────────────────────────
+    print("\n=== binary metadata tools: schema derivation ===")
+    go_schema = registry.schemas(["go_buildinfo_check"])[0]
+    check("go_buildinfo_check schema requires binary_path (string)",
+          go_schema["input_schema"]["required"] == ["binary_path"]
+          and go_schema["input_schema"]["properties"]["binary_path"]["type"] == "string",
+          detail=str(go_schema["input_schema"]))
+    rust_schema = registry.schemas(["rust_cargo_auditable_check"])[0]
+    check("rust_cargo_auditable_check schema requires binary_path (string)",
+          rust_schema["input_schema"]["required"] == ["binary_path"]
+          and rust_schema["input_schema"]["properties"]["binary_path"]["type"] == "string",
+          detail=str(rust_schema["input_schema"]))
+
+    # ── binary metadata tools: missing file is a usage error, not a crash ──
+    print("\n=== binary metadata tools: missing file ===")
+    missing_go = registry.call("go_buildinfo_check", binary_path="/no/such/binary")
+    check("go_buildinfo_check on a missing file reports ok=False, doesn't raise", missing_go["ok"] is False)
+    missing_rust = registry.call("rust_cargo_auditable_check", binary_path="/no/such/binary")
+    check("rust_cargo_auditable_check on a missing file reports ok=False, doesn't raise", missing_rust["ok"] is False)
+
+    # ── binary metadata tools: real Go binary, via the toolkit vs. direct ──
+    if shutil.which("go"):
+        print("\n=== go_buildinfo_check matches read_go_buildinfo() directly ===")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "go.mod").write_text("module example.com/toolkittest\n\ngo 1.21\n")
+            (root / "main.go").write_text('package main\n\nfunc main() {}\n')
+            bin_path = root / "toolkittest_bin"
+            subprocess.run(["go", "build", "-o", str(bin_path), "."], cwd=root, check=True, capture_output=True)
+
+            direct = read_go_buildinfo(bin_path.read_bytes())
+            via_tool = registry.call("go_buildinfo_check", binary_path=str(bin_path))
+            check("tool reports go_binary=True for a real Go binary", via_tool["ok"] and via_tool["go_binary"] is True)
+            check("module path matches the direct read_go_buildinfo() call",
+                  via_tool["module_path"] == direct.module.path, detail=f"tool={via_tool} direct={direct}")
+            check("go_version matches the direct call", via_tool["go_version"] == direct.go_version)
+
+            if shutil.which("gcc"):
+                # A real non-Go ELF binary is the correct negative case —
+                # it's a plain text file that's neither ELF nor PE at all,
+                # which read_go_buildinfo() correctly treats as a different,
+                # stricter case (an unsupported container format, raised as
+                # GoBuildInfoError) rather than "no header found."
+                (root / "hello.c").write_text("int main(){return 0;}\n")
+                c_bin = root / "hello_c"
+                subprocess.run(["gcc", "-o", str(c_bin), str(root / "hello.c")], check=True, capture_output=True)
+                via_tool_negative = registry.call("go_buildinfo_check", binary_path=str(c_bin))
+                check("a real non-Go ELF binary reports go_binary=False with ok=True "
+                      "(a correct negative, not a tool failure)",
+                      via_tool_negative["ok"] is True and via_tool_negative["go_binary"] is False,
+                      detail=str(via_tool_negative))
+
+            # A file that isn't ELF or PE at all is a different, stricter
+            # case: read_go_buildinfo() raises its own typed error for an
+            # unsupported container rather than returning None, and the
+            # tool correctly surfaces that as ok=False, not a crash.
+            non_container = root / "not_a_binary.txt"
+            non_container.write_text("plain text, not a binary")
+            via_tool_non_container = registry.call("go_buildinfo_check", binary_path=str(non_container))
+            check("a non-ELF/PE file reports ok=False with a typed-error message, doesn't raise",
+                  via_tool_non_container["ok"] is False
+                  and "only ELF and PE" in via_tool_non_container["summary"],
+                  detail=str(via_tool_non_container))
+    else:
+        print("\n=== go_buildinfo_check real-binary check: SKIPPED (no go toolchain) ===")
+
+    # ── binary metadata tools: real Rust binary, via the toolkit vs. direct ─
+    have_cargo_auditable = shutil.which("cargo") is not None
+    if have_cargo_auditable:
+        try:
+            subprocess.run(["cargo", "auditable", "--version"], check=True, capture_output=True, timeout=30)
+        except Exception:
+            have_cargo_auditable = False
+    if have_cargo_auditable:
+        print("\n=== rust_cargo_auditable_check matches read_cargo_auditable() directly ===")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "Cargo.toml").write_text(
+                '[package]\nname = "toolkittest"\nversion = "0.1.0"\nedition = "2021"\n'
+            )
+            (root / "src").mkdir()
+            (root / "src" / "main.rs").write_text("fn main() {}\n")
+            subprocess.run(
+                ["cargo", "auditable", "build", "--release"], cwd=root, check=True, capture_output=True, timeout=300
+            )
+            bin_path = root / "target" / "release" / "toolkittest"
+
+            direct = read_cargo_auditable(bin_path.read_bytes())
+            via_tool = registry.call("rust_cargo_auditable_check", binary_path=str(bin_path))
+            check("tool reports cargo_auditable=True for a real cargo-auditable binary",
+                  via_tool["ok"] and via_tool["cargo_auditable"] is True)
+            check("package list matches the direct read_cargo_auditable() call",
+                  [p["name"] for p in via_tool["packages"]] == [p.name for p in direct.packages],
+                  detail=f"tool={via_tool} direct={direct}")
+            check("no false-positive dependency cycle on a real single-package binary",
+                  via_tool["cyclic_dependency_indices"] == [])
+
+            if shutil.which("gcc"):
+                (root / "hello.c").write_text("int main(){return 0;}\n")
+                c_bin = root / "hello_c"
+                subprocess.run(["gcc", "-o", str(c_bin), str(root / "hello.c")], check=True, capture_output=True)
+                via_tool_negative = registry.call("rust_cargo_auditable_check", binary_path=str(c_bin))
+                check("a real non-Rust ELF binary reports cargo_auditable=False with ok=True "
+                      "(a correct negative, not a tool failure)",
+                      via_tool_negative["ok"] is True and via_tool_negative["cargo_auditable"] is False,
+                      detail=str(via_tool_negative))
+    else:
+        print("\n=== rust_cargo_auditable_check real-binary check: SKIPPED (no cargo-auditable) ===")
 
     # ── ledger ────────────────────────────────────────────────────────────
     print("\n=== ledger ===")

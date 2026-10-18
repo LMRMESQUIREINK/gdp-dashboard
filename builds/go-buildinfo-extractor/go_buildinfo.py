@@ -67,13 +67,27 @@ class GoBuildInfo:
 class _AddressMapper:
     """Maps a virtual address range to its file offset, or raises if the
     range isn't backed by file bytes (e.g. the zero-filled tail of a
-    segment/section)."""
+    segment/section).
 
-    def __init__(self, regions: list[tuple[int, int, int, int]]):
+    `image_base` is subtracted from every incoming address before matching
+    against `regions` (which are always stored as RVA/section-relative, per
+    ELF p_vaddr convention). ELF addresses recorded in a Go binary are
+    already absolute section addresses matching p_vaddr directly, so ELF
+    passes image_base=0. PE is different: every pointer Go embeds in a PE
+    binary — both the two header pointers *and* the data pointer inside
+    each resolved Go string header one indirection further in — is an
+    absolute ImageBase+RVA value, so every one of them needs the same
+    normalization. Doing it once here, centrally, instead of at each call
+    site is deliberate: the bug this is fixing was exactly a call site
+    (the inner string-header pointer) that forgot to normalize."""
+
+    def __init__(self, regions: list[tuple[int, int, int, int]], image_base: int = 0):
         # Each region: (vaddr, vaddr_size, file_offset, file_size)
         self._regions = regions
+        self._image_base = image_base
 
     def to_file_offset(self, address: int, size: int) -> int:
+        address -= self._image_base
         for vaddr, vsize, foff, fsize in self._regions:
             if vaddr <= address < vaddr + vsize:
                 delta = address - vaddr
@@ -152,16 +166,15 @@ def _parse_pe(data: bytes) -> tuple[_AddressMapper, int, str]:
         virtual_size, virtual_address, size_of_raw_data, pointer_to_raw_data = (
             struct.unpack_from("<IIII", data, base + 8)
         )
-        # PE images are loaded with an implicit base; buildinfo pointers in a
-        # non-relocated/non-PIE Go PE binary are absolute, but the raw
-        # on-disk buildinfo pointer search in this tool only needs the
-        # RVA-relative mapping, since Go's PE writer stores pointers as
-        # ImageBase + RVA and callers resolving them must subtract the
-        # configured image base. Handled in `_resolve_pe_pointer`.
         regions.append((virtual_address, max(virtual_size, size_of_raw_data), pointer_to_raw_data, size_of_raw_data))
 
+    # Every pointer Go embeds in a PE binary is an absolute ImageBase+RVA
+    # value (unlike ELF, where embedded addresses already match p_vaddr
+    # directly) — the mapper normalizes every lookup against image_base so
+    # no call site has to remember to do it itself.
+    image_base = _pe_image_base(data)
     # PE is little-endian only.
-    return _AddressMapper(regions), bits, "little"
+    return _AddressMapper(regions, image_base=image_base), bits, "little"
 
 
 def _pe_image_base(data: bytes) -> int:
@@ -325,11 +338,9 @@ def read_go_buildinfo(data: bytes) -> GoBuildInfo | None:
     if data[:4] == b"\x7fELF":
         fmt = "elf"
         mapper, bits, byte_order = _parse_elf(data)
-        image_base = 0
     elif data[:2] == b"MZ":
         fmt = "pe"
         mapper, bits, byte_order = _parse_pe(data)
-        image_base = _pe_image_base(data)
     else:
         raise GoBuildInfoError("only ELF and PE containers are supported")
 
@@ -355,12 +366,11 @@ def read_go_buildinfo(data: bytes) -> GoBuildInfo | None:
         fmt_code = "Q" if ptr_size == 8 else "I"
         (version_ptr,) = struct.unpack_from(endian + fmt_code, data, header + 16)
         (module_ptr,) = struct.unpack_from(endian + fmt_code, data, header + 16 + ptr_size)
-        # PE pointers are absolute (ImageBase + RVA); normalize to an RVA
-        # before mapping through the section table. ELF pointers are
-        # already virtual addresses matching the program headers.
-        if fmt == "pe":
-            version_ptr -= image_base
-            module_ptr -= image_base
+        # Raw pointer values are passed through unnormalized — the mapper
+        # itself subtracts image_base for PE (0 for ELF) on every lookup,
+        # including the second-level string-data pointer inside
+        # _resolve_pointer_string, which is what a prior version of this
+        # function got wrong by normalizing only here.
         version_bytes = _resolve_pointer_string(data, mapper, ptr_size * 8, version_ptr)
         module_bytes = _resolve_pointer_string(data, mapper, ptr_size * 8, module_ptr)
 

@@ -1078,6 +1078,104 @@ yourself every time.
   crashing or false-matching) builds its own fixtures at test time via
   the real toolchain rather than shipping committed binaries, and
   skips cleanly rather than failing when `go`/`gcc` aren't on `PATH`.
+- **`/builds/go-buildinfo-extractor` extended with the three follow-ups
+  requested after it shipped** (all three, no subset). (1) **New Rust
+  sibling extractor, `rust_cargo_auditable.py`** — REA documents Rust
+  `.dep-v0` cargo-auditable dependency metadata as a sibling static-
+  parsing capability to the Go build-info one, so this round read
+  REA's real Rust implementation (`RustAuditableReader.ts`,
+  `RustBinaryImage.ts`, `rustBinary.ts`) in full the same way the Go
+  reader was read last round, then wrote a fresh, independent Python
+  implementation: ELF/PE `.dep-v0` section location (a new named-
+  section-header parser, distinct from Go's program-header/PT_LOAD
+  approach), zlib inflate with a resource-budget cap, package/
+  dependency-graph parsing, and cycle detection via a real, iterative
+  (non-recursive) Tarjan's SCC algorithm — a different algorithm than
+  REA's own DFS-postorder approach, same correctness property,
+  verified against hand-built graphs (crates.io itself forbids real
+  dependency cycles, so no real binary could exercise this path).
+  Proven against real binaries, not synthetic bytes: installed
+  `cargo-auditable` for real, built a genuine two-crate project (a
+  `crates.io` dependency, `itoa`, plus a local `path` dependency, so
+  both `source` kinds and a real two-edge dependency graph are
+  exercised), and cross-checked the extractor's ELF output against an
+  **independent** ground-truth decode — a from-scratch section-header
+  walk plus a direct `zlib.decompress()`, written separately from the
+  extractor's own parser so a shared bug wouldn't be invisible to the
+  check. **Found and fixed a real bug while building the PE fixture**:
+  cross-compiling the same project to `x86_64-pc-windows-gnu` (installed
+  `gcc-mingw-w64-x86-64` + the Rust target for this) failed with
+  "dependency section has bytes after the zlib stream" — PE's
+  `SizeOfRawData` is padded up to `FileAlignment` (512 bytes observed),
+  while `VirtualSize` (137 bytes, matching the ELF build's section size
+  exactly) is the real unpadded length; reading the padded size pulled
+  in 375 zero bytes past the real zlib stream. Fixed by taking
+  `min(VirtualSize, SizeOfRawData)` as the section's true length, which
+  is a different, PE-specific bug from last round's Go PE pointer-
+  encoding one (same binary-format-padding family of mistake, caught
+  the same way: by actually cross-compiling and running the real
+  output rather than assuming the format was simple enough not to
+  need it). Negative cases (plain `cargo build` with no `auditable`, a
+  plain `gcc` C binary) and malformed-input handling (truncated
+  section, corrupted zlib stream, a 2,000-iteration fuzz pass — same
+  discipline as the Go suite's fuzz test) round out a 15/15-passing
+  suite, run alongside the existing 13 Go tests with no interference.
+  (2) **Got access to an older Go toolchain and closed the pointer-
+  encoding test gap**: `GOTOOLCHAIN=go1.17.13` (Go's own module-proxy-
+  based toolchain fetch, which this sandbox's egress proxy allows even
+  though direct `go.dev` downloads return 403) built real Go 1.13–1.17-
+  era ELF and PE binaries for the first time in this project. Running
+  them through the extractor **found a second real bug, in
+  `go_buildinfo.py` itself**: the PE pointer-resolution path normalized
+  the *outer* version/module pointers against `ImageBase` but not the
+  *inner* string-data pointer resolved one indirection further in, so
+  every PE pointer-encoded binary failed with "address ... is not
+  mapped by any segment." Fixed architecturally rather than patched at
+  the call site — moved the `ImageBase` subtraction into
+  `_AddressMapper` itself (now takes an `image_base` constructor
+  argument, applied to every address lookup at any indirection depth)
+  so no call site has to remember to normalize manually; `_parse_pe()`
+  updated to pass its computed `image_base` in, and the now-dead manual
+  normalization lines in `read_go_buildinfo()` were removed. Added two
+  new permanent regression tests (`TestPointerEncoding`, ELF and PE,
+  both built via the old toolchain and checked against `go version -m`
+  ground truth) — Go suite is now 13/13, up from 11, with zero
+  regression to the inline-encoding paths. (3) **Both extractors wired
+  into `/builds/interface-lift-toolkit/`'s tool registry** as two new
+  `effect="local"` typed tools — `go_buildinfo_check` and
+  `rust_cargo_auditable_check` in a new `binary_metadata_tools.py`,
+  with both underlying modules copied in unmodified (same convention
+  `prop_firm_*.py` already follows there). Deliberate `checks`-
+  semantics design, not copied from the prop-firm tools uncritically:
+  both readers document that a clean `None`/no-section result is a
+  normal, successful outcome (not Go / not cargo-auditable), not a tool
+  failure, so `ok` means "did the read complete," and whether the
+  binary turned out to carry that metadata is a plain output field,
+  never folded into `checks` — only a missing file or the module's own
+  typed error (genuinely malformed input) sets `ok=False`. Proven two
+  ways, extending both of the toolkit's existing test files rather than
+  adding a third: `test_toolkit.py` gained schema-derivation checks, a
+  missing-file usage-error check, and real-binary checks for both tools
+  (building a fresh Go binary and a fresh cargo-auditable Rust binary
+  at test time, cross-checked against a **direct call** to
+  `read_go_buildinfo()`/`read_cargo_auditable()` — same discipline as
+  every other tool in that suite) — including two negative-case checks
+  this round caught and corrected mid-build: a first draft tested the
+  "non-Go" case with a plain text file, which actually hits
+  `go_buildinfo.py`'s own *different*, stricter "unsupported container"
+  error path (neither ELF nor PE) rather than its "no header found"
+  path — fixed by testing both cases for real (a genuine non-Go `gcc`
+  ELF binary for the correct negative, a plain text file for the
+  unsupported-container error) instead of only the one that happened
+  to work. `test_agent_loop.py` gained a third scripted turn
+  (`go_buildinfo_check` against a real Go binary dispatched through the
+  mocked-Anthropic `run_agent` loop, same mocking convention as every
+  other dispatch-loop test here) proving the real reader's output flows
+  back through the tool-use loop, not a stub. Both README's updated —
+  `go-buildinfo-extractor`'s with the Rust extractor, both bug writeups,
+  and the toolkit cross-reference; `interface-lift-toolkit`'s with the
+  new tool category, its checks semantics, and refreshed real test
+  output.
 
 ---
 
