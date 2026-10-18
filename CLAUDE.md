@@ -1016,6 +1016,68 @@ yourself every time.
   never taking a consequential external action (opening a PR on
   someone else's repo) without it being explicitly asked for, and even
   then, only producing what this session's actual access permits.
+- **Deep analysis + new build from `morluto/rea`** ("REA: Reverse
+  Engineer Anything" — an MCP server connecting AI agents to native
+  disassemblers and a large built-in static-analysis toolkit, 300K+
+  GitHub stars per its own README). Full write-up in
+  `/notes/rea-reverse-engineer-anything-analysis.md`. First checked
+  whether this is in-scope work at all: `DISCLAIMER.md` names a clear,
+  specific lawful-use boundary (security research, malware analysis,
+  CTFs, software you own or are authorized to examine) and explicitly
+  refuses DRM/anti-cheat circumvention and unauthorized-access help —
+  legitimate dual-use tooling, not evasion tooling. The README's
+  self-reported "300,000 stars" was checked rather than repeated as
+  fact (same discipline as every other uncited-claim flag in this
+  project): no live GitHub API access to this unattached repo, so
+  verified via web search instead — independent sources corroborate
+  real, explosive growth (~30K on Oct 9 to ~234K by Oct 14), making
+  ~300K by the clone date plausible, not inflated. One of those same
+  sources also reports a real typosquat/impersonation risk around this
+  specific repo (a fake copy bundling a suspicious Windows executable)
+  — independent confirmation of the exact risk the README's own top
+  banner already warns about. Picked one concrete, checkable claim from
+  the README's capability table — Go-binary build-info extraction — and
+  read the actual implementation in full
+  (`src/go/GoBinaryImage.ts`/`GoModuleText.ts`) rather than trusting
+  the one-line table description: genuinely careful engineering (real
+  Go buildinfo magic/sentinels, varint decoding, Go's own quoted-string
+  escape syntax for build settings, explicit anti-DoS budgets, zero-
+  fill-span handling) — the most rigorously-engineered source code read
+  in this project's run of analyses to date, credited plainly as such.
+  **Built**: `/builds/go-buildinfo-extractor/` — not a clone of REA
+  (3,235 files, native disassembler integrations, far out of
+  proportion to what this sandbox can verify), but a standalone,
+  dependency-free Python reimplementation of that one capability,
+  built from understanding the format (confirmed via REA's code as a
+  correctness reference, nothing copied) rather than guessing. ELF and
+  PE both fully implemented; Mach-O explicitly cut, stated plainly, for
+  a concrete reason — no way to produce or verify a real Mach-O binary
+  in this Linux sandbox (confirmed by actually cross-compiling one and
+  showing the tool rejects it cleanly rather than crashing). The
+  pointer-encoding string path (vs. the modern "inline" encoding) is
+  implemented but flagged as unverified — no Go toolchain old enough
+  here to produce a binary that exercises it. Proven against real
+  compiled binaries, not synthetic byte strings: a genuine two-module
+  Go project (a main module with a `replace`-directive local
+  dependency, so both the `dep` and `=>` replacement lines are
+  exercised for real) built with the system Go 1.24.7 toolchain, cross-
+  checked field-by-field against `go version -m`'s own ground-truth
+  output — exact match on the first run, for both the native ELF binary
+  and a cross-compiled Windows PE binary (confirming the PE section-
+  table/RVA-mapping and `ImageBase` normalization are correct without
+  ever needing Windows). **Found and fixed a real bug while testing**:
+  a deliberately corrupted byte inside the version string leaked a raw
+  `UnicodeDecodeError` instead of the tool's own typed error — caught
+  by a byte-flip test, not by inspection. Fixed by routing every UTF-8
+  decode through a wrapper that converts it to the typed error. Then
+  stress-tested the fix with a 2,000-iteration deterministic fuzz pass
+  (1–20 random byte flips per trial, both ELF and PE fixtures): zero
+  uncaught exceptions of any kind, now a permanent regression test. The
+  full suite (11 tests, including the negative case — a plain `gcc`-
+  compiled C binary correctly reports no Go build info rather than
+  crashing or false-matching) builds its own fixtures at test time via
+  the real toolchain rather than shipping committed binaries, and
+  skips cleanly rather than failing when `go`/`gcc` aren't on `PATH`.
 
 ---
 
