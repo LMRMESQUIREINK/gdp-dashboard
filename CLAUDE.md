@@ -1176,6 +1176,147 @@ yourself every time.
   and the toolkit cross-reference; `interface-lift-toolkit`'s with the
   new tool category, its checks semantics, and refreshed real test
   output.
+- **Deep-dive (no analysis file written — a 3-article Medium/Claude-Code
+  bundle, "7 claude skills that print money," "6 Claude Skills to Reduce
+  Token Usage," "9 Claude Code Mods You NEED to Install Right Now") +
+  seven new builds**: asked which of the bundle's scope (analysis of all
+  three vs. building a mod vs. building a skill) was wanted rather than
+  guessing; the answer (which arrived as a follow-up message after an
+  `AskUserQuestion` round the user didn't directly answer) asked for both
+  — three of the named mods built "for real" via the `plugin-authoring`
+  skill, and four of the seven "skills that print money" ideas
+  adapted into this repo, same move as Build Brain/Agent Readiness
+  Scorecard. Token-usage-reduction article not acted on this round (no
+  build asked for from it).
+  - **Three real Claude Code mods, `/builds/claude-code-mods/`**
+    (`blast-radius`, `cache-keeper`, `collision-guard`), built via the
+    `plugin-authoring` skill after reading its full reference (hook
+    types, `ui.render`, `$.state` contracts, the test kit). Pure
+    detection/arithmetic logic kept in separate, `$`-free modules
+    specifically so it could be unit-tested with `claude plugin test`
+    with no engine mocking — 34/34 tests passing across the three (18 +
+    8 + 8). `blast-radius` gates destructive `Bash` commands (`rm -rf`,
+    `git push --force`, `git reset --hard`, `git clean -f`,
+    `git branch -D`, `git checkout --`/`git restore --worktree`) behind
+    a real `$.ui.ask` Proceed/Cancel dialog — confirmed `$` calls don't
+    count against a hook's own execution budget, so the wait is
+    genuinely unbounded on a human, not a race against a timeout.
+    **Found and fixed a real bug via its own test suite**: an early
+    `git branch -D` rule ran case-insensitively, so it false-flagged the
+    safe, merged-only `git branch -d` as destructive — caught by a
+    dedicated negative test, fixed by making the `-D`-vs-`-d` check
+    case-sensitive while keeping `git branch` itself matched loosely.
+    `cache-keeper` shows a live prompt-cache countdown, context
+    percent/tokens, rate-limit usage, and session cost above the prompt
+    (`$.session.usage()` for everything live; the cache window itself
+    has no documented API, so it's stated plainly as a configurable
+    60-minute estimate reset on each prompt, not a measurement) plus a
+    "Handoff & Compact" button calling the real `$.session.compact()`.
+    **Found and fixed a second real bug, this one in the plugin-
+    authoring mechanism itself, not the mod's logic**: `claude plugin
+    validate` kept rejecting a `$.state` contract that structurally
+    matched the skill's own reference examples; isolated by validating
+    the skill's own unmodified `pane.tsx`/`pane-state.d.ts` example pair
+    as a control (it passed) and diffing byte-for-byte against it — the
+    difference was declaring the `PluginState` entry as a reference to a
+    separately-named type alias instead of an inline object-type
+    literal, which the validator's static check doesn't resolve. Fixed
+    by keeping the named export for reuse while the `PluginState`
+    interface itself repeats the shape inline, documented with a comment
+    so the next mod in this project doesn't hit the same wall blind.
+    `collision-guard` warns via `$.ui.ask` before `Edit`/`Write`/
+    `NotebookEdit` when another session wrote the same file inside a
+    configurable window, using `$.store` (confirmed from the API docs to
+    be shared across sessions for the same plugin, not per-session) to
+    record `{sessionId, at}` per file path. Cut, stated plainly: the
+    article's "move to a worktree" and free-text options, and the
+    bidirectional "what's the other session doing" banner — each a
+    materially bigger feature than the one collision-warning mechanism
+    this mod set out to build. `claude plugin validate` passes cleanly
+    on all three. Honestly flagged as **not** verified: none of the
+    three has been exercised inside a real hot-reloaded session with an
+    actual person answering `$.ui.ask`, or against a genuine second
+    concurrent session colliding on a file — this sandbox session can't
+    arrange either for itself. The live, loadable copy of each mod stays
+    in this session's required `/root/.claude/dev-mods/<session>/`
+    location per the skill's own instructions; the copies under
+    `/builds/claude-code-mods/` are the project's documented record, not
+    what a session actually loads.
+  - **`/builds/humanizer/`** — a real, dependency-free Python detector
+    for AI-writing tells (14 rules across throat-clearing, rhetorical
+    tics, hedging, and buzzwords), filling a real gap `design-rules.md`'s
+    existing "Generic-AI tells to avoid" section doesn't cover (that
+    section is visual tells; nothing in this project checked prose tells
+    before this). 15/15 tests passing, with the test that actually
+    matters being discrimination, not isolated regex matches: a real
+    AI-sounding paragraph scores 11 findings across 4 categories, a real
+    plain paragraph (an engineer describing an actual bug fix) scores
+    exactly 0. **Found and fixed a real bug while writing the
+    discrimination test**: the `stacked-intensifier` rule only matched
+    two intensifiers separated by bare whitespace, missing the more
+    common real phrasing with a comma between them ("truly, really") —
+    caught against realistic text, not a synthetic edge case. A CLI
+    (`--max-per-1000-words` as a real pass/fail gate, `--json`) and a
+    matching skill (`.claude/skills/humanizer`) make it a real check
+    other skills actually run, not just a standalone script — wired into
+    `proposal-generator`, `launch-kit-writer`, `sales-page-engine`, and
+    `launch-pad`'s own "before calling it done" step.
+  - **`/builds/programmatic-seo-builder/`** — a real page generator
+    proving the article's own one named hard rule ("strict about one
+    thing: no thin pages") as an actual pre-write check
+    (`pseo_guard.py`: minimum word count, minimum unique-fact count, and
+    a separate duplicate-facts check two pages could both pass word
+    count while still saying the same thing), not a guideline. Generates
+    against real data already proven elsewhere in this project —
+    `PropFirmAccount`/`TPT_TIERS`/`CONTRACT_SPECS` from
+    `/builds/prop-firm-sizing/`, copied in unmodified — rather than a
+    synthetic placeholder dataset: 5 tiers × 6 contracts = 30 real pages,
+    each answering a genuinely distinct long-tail question ("Can I trade
+    {symbol} on a ${tier} TPT account?") with real computed numbers, plus
+    5 tier-index and 6 symbol-index pages with real internal linking (not
+    just links back to one index). 10/10 tests passing, including a real
+    regex pass over one page's actual generated HTML asserting every
+    `href` it contains points at a file that was genuinely written to
+    disk. Screenshot-verified per the project's screenshot-before-done
+    rule (served locally, Playwright/Chromium, a sample page and the
+    index, clean on the first pass) — styled with the already-locked
+    RUTHLESS TRADING GOLD palette since the dataset is real data from
+    that portfolio, not an invented template brand. Schema.org markup
+    and live rank-tracking explicitly cut and stated why (no schema-
+    generation skill exists yet to pair it with; no live search-engine
+    access from this sandbox to check rankings either way).
+  - **`/builds/proposal-generator/`** (skill +
+    `.claude/skills/proposal-generator`) and **`/builds/launch-kit-writer/`**
+    (skill + `.claude/skills/launch-kit-writer`, explicitly extending
+    `launch-pad` rather than duplicating it — point to launch-pad's own
+    long-form email instead of writing a second one) — both built as
+    skill-plus-worked-example pairs (matching `sales-page-engine`/
+    `launch-pad`'s own established shape, since the output is bespoke
+    prose per client/launch, not a deterministic transform like the
+    pSEO builder). The proposal worked example uses synthetic discovery-
+    call notes (explicitly marked, no real client) and states plainly,
+    inside the generated proposal itself, that its three pricing tiers
+    are anchored to the one real number the synthetic client gave rather
+    than an invented agency rate, per the skill's own rule to never
+    fabricate a number not in the source material. The launch-kit worked
+    example extends Recovery Desk's real, already-shipped `launch-pad`
+    output (`/builds/recovery-desk/launch/ad-copy.md`,
+    `business-brain.md`'s sourced stats/quotes) into five more
+    platform-native assets (Product Hunt listing, Show HN post, a
+    7-tweet X thread, three distinct per-subreddit Reddit replies, a
+    Medium-style article) with nothing reinvented — same pricing, same
+    sourced complaint quotes, same reply-in-thread-never-cold-post
+    distribution rule already established. Both worked examples run for
+    real through both `design-rules.md`'s don't-say-list grep and the
+    new Humanizer tool, not just presented as checked. **A real,
+    instructive false positive found while checking the launch kit**: a
+    naive grep of the whole file hit the don't-say list 13 times — all
+    inside the file's own "what was checked" section, which spells out
+    the banned-word list by name to document the check, the same
+    false-positive class already documented for Recovery Desk's
+    "diagnose"/"treat" hits, now from quoting the rule itself rather
+    than negated medical language; confirmed by line number, not
+    assumed away, and the actual asset content underneath is clean.
 
 ---
 

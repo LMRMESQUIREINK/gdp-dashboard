@@ -1,0 +1,13 @@
+{
+  "name": "collision-guard",
+  "version": "0.1.0",
+  "description": "Warns before Edit/Write/NotebookEdit when another Claude Code session touched the same file recently, so two sessions don't silently overwrite each other's work.",
+  "userConfig": {
+    "collisionWindowMinutes": {
+      "type": "number",
+      "title": "Collision window (minutes)",
+      "default": 30,
+      "description": "How recently another session must have touched a file for this mod to ask before editing it."
+    }
+  }
+}
