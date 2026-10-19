@@ -1317,6 +1317,73 @@ yourself every time.
     "diagnose"/"treat" hits, now from quoting the rule itself rather
     than negated medical language; confirmed by line number, not
     assumed away, and the actual asset content underneath is clean.
+- **Deep analysis + new build from a second uploaded bundle: three
+  separate YouTube transcripts about building a WordPress site with
+  Claude** ("Build a WordPress Website using Claude in 2026 (FULL
+  GUIDE)," "(REALLY) Build a WordPress Website with Claude in 2026,"
+  "How I Built INSANE WordPress Websites In 20 Minutes") — three
+  different creators teaching the same general technique (design with
+  Claude, land it in WordPress via a bridge plugin called Novamira/
+  "Nova Mirror," finish in Elementor), not one guide. Full comparison in
+  `/notes/wordpress-claude-elementor-tutorials-analysis.md`: credited
+  what's consistent and load-bearing across all three independently
+  (build with real Elementor elements, never a separate stylesheet or
+  raw HTML widgets, or the page looks editable but isn't — Matt's
+  transcript names this "the trap in this whole method," Daryl's
+  documents hitting the milder version of the same failure, the third
+  video's own 6.5–7/10 self-rating for "fully editable" output reflects
+  the same editability-vs-fidelity tradeoff structurally). Flagged real,
+  direct contradictions between sources that aren't just style
+  differences: the Atomic Editor setting (Matt says confirm it's on,
+  Daryl says deactivate it — likely two different points in Elementor's
+  own rollout of that feature, neither video aware of the other);
+  header/footer tooling (Astra's built-in builder vs. a separate XPro
+  plugin, each creator's own stated reason for their choice directly
+  contradicting the other's); and a hosting-plan recommendation (Matt:
+  the cheapest plan is enough; Daryl: the pricier one, for reasons that
+  don't actually apply to the single-site beginner the video is nominally
+  teaching). Also flagged the one claim repeated as fact rather than
+  checked (WordPress "40% of the internet," sourced to the video, not
+  independently verified — no live web access to check it as of the
+  video's own recording date). First deep-analysis round where none of
+  three sources could be tested at all, not even against synthetic
+  data — this sandbox has no WordPress, Hostinger, Claude Design, or
+  Novamira access, stated plainly as a stronger version of the usual
+  no-live-API-access caveat. **Built**: `/builds/voice-extractor/` — not
+  a WordPress tool (nothing in the bundle beyond one technique is
+  buildable without a live WordPress install), but the one genuinely
+  extractable, testable technique in it: the third video's tone.md/
+  humor.md idea (paste a real writing sample, have Claude "decode" it
+  into a reusable style guide), built as the measurable half of that —
+  real counted signals (sentence length, contraction rate, first-person
+  rate, em-dash/question/exclamation rates, sentence-starting-
+  conjunction rate, common openers), not a vague prescriptive guide, and
+  a real scorer that checks a new draft against a saved profile.
+  Deliberately complements last round's `/builds/humanizer/`: Humanizer
+  strips AI tells out, this puts a specific real voice back in, and the
+  two skills now cross-reference each other. **A real design flaw found
+  and fixed via its own discrimination test, not assumed away**: the
+  first scoring version used relative difference per metric, which
+  passed a read-through but made a draft deliberately written to match
+  the reference voice score *lower* (0.526) than a deliberately generic
+  corporate draft (0.753) — the opposite of the tool's purpose. Found by
+  printing the actual extracted numbers rather than guessing: a
+  rare-event metric near zero in the reference (first-person use, em
+  dashes) turned any nonzero draft value into a near-maximal penalty
+  under relative difference, which doesn't track real stylistic
+  distance on short samples. Fixed by switching to fixed, declared
+  absolute tolerances per metric. In the same debugging pass, the
+  hand-written "matching" test draft itself turned out not to
+  statistically match the reference as well as it read by eye (shorter
+  sentences, much lower first-person rate than intended) — caught by
+  printing the real numbers, not by trusting the draft looked right, and
+  rewritten to actually hit the reference's measured figures. Re-verified
+  after both fixes: matching draft scores 0.873, generic draft 0.61, with
+  correct, specific suggestions naming exactly what differs. 14/14 tests
+  passing, including a real CLI round-trip test (`extract` then `score`
+  as real subprocesses against real files in a temp directory, not
+  in-memory calls) proving the saved JSON profile survives a real file
+  round trip.
 
 ---
 

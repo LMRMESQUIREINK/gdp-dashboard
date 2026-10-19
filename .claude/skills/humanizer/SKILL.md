@@ -60,4 +60,8 @@ judgment, same reasoning the build's own README states for why an
 automated rewriter was cut. It's also not a substitute for
 `design-rules.md`'s own do-say/don't-say voice check on a specific
 brand — run both: this one catches generic AI-sounding prose, the
-brand-specific check catches a brand saying something off-voice.
+brand-specific check catches a brand saying something off-voice. And it
+only strips tells *out* — when a real writing sample from a specific
+person exists and matching their actual measured voice matters, pair
+this with `.claude/skills/voice-extractor`, which puts a real voice
+back in rather than just removing generic ones.
