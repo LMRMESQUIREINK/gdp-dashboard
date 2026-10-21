@@ -1384,6 +1384,81 @@ yourself every time.
   as real subprocesses against real files in a temp directory, not
   in-memory calls) proving the saved JSON profile survives a real file
   round trip.
+- **Deep analysis + new build from a single uploaded transcript**
+  ("Build $10,000 Websites using Claude Code (Ultimate Guide)"), plus
+  two GitHub repos the video names and links directly — read in full
+  rather than trusted on the video's word, same discipline as reading
+  REA's actual source instead of its README table: `anthropics/skills/
+  skills/frontend-design` and `nextlevelbuilder/ui-ux-pro-max-skill`.
+  Full write-up in `/notes/10k-website-claude-code-analysis.md`.
+  Credited as genuinely useful: the video's 8-pillar checklist (point
+  of view, typography, colour, hierarchy, imagery, motion, mobile, "the
+  invisible stuff"), and its own mid-build move of grading the result
+  against that checklist before polishing further — the same "turn a
+  checklist into an actual self-check" idea already credited to the
+  Factory.ai Autonomy Maturity Model paper. Two concrete claims checked
+  and found wrong, not repeated as fact: (1) Frontend Design "bans the
+  most overused fonts on the internet" — false; the entire skill is one
+  file with no banned-fonts list at all, and what it actually bans are
+  five *visual patterns* (cream+terracotta #F4F1EA/#D97757 — named as
+  Anthropic's own UI accent — near-black+acid-green, broadsheet
+  hairlines, the SaaS-card kit, ALL-CAPS/middle-dot/arrow-suffixed
+  "template chrome"), never a specific typeface; (2) UI/UX Pro Max
+  "ships with 57 UI styles, 95 colour palettes and 56 font pairings" —
+  checked by direct CSV row count against the real data files, not the
+  video's on-screen caption: real counts are 88 style rows (79
+  searchable), 192 palettes, 74 font pairings, all higher than claimed,
+  cross-confirmed against the package's own `catalog-summary.json`.
+  Most likely explanation stated plainly rather than invented: real,
+  active CI automation in that repo (`bump-versions.yml`,
+  `refresh-catalogs.yml`) actively grows the catalog, so version drift
+  is plausible — but the clone here is shallow (`--depth 1`, no tag
+  history), so the video-era historical counts couldn't be
+  reconstructed from this sandbox, and that limitation is stated rather
+  than guessed around. One claim that *did* check out: the installer
+  phrase "Install this plugin using NPM" matches the repo's real,
+  documented `npm install -g ui-ux-pro-max-cli` distribution path.
+  **Built**: `/builds/ten-k-website-grader/` — the 8-pillar checklist
+  as a real, static-file-checkable grader, same move as
+  `/builds/agent-readiness-scorecard/`: honest about which pillars a
+  machine can actually check. Point of view is always reported
+  not-assessable (it's about the brief's intent, not observable from
+  files); hierarchy, imagery, and motion get explicit partial/heuristic
+  proxies (type-scale spread; real-media-and-alt-text presence;
+  transition/animation presence plus `prefers-reduced-motion` support)
+  with the tool itself stating in its own output what each proxy can't
+  see (e.g., whether imagery actually looks premium vs. generic stock).
+  Typography, colour, mobile, and "invisible stuff" (broken local
+  references, duplicate ids, oversized images) get full checks, with
+  informational (non-failing) flags for named AI-site tells: `Inter`
+  usage (the video's own specific callout) and default Tailwind/
+  Bootstrap-blue hexes (`design-rules.md`'s existing rule, reused
+  rather than reinvented). Proven via a real discrimination test
+  (`test_grader.py`, 15/15 passing): a deliberately well-built fixture
+  site scores 100%, a deliberately generic AI-default-shaped fixture
+  (Inter-only, one flat font size, default blue, missing alt text, a
+  broken file reference, a duplicate id, no viewport meta, no motion)
+  scores 14%, with the specific failing pillars and flags matching
+  exactly what was built wrong into it on purpose. **Also run for real
+  against this project's own already-shipped, already screenshot-
+  verified pages** (`/builds/recovery-desk/sales-page/` and
+  `/builds/prop-firm-dashboard/sales-page/`, not just synthetic
+  fixtures) — both scored 71% on first run, and that real run **found
+  a genuine, previously-undocumented accessibility gap**: Recovery
+  Desk's sales page has a hover `transition` with no
+  `prefers-reduced-motion` guard anywhere in the file, a real violation
+  of `design-rules.md`'s own already-stated motion rule. Confirmed by
+  reading the actual CSS before fixing it, fixed with a 3-line
+  `@media (prefers-reduced-motion: reduce)` block, and re-verified —
+  that page moved from 71% to 86%, motion pillar now passing. Both
+  pages still honestly fail `imagery` (neither has any actual
+  `<img>`/`<video>` tag — CSS-only hero treatments, consistent with
+  this project's standing no-image-generation-tool-in-sandbox note) and
+  `prop-firm-dashboard`'s page separately fails `colour` at 11 distinct
+  literals against the grader's 3–10 heuristic — deliberately **not**
+  "fixed" by trimming that page's real RUTHLESS TRADING GOLD palette
+  just to satisfy the tool, and the README states this as a named,
+  honest limitation of the colour heuristic rather than a bug to chase.
 
 ---
 
