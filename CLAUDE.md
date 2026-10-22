@@ -1548,6 +1548,45 @@ yourself every time.
   all either out of scope for a demo with no real brief or blocked by
   the same live-paid-API restriction as every other build in this
   project.
+- **Analysis-only round: Week 21 of the same newsletter series already
+  analyzed twice** ("5 Open-Source GitHub Repositories Every Developer
+  Should Know in 2026" — Docusaurus, n8n, Mattermost, AutoGPT, LocalAI).
+  Full write-up in `/notes/oss-ai-engineering-stack-week21-analysis.md`.
+  Unlike Week 19/20 (no live network access, every number reported as
+  source-stated), this round actually cloned three of the named repos
+  (`n8n-io/n8n`, `mattermost/mattermost`, `significant-gravitas/autogpt`)
+  via this session's now-confirmed anonymous git-read access and checked
+  the post's most specific, decision-relevant claims against the real
+  files rather than the post's description of them: n8n's Sustainable
+  Use License + Enterprise License split (`LICENSE.md`/`LICENSE_EE.md`,
+  exact match), Mattermost's Go+React/open-core/PostgreSQL-only
+  architecture (`server/go.mod`, `webapp/`, `LICENSE.txt` +
+  `LICENSE.enterprise`, `server/config/database.go` referencing
+  PostgreSQL only — no MySQL driver code at all in the current repo,
+  more precise than it reads at a glance), and AutoGPT's split license
+  (root `LICENSE`: Polyform Shield inside `autogpt_platform/`, MIT
+  everywhere else — verbatim match). All three checked out exactly.
+  One real, non-accusatory discrepancy found and stated rather than
+  glossed over: n8n's README really does say "1500+ integrations" in
+  three places (faithfully repeated by the post, not invented), but a
+  direct count of the actual shipped core package
+  (`packages/nodes-base/nodes`) found only 308 node directories and 563
+  total `.node.ts` files — a real gap, most likely a counting-
+  methodology difference (per-operation counting, or a separate
+  npm-distributed community-node ecosystem not bundled in this repo)
+  rather than an inflated figure, reported as unreconciled rather than
+  assumed either way. Docusaurus and LocalAI's claims, and AutoGPT's own
+  platform-feature descriptions, were read as plausible and internally
+  consistent with each repo's real structure but not independently
+  re-cloned/re-verified this round, a time-boxed choice for a five-
+  repository survey stated plainly rather than claimed as fully
+  checked. **No build this round** — same call as Week 19/20: a survey
+  of five already-mature, independently famous, actively-maintained
+  projects has no generalizable gap or technique to extract, unlike the
+  same series' "weekend project" post, which made one specific,
+  previously-unverified claim about the author's own code and got a
+  real build (`/builds/github-repo-manager-safety-wrapper/`) because of
+  it.
 
 ---
 
