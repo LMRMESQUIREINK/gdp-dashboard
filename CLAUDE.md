@@ -1459,6 +1459,95 @@ yourself every time.
   "fixed" by trimming that page's real RUTHLESS TRADING GOLD palette
   just to satisfy the tool, and the README states this as a named,
   honest limitation of the colour heuristic rather than a bug to chase.
+- **Deep analysis + new build from a second, distinct "$10K website" bundle**:
+  the "10k-websites" Claude Skill (`SKILL.md` + five `references/` files —
+  `deploy.md`, `design-package.md`, `ffmpeg-recipes.md`, `prompt-laws.md`,
+  `scrub-pipeline.md`) and its companion tutorial, "How to Build $10K
+  Websites in Minutes (Claude AI)" — separate from the earlier "Build
+  $10,000 Websites using Claude Code" round, same positioning, completely
+  different architecture (a scroll-scrubbed AI-generated hero video via
+  Higgsfield + a dedicated Hostinger MCP connector, not a static-skill-
+  driven page). Full write-up in
+  `/notes/10k-websites-higgsfield-skill-analysis.md`. Flagged plainly,
+  straight from the file's own text: `SKILL.md` and `deploy.md` both
+  hard-code Higgsfield and Hostinger partner/affiliate links directly
+  into the instructions an installing session would run — stated
+  honestly by the skill itself ("say so plainly"), but a materially
+  different category from Anthropic's own unaffiliated `frontend-design`
+  skill analyzed in the earlier round. Credited as the most rigorously
+  engineered, most independently verifiable source analyzed in this
+  project's whole run to date — two concrete technical claims checked by
+  actually executing them, not just read: the drive loop's claimed
+  frame-rate-independent lerp formula (verified via a Node simulation:
+  50% convergence in the same 66.7ms at 30/60/120fps alike, vs. a
+  genuine 2x discrepancy for the naive alternative the file warns
+  against) and the `-g 8` scrub-encode keyframe interval (verified via
+  `ffprobe` frame-by-frame against a real ffmpeg-encoded test clip,
+  landing exactly on schedule). Both checks came back correct. Separately
+  unverifiable from this sandbox: Higgsfield/Hostinger live API access
+  (same restriction as every other paid-connector build here) and the
+  new video's Claude-plan-tier pricing claims (Fable needing Max/credits,
+  Opus included on Pro) — reported as source-stated. **Built**:
+  `/builds/scroll-scrub-hero/` — a real, standalone implementation of
+  `scrub-pipeline.md`'s engineering standard (the single hardest, most
+  load-bearing piece of the whole skill, and the one piece fully
+  testable without either paid service): the streamed-Blob loader with
+  a progress ring, the frame-rate-independent lerp drive loop, gated
+  seeks, delta-gated DOM writes, the vh-paced caption-band system with
+  word-level entrances, the four-layer legibility scrim system, the
+  five static-hero gates, live reduced-motion handling in both
+  directions, and the one press-and-hold interactive moment — built
+  against a synthetic ffmpeg-generated placeholder hero video (no
+  Higgsfield access; stated plainly, and, per the spec's own advice that
+  abstract worlds generate most reliably, the substitute happens to land
+  in the same visual category the spec itself recommends), with the
+  real documented ffmpeg asset pipeline (`-g 8 -crf 18 -movflags
+  +faststart` scrub encode, poster/ending-frame extraction) run for
+  real producing a genuine H.264 asset matching the spec exactly.
+  **Found and fixed four real bugs by actually running this in a
+  browser, not by reading the code**: (1) a type-less `Blob` fails
+  Chromium's demuxer with `DEMUXER_ERROR_NO_SUPPORTED_STREAMS` — and the
+  reference spec's own sample code has this exact same bug
+  (`new Blob(chunks)` with no MIME type), fixed here with an explicit
+  `{ type: "video/mp4" }`; (2) this sandbox's pre-installed open-source
+  Chromium build has zero H.264 decoding support at all
+  (`canPlayType` returns `""`), confirmed directly rather than assumed,
+  worked around with a test-only `VIDEO_URL` override pointing the
+  Playwright suite at a VP9 re-encode of the identical footage so the
+  real engine code path still gets exercised in a real browser, while
+  production markup stays H.264, the universally-compatible real choice;
+  (3) a first pass reused the three scroll bands directly as the
+  static-hero fallback, which both clipped/ghosted inside the still-
+  sticky `.hero-stage` and violated `design-package.md`'s own explicit
+  spec (section 5: the static hero gets one composed headline/subline/
+  CTA, "with no journey behind them," never the scroll bands) — caught
+  by a real mobile screenshot showing footer text ghosting into the
+  hero, the same Chromium full-page-stitched-screenshot bug already
+  documented in this project's `/builds/prop-firm-dashboard` work, fixed
+  at the root (a dedicated `.static-hero` block, bands hidden and the
+  stage un-stuck once a gate matches) with scroll-segmented screenshots
+  used going forward as a second safeguard; (4) the band-one load-ramp
+  failure the spec itself names and warns against ("the hero opens on
+  footage with no words until the user scrolls") was present in the
+  first implementation and caught directly by this build's own
+  Playwright test (band 0 measured `opacity: 0` at scroll top) before
+  being fixed per the documented `k = max(scrollK, loadK)` pattern.
+  25/25 checks passed on the real run across two suites: `test_pure.mjs`
+  (6 — the lerp/smoothstep math, and a real regex-based check that the
+  five static-hero gate strings are character-for-character identical
+  between the CSS media query and the JS `matchMedia` array, the exact
+  failure mode the spec calls out) and `test_playwright.py` (19 — real
+  Chromium scrubbing, the spec's own flick-test harness replicated
+  exactly at 120/240/360px steps, reduced motion toggled live in both
+  directions, the complete-without-video fallback, the press-and-hold
+  interaction's build/ease-back/completion states, and screenshots at
+  desktop and phone widths). Deliberately not built this round: the
+  worst-frame canvas-pixel legibility audit script (checked by eye
+  against real screenshots instead), Tier 2/3 chaining and the Creative
+  Director's Loop, and the actual Higgsfield/Hostinger deploy flow —
+  all either out of scope for a demo with no real brief or blocked by
+  the same live-paid-API restriction as every other build in this
+  project.
 
 ---
 
