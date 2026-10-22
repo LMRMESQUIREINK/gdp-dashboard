@@ -1553,11 +1553,13 @@ yourself every time.
   Should Know in 2026" — Docusaurus, n8n, Mattermost, AutoGPT, LocalAI).
   Full write-up in `/notes/oss-ai-engineering-stack-week21-analysis.md`.
   Unlike Week 19/20 (no live network access, every number reported as
-  source-stated), this round actually cloned three of the named repos
-  (`n8n-io/n8n`, `mattermost/mattermost`, `significant-gravitas/autogpt`)
-  via this session's now-confirmed anonymous git-read access and checked
-  the post's most specific, decision-relevant claims against the real
-  files rather than the post's description of them: n8n's Sustainable
+  source-stated), this round actually cloned all five named repos
+  (`n8n-io/n8n`, `mattermost/mattermost`, `significant-gravitas/autogpt`,
+  then `facebook/docusaurus` and `mudler/localai` after the user
+  followed up pasting all five clone URLs directly) via this session's
+  now-confirmed anonymous git-read access and checked the post's most
+  specific, decision-relevant claims against the real files rather than
+  the post's description of them: n8n's Sustainable
   Use License + Enterprise License split (`LICENSE.md`/`LICENSE_EE.md`,
   exact match), Mattermost's Go+React/open-core/PostgreSQL-only
   architecture (`server/go.mod`, `webapp/`, `LICENSE.txt` +
@@ -1565,7 +1567,22 @@ yourself every time.
   PostgreSQL only — no MySQL driver code at all in the current repo,
   more precise than it reads at a glance), and AutoGPT's split license
   (root `LICENSE`: Polyform Shield inside `autogpt_platform/`, MIT
-  everywhere else — verbatim match). All three checked out exactly.
+  everywhere else — verbatim match). Then, once the user supplied all
+  five URLs, the remaining two were checked too: Docusaurus's exact
+  `npm init docusaurus@latest` scaffold command (present verbatim in
+  the real README), its React dependency, and real i18n test fixtures
+  for German/French/Chinese locales (not just a README claim); and
+  LocalAI's own README stating almost word for word what the post
+  claims — "Drop-in API compatibility: OpenAI, Anthropic, and
+  ElevenLabs APIs across every backend" — with Anthropic support dated
+  to LocalAI 3.10.0 (January 2026) in the same file's own changelog, a
+  genuinely recent addition the post reflects accurately rather than a
+  stale assumption, plus a real pluggable `backend/` directory
+  (separate go/python/rust/cpp implementations) matching the claimed
+  architecture. All five repos' specific, checkable claims — two
+  license splits, one open-core/architecture claim, one scaffold
+  command, one localization claim, one API-compatibility claim — now
+  checked out exactly, not just three.
   One real, non-accusatory discrepancy found and stated rather than
   glossed over: n8n's README really does say "1500+ integrations" in
   three places (faithfully repeated by the post, not invented), but a
@@ -1575,12 +1592,11 @@ yourself every time.
   methodology difference (per-operation counting, or a separate
   npm-distributed community-node ecosystem not bundled in this repo)
   rather than an inflated figure, reported as unreconciled rather than
-  assumed either way. Docusaurus and LocalAI's claims, and AutoGPT's own
-  platform-feature descriptions, were read as plausible and internally
-  consistent with each repo's real structure but not independently
-  re-cloned/re-verified this round, a time-boxed choice for a five-
-  repository survey stated plainly rather than claimed as fully
-  checked. **No build this round** — same call as Week 19/20: a survey
+  assumed either way. AutoGPT's own platform-feature descriptions
+  (AutoPilot, Agents, Marketplace, Build) were read as plausible and
+  internally consistent with the repo's real top-level structure but
+  not independently run or clicked through. **No build this round** —
+  same call as Week 19/20: a survey
   of five already-mature, independently famous, actively-maintained
   projects has no generalizable gap or technique to extract, unlike the
   same series' "weekend project" post, which made one specific,

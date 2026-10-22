@@ -59,6 +59,48 @@ check out exactly against the real repositories, not just at the level
 of "plausible for a project like this" — character-level confirmation
 against the actual license files.
 
+## Addendum: the remaining two repos, checked after the user supplied all five URLs directly
+
+The user followed up by pasting all five repos' clone URLs. Cloned and
+checked the two not yet verified above.
+
+**Docusaurus.** The post's exact scaffold command, `npm init
+docusaurus@latest`, is real and current — present verbatim in the
+repo's own `README.md` (line 55) and matching `packages/create-
+docusaurus/README.md`'s documented `npm init docusaurus` / `npx
+create-docusaurus@latest` forms. The React-ecosystem claim checks out
+(`react`/`react-dom` as real dependencies in `packages/docusaurus/
+package.json`). The localization claim checks out concretely, not just
+plausibly: real i18n test fixtures exist in the repo for German,
+French, and Chinese locales (`packages/docusaurus/src/server/__tests__/
+__fixtures__/load-i18n-site/i18n/{de,fr}` and a `zh-Hans-custom`
+variant), not just a README mention. "Developed by Meta" is consistent
+with the repo living under the `facebook` GitHub org, which this
+session already knows independently of the clone.
+
+**LocalAI.** The post's compatibility claim — "APIs compatible with
+OpenAI, Anthropic, and ElevenLabs interfaces across its supported
+backends" — matches the repo's own README almost word for word:
+"**Drop-in API compatibility**: OpenAI, Anthropic, and ElevenLabs APIs
+across every backend." Worth noting as a genuinely current detail, not
+a stale repeated claim: the same README's own changelog line dates
+Anthropic API support to LocalAI 3.10.0, January 2026 — a recent
+addition the post is accurately reflecting, not an out-of-date
+assumption. The pluggable-backend claim also checks out structurally:
+a real `backend/` directory holds separate `go/`, `python/`, `rust/`,
+and `cpp/` backend implementations plus per-backend Dockerfiles
+(`Dockerfile.llama-cpp`, `Dockerfile.rust`, `Dockerfile.privacy-filter`,
+etc.), matching "backends are separate components that can be pulled
+in when needed" rather than one monolithic build.
+
+All five of this post's repositories now directly verified, not just
+three. Every specific, checkable claim across all five — two license
+splits, one open-core/architecture claim, one scaffold command, one
+localization claim, and one API-compatibility claim — holds up exactly
+against the real source. The one open item remains the n8n integration-
+count gap below, which is about counting methodology, not accuracy of
+the five repos' descriptions.
+
 ## One real, honest discrepancy found and not glossed over
 
 n8n's README does say "1500+ integrations" in three separate places,
@@ -79,15 +121,15 @@ accepting either number at face value.
 
 ## What wasn't re-verified this round
 
-Docusaurus's and LocalAI's specific claims (the `npm init docusaurus@latest`
-scaffold command, LocalAI's OpenAI/Anthropic/ElevenLabs-compatible API
-surface across pluggable backends) are consistent with this project's
-existing general knowledge of both projects and weren't independently
-re-cloned this round — a time-boxed choice for a five-repository survey
-post, not a claim they were checked and passed. Same treatment AutoGPT's
-own platform/feature descriptions (AutoPilot, Agents, Marketplace, Build)
-got: read as plausible and internally consistent with the repo's real
-top-level structure, not independently exercised.
+Docusaurus and LocalAI were initially skipped and are now covered in
+the addendum above, once the user supplied all five clone URLs
+directly. What's still not independently exercised: AutoGPT's own
+platform/feature descriptions (AutoPilot, Agents, Marketplace, Build)
+were read as plausible and internally consistent with the repo's real
+top-level structure, not run or clicked through, and n8n's/Mattermost's/
+AutoGPT's own broader feature claims beyond the specific license/
+architecture facts checked above weren't exhaustively re-verified line
+by line.
 
 ## What's built from this
 
