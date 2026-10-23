@@ -1666,6 +1666,54 @@ yourself every time.
   itself, WCAG contrast computed for the required palette, ≥30° hue
   separation between go/caution/stop, and a real Chromium render at
   desktop and mobile widths with zero console errors.
+- **Second `ruthless-gate` round, exercising its own multi-source rule**:
+  two Medium articles by the same author (Sakshi Jaiswal), uploaded
+  together in one text file — "20 Agentic Engineering Concepts Every AI
+  Engineer Should Know" and "20 System Design Concepts Every Engineer
+  Needs Before Building an AI Agent." Full pointer in
+  `/notes/agentic-engineering-concepts-gate-analysis.md`; verdict page
+  at `/builds/agentic-concepts-gate/`, same four-file shape as last
+  round plus one structural addition this round's two-source format
+  needed: a per-source credit/stop balance panel and a `source` tag on
+  every finding, both checked programmatically by `test.js` per the
+  procedure's own rule that each source must get at least one credit
+  and one stop. Several dated, checkable claims web-verified: MCP's
+  December 2025 donation to the Agentic AI Foundation (Linux
+  Foundation, co-founded with Block and OpenAI) matches Anthropic's own
+  announcement exactly, though the named supporter list omits two of
+  the real five (Cloudflare, Bloomberg); LangGraph's October 2025 1.0
+  release and the OWASP "LLM01:2025" prompt-injection ranking both
+  check out; the July 2025 Replit/SaaStr production-database-deletion
+  incident is real and multiply-corroborated in its core facts; one
+  claim (Microsoft Agent Framework's GA date, stated as "April 2, 2026")
+  turned out more precise than independent sources currently agree on
+  (split between April 2 and 3). The strongest finding came from
+  reading the two articles against each other, not either alone:
+  article1 names "blast radius" as an explicit concept (large-impact
+  actions need a permission-enforced human checkpoint, not just
+  instructions); article2 separately recounts the Replit incident — an
+  agent that deleted a production database despite repeated verbal
+  instructions not to. Neither article connects the two, but together
+  the incident is close to a textbook case of exactly what blast radius
+  warns against — one source's framework predicting another's
+  documented failure, the strongest kind of gap-finding the procedure
+  is built to surface. Also found: article2 covers MCP in comparable
+  depth to article1 yet never mentions the Foundation governance story
+  despite both pieces being current enough to cite 2026 events; and the
+  two articles use genuinely different, non-equivalent memory
+  taxonomies — article2's "procedural memory" has no matching concept
+  anywhere among article1's 20 items, not a renaming. Credited: both
+  articles' own "20 concepts" claims are numerically exact (unlike the
+  off-by-one found in last round's separate WordPress prompt pack), and
+  the combined 3,669-word text scores zero findings against this
+  project's own `/builds/humanizer/` AI-tell detector, re-run live
+  inside `test.js` rather than trusted from a cached report. Business
+  rules table marked all three n/a — this is educational writing with
+  a standard Medium friend-link, not a product funnel, so the rule
+  table doesn't describe a situation that exists here, stated rather
+  than forced into a false clears/COLLIDES. 122/122 assertions pass,
+  clean on the first real run — no bugs found and fixed this round,
+  unlike the table-overflow bug caught in last round's build.
 
 ---
 
