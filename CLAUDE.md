@@ -1603,6 +1603,69 @@ yourself every time.
   previously-unverified claim about the author's own code and got a
   real build (`/builds/github-repo-manager-safety-wrapper/`) because of
   it.
+- **First round run through the newly-available `ruthless-gate` skill**
+  ("Audit a supplied source... at four escalating depths and build a
+  tested verdict page from it") instead of hand-rolling the usual
+  markdown analysis — it matched this project's own repeated
+  DEEP/DEEPER/DEEPEREST/DEEPEREST-EST pattern exactly, so this round
+  used it directly. Source: `Claude_WordPress_Prompt_Pack2.pdf`
+  ("Build a WordPress website using Claude AI — Free Prompt Pack",
+  Metics Media, 9 pages). Full pointer in
+  `/notes/wordpress-prompt-pack-gate-analysis.md`; the real deliverable
+  is the verdict page itself, `/builds/wp-prompt-pack-gate/` (the
+  skill's required four-file shape: `index.html`, `data.js`, `test.js`,
+  `README.md`, METAL HEAVY palette, contrast computed not eyeballed).
+  15 findings (8 credit, 7 stop) across all four levels, plus a 3-row
+  operator-business-rule table (2 clear, 1 COLLIDES — the affiliate
+  purchases complete on the third party's own site, not Metics Media's).
+  Two real, checkable findings worth naming: the cover claims "9
+  prompts"/"Nine prompts" twice, but the pack's own table of contents
+  delivers exactly 10 numbered prompts, confirmed by direct count; and
+  this pack shares its operator domain (`meticsmedia.com`) and its core
+  Hostinger affiliate product with last round's separate "10k-websites"
+  Higgsfield skill, each with its own campaign-tracking URL suffix
+  (`-HZU` here, `-ESVT` there) — one operator running parallel "build a
+  $X website with Claude" funnels, visible only by reading both rounds
+  together, stated by neither artifact on its own. Also resolved, by the
+  same cross-source reading, a real three-way contradiction this project
+  already found across three earlier WordPress/Claude tutorials (Astra's
+  built-in header/footer builder vs. a separate XPro plugin) — this pack
+  sides cleanly with Astra. Credited: the pack's copy-voice ban (no em
+  dashes, no named stock AI phrases) is independently, mechanically
+  enforceable — this project's own `/builds/humanizer/` already tracks
+  every term it bans, confirmed by running it against the pack's own
+  text (the 5 raw hits are all inside the rule's own quoted example,
+  the same false-positive class already documented elsewhere in this
+  project, checked by reading the context before reporting). Web-
+  verified the pack's central technical claim, "Elementor version 4
+  atomic elements," as real and current — while also flagging, from the
+  same search, that the same V4 system is independently reported still
+  Beta as of its own cited 2026 changelog dates, a hedge the pack never
+  discloses to the small-business readers it's steering onto it.
+  Flagged a structural gap matching this project's repeated "referenced
+  but never actually supplied" pattern: the NovaMira connector, which
+  every Claude Code prompt in the pack silently depends on, is named
+  exactly once in six-point type with zero setup instructions anywhere.
+  **Found and fixed a real bug during verification, isolated from a
+  harness artifact found in the same pass**: the test suite's mobile
+  screenshot first came back 455px wide instead of 375 — traced to a
+  `<table>` without `table-layout:fixed` growing past its container on
+  long unwrapped evidence URLs, hidden from
+  `document.documentElement.scrollWidth` by `overflow-x:clip` while
+  `document.body.scrollWidth` (what the real screenshot actually
+  measures) still showed the overflow; fixed with `table-layout:fixed`
+  plus `overflow-wrap:anywhere`, and the test's own check now compares
+  both so a regression can't hide again. Separately, an early regex
+  failed to recompute the pack's own "9 prompts" claim because
+  `pdftotext -layout` wraps that sentence across a line break —
+  confirmed by inspecting the raw extracted bytes before concluding the
+  regex, not the source, was wrong, correctly not reported as a source
+  finding. 104/104 real assertions pass on the final run, including the
+  9-vs-10 and em-dash counts independently recomputed from the raw
+  extracted text rather than trusted from the ledger's own claim about
+  itself, WCAG contrast computed for the required palette, ≥30° hue
+  separation between go/caution/stop, and a real Chromium render at
+  desktop and mobile widths with zero console errors.
 
 ---
 
