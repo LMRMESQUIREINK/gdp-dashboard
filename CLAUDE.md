@@ -1714,6 +1714,85 @@ yourself every time.
   than forced into a false clears/COLLIDES. 122/122 assertions pass,
   clean on the first real run — no bugs found and fixed this round,
   unlike the table-overflow bug caught in last round's build.
+- **Deep analysis of four uploaded Fareed Khan "build an agentic X
+  system" articles**, three new to this project and one a repeat: "The
+  Case for Interface Lifting in AI Agents" is byte-for-byte the same
+  article already analyzed and built from earlier in this project
+  (`/notes/interface-lifting-fast-computer-agents-analysis.md`,
+  `/builds/interface-lift-toolkit/`) — confirmed by title match before
+  touching anything, same discipline as every repeat-upload round here,
+  no new action taken on it. The three genuinely new pieces — "Building
+  an Agentic Quantum Computing System," "Building an Agentic Security
+  Pipeline That Finds, Proves, and Patches Vulnerabilities," and
+  "Building a Week-Long Running Agentic System" — got the full write-up
+  in `/notes/agentic-systems-deep-dive-analysis.md`. Reproduced the
+  security-pipeline article's dead-store-elimination hazard from scratch
+  before trusting it: a minimal 10-line `memcpy`-into-undersized-buffer
+  repro, compiled `-O1 -fsanitize=address`, runs clean (exit 0) without
+  an `__asm__ volatile` barrier (the optimizer proves the buffer dead and
+  deletes the overflowing write) and crashes correctly with it — matching
+  the article's claim exactly. Web-verified several dated claims: Temporal's
+  Continue-As-New and replay-determinism mechanics (real, matching the
+  long-running-agent article's durability story), PennyLane's `lightning.gpu`
+  device (real, GPU-cuQuantum-backed, though its own docs say it raises an
+  error with no graceful CPU fallback unless a wrapper checks first — a
+  precision gap in how the quantum article describes its own `make_device()`
+  helper), the LHC Olympics 2020 Zenodo dataset (real, matches the article's
+  description, one DOI-digit mismatch found in an unrelated external
+  citation), and Anthropic's own published six-step find/prove/triage/patch
+  vulnerability loop (real and independently corroborated, not an invented
+  framework). Flagged a likely publishing error in the security-pipeline
+  article (every "code is on GitHub" link points at the *quantum* article's
+  repo instead of its own stated one) and a real governor gap in the
+  long-running-agent article (its budget check authorizes against a
+  *projected* mean cost, not a hard per-cycle cap, so an unusually expensive
+  cycle can still push the real total past the ceiling). The strongest
+  finding came from reading the security-pipeline and long-running-agent
+  articles together: both independently arrive at the same underlying
+  principle — a deterministic, re-runnable check decides truth, never a
+  model's self-report — one via AddressSanitizer exit codes, the other via
+  git-committed checklist items that only flip to `done` after real lint/
+  type/test commands exit zero — stated by neither article but visible
+  reading both. A second cross-article finding: the quantum article's own
+  mid-piece admission that its headline 8-qubit win only holds on 2 of 5
+  seeds, and the security-pipeline article's report of a 7B model voting a
+  provably-crashing bug `FALSE_POSITIVE` 3/3 with 95% confidence, are the
+  same "a single run or a single opinion is not evidence" lesson stated two
+  ways by the same author across two pieces that never cite each other.
+  **Built:** `/builds/defender-loop-verifier/` — not the quantum pipeline
+  (inseparable from GPU numbers this sandbox can't produce) or the
+  long-running-agent's durability layer (inseparable from a real Temporal
+  server, and this project already has a hand-built checkpoint/resume
+  analog at `/builds/agent-checkpoint-layer/` covering similar territory
+  with SQLite+WAL) — but the one idea from the security-pipeline article
+  that is both genuinely new to this project and fully reproducible with
+  nothing but `gcc` and the standard library already in this sandbox: "the
+  host re-detonates independently and never trusts the agent's self-report,"
+  built and tested as a real rule rather than just read about. A 2-bug ASan
+  canary (reusing the exact dead-store hazard verified above: a heap-buffer-
+  overflow and a heap-use-after-free), a deterministic verifier
+  (`detonate()`/`verify_crash()`/`grade_patch()` — a real subprocess exit
+  code and ASan `SUMMARY:` line decide crashes, majority-of-3-reruns before
+  calling a finding reproducible, a 3-rung patch ladder), an allow-list tool
+  dispatcher (unknown/not-allowed/mutation-disabled/egress-disabled, each
+  enforced in code), and a scripted stand-in for the model (no live model
+  API in this sandbox, same standing restriction as every build here) that
+  can be told to lie in either direction about whether its own PoC crashed.
+  Proven for real: two tests drive a dishonest agent one way each (denying
+  a real crash, claiming a fake one) and show the verdict is unaffected
+  either way, because `verify_crash()` never reads the self-report at all —
+  a direct, testable version of the article's own worst-case finding. The
+  patch ladder is shown to discriminate, not just pass everything: a
+  root-cause fix (clamp the copy length before the `memcpy`, the article's
+  own stated recipe) passes all three rungs; a cosmetic fix that only
+  changes what gets printed correctly fails at rung two because the ladder
+  re-detonates the *compiled* patched binary, not the diff text. 18/18 tests
+  pass, clean on the first real run. Scope cuts stated plainly rather than
+  silently made: no Docker/network sandbox (this session already runs
+  inside one container with no outbound default access, so nesting a second
+  one would guard against the wrong threat model), no multi-agent swarm, no
+  recon/triage/severity stages — just the two stages that are genuinely
+  load-bearing and fully verifiable without a model in the loop.
 
 ---
 
