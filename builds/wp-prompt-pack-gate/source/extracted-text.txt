@@ -1,0 +1,416 @@
+Free prompt pack
+
+
+
+
+Build a WordPress website
+using Claude AI
+Every prompt from the tutorial, ready to copy. Nine
+prompts, in the order you need them, from the first
+design brief to adding pages months later.
+
+
+
+
+9 prompts   Claude Design + Claude Code   WordPress + Elementor
+How to use this pack
+The prompts are numbered in the order they appear in the video. Copy them
+straight out of this PDF, so nothing gets mistyped.
+
+
+    1     Copy the whole block. Select from the first line to the last and paste it in one
+          message. Line breaks do not matter, but leaving lines out does, because
+          most of them are preventing a specific problem.
+
+    2     Replace the highlighted placeholders. Anything in square brackets is yours
+          to fill in. Everything else can stay exactly as written.
+
+    3     Use the right tool. Each prompt is labelled Claude Design or Claude Code.
+          They are different tools and the prompts are not interchangeable.
+
+    4     Adapt them once you understand them. These are a starting point, not a
+          script. Prompting is most of the skill with this kind of work.
+
+
+
+
+        If something goes wrong
+
+        Tell Claude what happened and what you expected instead. That one habit fixes more than any specific
+        prompt. Prompts 5 and 6 are ready-made versions for the two most common problems.
+
+
+
+
+W H AT ' S I N S I D E
+
+
+1        Design your website                                                                              Claude Design
+
+
+2        Fix elements hanging off the edge                                                                Claude Design
+
+
+3        Check the connection                                                                                  Claude Code
+
+
+4        Build the design into WordPress                                                                       Claude Code
+
+
+5        Recovery: it came in as raw code                                                                      Claude Code
+
+
+6        Recovery: a stylesheet is overruling Elementor                                                        Claude Code
+
+
+7        Build the header and footer                                                                           Claude Code
+
+
+8        Add a new page                                                                                        Claude Code
+
+
+9        Generate images for a page                                                                            Claude Code
+
+
+10       Add a blog                                                                                            Claude Code
+  1      Design your website
+           Claude Design      / Chapter 5 / Paste as one message
+
+The whole design brief. Everything above the divider is the output format that
+makes the design move into WordPress cleanly. Everything below it is yours.
+
+
+   Note Attach your logo and photos to this same message. Rough phone photos
+   are fine, because the image rules turn them into professional versions.
+
+
+
+      BUILD RULES. Follow all of these.
+
+
+      Layout: use flexbox for all layout. Do not use CSS grid. Do not use absolute or
+      fixed positioning, except for a sticky navigation bar if the design needs one.
+
+
+      Styling: define every colour, font family, font size, and spacing value once as a
+      CSS custom property in :root, then reference them with var(). Do not hard-code a
+      colour or a size anywhere in the page.
+
+      Fonts: write every font family value as a quoted string, including families whose
+      names contain a space or a number.
+
+
+      Class names: give each repeated visual pattern one short, descriptive class name,
+      for example card-service or button-primary, and reuse that same class every time
+      the pattern appears. Do not use long stacks of single-purpose utility classes.
+
+
+      Do not style part of a heading differently from the rest of it. If a phrase inside
+      a heading needs its own colour, make it a separate element.
+
+      Do not use pseudo-elements such as ::before or ::after for anything visible. Bullets,
+      dots, and decorative marks must be real elements.
+
+
+      Header and footer: design them once, as their own standalone components. Do not
+      repeat the header and footer markup inside each page. Each page's content starts
+      below the navigation and ends above the footer.
+
+
+      IMAGES
+
+      I have attached my own photos and my logo. Use them in the design and keep their
+      filenames.
+
+
+      If an image generation connector such as Artlist is available to you, you may also
+      generate images. In that case: use my attached photos as style references, so
+      everything you generate matches them for lighting, colour, setting, and season.
+      Where one of my photos is low quality or looks like a phone snapshot, generate a
+      professional version of that same subject and use it instead. Generate any
+      additional imagery the design needs in the same consistent style.
+
+      If I have not attached a logo, generate one that fits the brand.
+
+
+      If no image generation connector is available, use only my attached photos and do
+      not substitute or invent other images.
+
+      Contact form: style the form fields and the button as a visual mockup only. Do not
+      write any submission logic. Label it clearly as a mockup.
+
+
+      Screens: design and show me the desktop, tablet, and mobile layout for every page.
+      Lay mobile out deliberately rather than letting things stack by accident.
+      - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+      THE WEBSITE
+
+
+      Design a five-page website for [BUSINESS NAME] , a [BUSINESS TYPE] in [LOCATION] .
+
+
+      What they do: [TWO SENTENCES OF SPECIFIC DETAIL, INCLUDING WHAT MAKES THEM DIFFERENT]
+      Who it's for: [CUSTOMER]
+      Services: [FOUR NAMED SERVICES]
+
+
+      Pages: Home, Services, Gallery, About, Contact.
+
+      Design direction: [3-5 WORDS] .
+
+
+      Write specific copy for this business. No placeholder text and no lorem ipsum.
+
+
+      Copy voice: write like a person, not like an AI. Do not use em dashes anywhere in
+      the copy. Avoid stock AI phrasing such as "unlock", "elevate", "seamless",
+      "in today's fast-paced world", and "it's not just X, it's Y". Short, concrete,
+      specific sentences about what this business actually does.
+
+
+
+
+  2      Fix elements hanging off the edge
+            Claude Design     / Chapter 5 / Only if you spot it
+
+Open each page preview one at a time and look down the right-hand edge.
+Overflow is the most common thing to find, and it travels into WordPress if you
+leave it.
+
+
+      On the individual page previews, several pages have elements extending beyond the right
+      edge of the page. Review and fix all occurrences.
+
+
+
+
+  3      Check the connection
+            Claude Code     / Chapter 6 / Run before you build
+
+Confirms Claude can reach your site. Read the theme in the answer: if it says
+anything other than Astra, your theme never activated.
+
+
+      Are you connected to my WordPress site? Tell me the site name and the active theme.
+ 4      Build the design into WordPress
+          Claude Code      / Chapter 7 / Attach your design zip
+
+The big one. Rebuilds your design as editable Elementor blocks, converts and
+uploads every image, and turns your colours into reusable variables.
+
+
+  Note The last line stops it after the home page on purpose, so you can check
+  one page before it builds the other four.
+
+
+
+     Attached are the exported pages of a website design: Home, Services, Gallery,
+     About, and Contact.
+
+     Rebuild them on my WordPress site as Elementor pages.
+
+
+     Use Elementor version 4 atomic elements. Do not paste raw HTML into an HTML widget
+     anywhere, and do not use a shortcode to embed markup.
+
+     Build page content only. Do not add the header or the footer to any page, because
+     the theme handles those. Each page starts below the navigation and ends above the
+     footer.
+
+
+     Images: before uploading any photograph to my media library, convert it to WebP and
+     resize it so its longest edge is at most 1600 pixels and the file is under 400 KB.
+     Do this conversion on the server. Large PNGs cause the Elementor editor to fail to
+     paint images, so do not upload a photograph over 400 KB under any circumstances.
+     Keep logos and any image with transparency as PNG.
+
+     Wherever the design has an image referencing a local file, convert it to an
+     optimized format, then upload it to the WordPress media library and the site design.
+
+
+     Wherever the design has an image that references a URL, download the image from the
+     URL so we have a local copy, convert it to an optimized format, then upload it to
+     the WordPress media library and the site design.
+
+
+     Use real image widgets for photographs. Do not build a photo as a background image
+     on an empty container, and do not leave any container empty.
+
+     Turn every CSS custom property from the design into an Elementor global variable,
+     and every repeated class into an Elementor global class. Reference those instead of
+     setting values on individual elements.
+
+
+     Do not create, enqueue, or link any stylesheet, and do not put any styling in the
+     theme's Additional CSS or a child theme. Every style must live in an Elementor
+     global class, an Elementor global variable, or the element's own settings panel.
+     If a style cannot be expressed that way, tell me instead of writing CSS.
+
+
+     Set colour explicitly on any class that styles a heading, because the theme sets
+     heading colours directly and will otherwise win.
+
+
+     Set every page's template to Elementor Full Width, and in the Astra settings for
+     each page use the full-width container, no sidebar, and hide the page title.
+
+     Recreate the responsive behaviour using Elementor's own per-device controls for
+     tablet and mobile. Do not assume the media queries in my files carry across.
+
+
+     On the contact page, leave an empty section where the form mockup is, and tell me
+     where it is. I'll put a working form there myself.
+
+     If you need to install anything to do this work, go ahead and install it.
+
+
+     Build the Home page first, then stop and tell me it's done so I can check it before
+     you continue.
+ 5     Recovery: it came in as raw code
+         Claude Code   / Chapter 7 / Only if something went wrong
+
+Use this if the page arrived as one block you cannot click into.
+
+
+     This page came in as raw HTML inside a single widget. I expected Elementor version 4
+     atomic elements that I can select and edit individually. Please rebuild it that way,
+     with no HTML widgets.
+
+
+
+
+ 6     Recovery: a stylesheet is overruling Elementor
+         Claude Code   / Chapter 7 / Only if something went wrong
+
+Use this if the elements select fine but changing a colour in the panel does nothing.
+
+
+     These elements are styled by an external CSS class instead of by Elementor. I expected
+     every style to live in the element's own panels. Please rebuild them using only
+     Elementor's own settings, so the background, spacing, borders, and typography are all
+     in the Style and Advanced panels. Then remove the CSS class and the stylesheet. Do this
+     for every page, not just this one.
+
+
+
+
+ 7     Build the header and footer
+         Claude Code   / Chapter 8 / Create your menu first
+
+Build the menu by hand at Appearance then Menus before you run this, otherwise
+WordPress orders your pages alphabetically.
+
+
+     Set up the Astra header and footer to match the design I gave you, using the site
+     menu I just created. Use the designs from the Claude Design package I provided
+     earlier.
+ 8     Add a new page
+         Claude Code    / Chapter 11 / Reuse for every new page
+
+No design tool and no export needed. Claude reads the pages it already built and
+matches them.
+
+
+  Note Reusing the existing variables and classes is what stops your site drifting
+  into five different designs as it grows.
+
+
+
+     Design and build a new Elementor page on my site for [PURPOSE] .
+
+
+     First read my existing pages and my Elementor global variables and global classes,
+     and match the style, spacing, colours, and fonts you find there.
+
+
+     Use Elementor version 4 atomic elements, reuse the existing global variables and
+     classes rather than making new ones, no HTML widgets, no empty containers, and no
+     header or footer in the page content. Set the page template to Elementor Full Width
+     with the Astra title hidden, like the other pages, and set the tablet and mobile
+     layouts with Elementor's per-device controls.
+
+
+     Convert every photograph to WebP under 400 KB before uploading it to my media
+     library. If an image is only a URL, download it first so we have a local copy.
+
+
+     Make it a sub-page of [PARENT PAGE] and link it as a sub-item in the primary menu.
+
+
+     For imagery, use the Instant Images plugin I have installed to find stock photos
+     that match the existing images on my site.
+
+
+
+
+ 9     Generate images for a page
+         Claude Code    / Chapter 11 / Needs Artlist connected
+
+Generates images on brand, converts them, uploads them to your media library,
+and places them on the page.
+
+
+     Generate images for this page with Artlist that match the theme, style and setting of the
+     images already in my media library, then use them on the page.
+ 10     Add a blog
+          Claude Code   / Chapter 11 / Optional
+
+WordPress has a blog built in. This switches it on, puts it in your menu, and styles it
+to match the rest of your site.
+
+
+   Note Post layouts are controlled by your theme, not Elementor, because
+   Elementor's template builder is a paid feature. Your posts still match your
+   colours and fonts, and you write them in the normal WordPress editor.
+
+
+
+      Add a blog to my site.
+
+
+      Create a page called Blog and set it as the posts page under Settings, then Reading.
+      Add it to the primary menu.
+
+
+      Style the blog listing and the single post layout using Astra's own settings so they
+      match the rest of my site: the same colours, the same fonts, the same container
+      width, and no sidebar. Do not try to build post templates in Elementor, because the
+      template builder is a paid feature. Do not create any stylesheet.
+
+
+      Then write one short example post so I can see how it looks, and tell me where in
+      WordPress I go to write the next one.
+Everything you need
+The two paid tools from the video, and how to get the best price on them.
+
+
+
+
+   Hostinger — hosting and your free domain
+   An additional 10% off, on top of any promotion already running. Applied automatically, no code needed.
+   meticsmedia.com/hostinger-HZU
+
+
+
+
+   Artlist — AI image generation (optional)
+   Only needed if you want Claude to generate images for you. Lands on the page where you connect it to Claude.
+   meticsmedia.com/artlist-HZU
+
+
+
+
+   Claude — Pro plan or above
+   Required for both Claude Design and the Code tab. There is no free route through this build.
+   claude.ai
+
+
+
+
+Free tools used in the video: the Astra theme, Elementor, WPForms, the NovaMira
+connector, and the Instant Images plugin. Prices and interfaces change, so check
+what is on screen when you get there rather than matching the video exactly.
+

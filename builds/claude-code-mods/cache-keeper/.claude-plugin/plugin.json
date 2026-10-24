@@ -1,0 +1,20 @@
+{
+  "name": "cache-keeper",
+  "version": "0.1.0",
+  "description": "Shows a prompt-cache countdown, context size, rate-limit usage and session cost above the prompt, with a handoff-and-compact button.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "cacheWindowMinutes": {
+      "type": "number",
+      "title": "Cache window (minutes)",
+      "default": 60,
+      "description": "Minutes of inactivity after which the prompt cache is assumed to have gone cold. There is no documented API for the real server-side TTL, so this is a configurable estimate, not a measurement."
+    },
+    "warnBeforeMinutes": {
+      "type": "number",
+      "title": "Warn before (minutes)",
+      "default": 5,
+      "description": "How many minutes before the estimated cache-cold point to send one notification."
+    }
+  }
+}
