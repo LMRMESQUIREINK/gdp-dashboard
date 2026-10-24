@@ -2,19 +2,26 @@
   "name": "creator-empire-ai-cloud",
   "version": "0.1.0",
   "private": true,
-  "description": "Creator Empire AI -- Cloud Edition scaffold: auth-gated AI generation route, Supabase persistence, Stripe webhook skeleton. Not deployed; see README.md for what's real vs. stubbed.",
+  "description": "Creator Empire AI -- Cloud Edition: a real Next.js app (dashboard, auth, 7-step campaign wizard, auth-gated AI generation route, Supabase persistence, Stripe webhook skeleton). Not deployed; see README.md for what's real vs. stubbed.",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "build": "next build",
+    "dev": "next dev"
   },
   "license": "UNLICENSED",
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
+    "next": "^15.5.28",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "stripe": "^23.0.1"
   }
 }

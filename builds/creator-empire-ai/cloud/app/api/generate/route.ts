@@ -11,56 +11,13 @@
 //      plan's own "production safeguards" section names ("server-side
 //      API key protection").
 //
-// handleGenerateRequest is the testable core, split from POST the same
-// way app/api/stripe/webhook/route.ts splits handleStripeWebhook from
-// its own POST -- dependencies (auth verification, the AI call) are
-// injected, so the real branching logic can be unit-tested with fakes
-// instead of a live Supabase project and a live OpenAI key, neither of
-// which exist in this sandbox.
-import { validateBrief, type CampaignBrief } from "../../../lib/campaign";
+// The actual branching logic lives in lib/generateHandler.ts -- this
+// file is a thin wrapper that only ever exports POST, which is what
+// Next's route-type checker requires (see that file's own comment for
+// why handleGenerateRequest can't live here directly).
+import { handleGenerateRequest } from "../../../lib/generateHandler";
 import { generateHooks, AIGenerationError } from "../../../lib/ai";
 import { createServerSupabaseClient, readSupabaseEnv } from "../../../lib/supabase";
-
-export interface GenerateDeps {
-  verifyUser: (token: string) => Promise<{ userId: string } | null>;
-  generateHooksFn: (brief: CampaignBrief) => Promise<string[]>;
-}
-
-export interface HttpResult {
-  status: number;
-  body: unknown;
-}
-
-export async function handleGenerateRequest(
-  authHeader: string | null,
-  rawBody: unknown,
-  deps: GenerateDeps
-): Promise<HttpResult> {
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) {
-    return { status: 401, body: { error: "missing Authorization: Bearer <token>" } };
-  }
-
-  const user = await deps.verifyUser(token);
-  if (!user) {
-    return { status: 401, body: { error: "invalid or expired session" } };
-  }
-
-  const validated = validateBrief(rawBody);
-  if (!validated.ok) {
-    return { status: 400, body: { error: "invalid campaign brief", details: validated.errors } };
-  }
-
-  try {
-    const hooks = await deps.generateHooksFn(validated.brief);
-    return { status: 200, body: { hooks } };
-  } catch (err) {
-    if (err instanceof AIGenerationError) {
-      return { status: 502, body: { error: err.message } };
-    }
-    throw err;
-  }
-}
 
 export async function POST(req: Request): Promise<Response> {
   const supabaseEnv = readSupabaseEnv(process.env as Record<string, string | undefined>);

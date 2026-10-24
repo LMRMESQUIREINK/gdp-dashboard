@@ -1,50 +1,12 @@
 // Next.js App Router Route Handler: POST /api/stripe/webhook
 //
 // Scaffold only -- never exercised against a live Stripe account or a
-// real webhook delivery from this sandbox (no Stripe account exists
-// here, same standing restriction as every live-paid-API claim in this
-// project). What IS real: the signature-verification call itself,
-// Stripe's actual SDK method, used the way Stripe's own docs specify --
-// not a hand-rolled HMAC check that could silently drift from their
-// format.
+// real webhook delivery from this sandbox. The actual signature
+// verification + event routing logic lives in
+// lib/stripeWebhookHandler.ts -- this file only ever exports POST, per
+// Next's route-type checker (see that file's own comment for why).
 import Stripe from "stripe";
-
-export interface StripeWebhookDeps {
-  stripe: Stripe;
-  webhookSecret: string;
-  onSubscriptionEvent: (event: Stripe.Event) => Promise<void>;
-}
-
-/** Framework-agnostic handler body, separated from the Route Handler
- * export below so it can be unit-tested with a fake Stripe client
- * instead of a real signed payload. */
-export async function handleStripeWebhook(
-  rawBody: string,
-  signatureHeader: string | null,
-  deps: StripeWebhookDeps
-): Promise<{ status: number; body: unknown }> {
-  if (!signatureHeader) {
-    return { status: 400, body: { error: "missing stripe-signature header" } };
-  }
-
-  let event: Stripe.Event;
-  try {
-    event = deps.stripe.webhooks.constructEvent(rawBody, signatureHeader, deps.webhookSecret);
-  } catch (err) {
-    return { status: 400, body: { error: `signature verification failed: ${(err as Error).message}` } };
-  }
-
-  const relevant = [
-    "customer.subscription.created",
-    "customer.subscription.updated",
-    "customer.subscription.deleted",
-  ];
-  if (relevant.includes(event.type)) {
-    await deps.onSubscriptionEvent(event);
-  }
-
-  return { status: 200, body: { received: true } };
-}
+import { handleStripeWebhook } from "../../../../lib/stripeWebhookHandler";
 
 export async function POST(req: Request): Promise<Response> {
   const secretKey = process.env.STRIPE_SECRET_KEY;

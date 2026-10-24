@@ -1868,6 +1868,66 @@ yourself every time.
     be done. 12 of the 18 apps, a deployed cloud instance, and any
     rendered video remain explicitly out of scope, stated in the
     build's README rather than implied as present.
+- **`/builds/creator-empire-ai/cloud` extended into a real running
+  Next.js app**, following all three user-picked next moves from round
+  1 ("wire a real Supabase/OpenAI/Vercel deploy," "port the standalone's
+  UI into Next.js," "build out Phase 2") — sequenced rather than
+  attempted all at once: move 2 (the Next.js port) is what this round
+  actually builds, since it's real code that could be written and
+  proven without the live credentials move 1 needs; move 1's exact
+  setup steps are explained rather than guessed at (Supabase project,
+  OpenAI key, Stripe account, Vercel project, all needing the user's
+  own accounts); move 3 (Phase 2 apps) stays queued for the round after.
+  Installed Next.js 15 + React 19 for real — a real `npm view` check
+  caught that the first `next@15.1.6` install carried a known CVE, so
+  upgraded to the patched `15.5.28` backport before building anything
+  on top of it. Ported the dashboard, login, and full 7-step campaign
+  wizard from the Standalone Edition's already-proven logic
+  (`lib/generators.ts` is a direct TypeScript port of
+  `standalone/assets/app.js`'s generator functions, not a re-derivation
+  — re-proven with its own 5 new tests matching the Standalone
+  Edition's exact behavior) — hooks now call the real `/api/generate`
+  route with the signed-in user's session token; `Save to Supabase`
+  and both file exports are wired to real code paths. The browser
+  Supabase client (`lib/supabaseBrowser.ts`) is deliberately constructed
+  lazily, inside `useEffect`/event handlers only, never at module scope
+  — the reason stated in the file itself: a module-scope throw (which
+  `readSupabaseEnv()` does without live credentials, true in this
+  sandbox) would fail `next build`'s prerendering pass for every page
+  that imports it. **Two real bugs found and fixed this round, both
+  while actually building and running the app, not from reading the
+  code** — a real gap in round 1's own verification, which stopped at
+  `tsc --noEmit` and never actually ran `next build`: (1) Next's own
+  route-type checker rejected round 1's `route.ts` files outright
+  (`"handleGenerateRequest" is not a valid Route export field"`) because
+  it only allows a fixed set of exports (`GET`/`POST`/a few config
+  constants) from a route file — round 1's dependency-injected handlers
+  had been exported directly alongside `POST`, which satisfied plain
+  `tsc` but not Next's stricter build-time check; fixed by moving
+  `handleGenerateRequest`/`handleStripeWebhook` into
+  `lib/generateHandler.ts`/`lib/stripeWebhookHandler.ts`, leaving each
+  `route.ts` a thin wrapper exporting only `POST`. (2) TypeScript 7 (the
+  brand-new native compiler, grabbed by round 1's plain
+  `npm install typescript`) is incompatible with Next 15's build-time
+  type checker and blocked `next build` entirely until downgraded to
+  TypeScript 6, per Next's own error message — a real, currently-live
+  version trap for anyone pairing a fresh `npm install` with an
+  existing Next 15 project today. `next build` now succeeds for real:
+  4 pages + 2 API routes, all 4 pages statically prerendered, with
+  **zero live environment variables set** — direct proof the lazy-
+  client design works rather than just reading plausibly. The built
+  app was started for real (`next start`) and driven with Playwright:
+  5 pages/viewports screenshot clean with zero console errors
+  (`review/screenshots/cloud/`), and — the test that matters most for a
+  "not deployed" build — both the login form and the wizard's
+  "Generate hooks" button were actually submitted with no live Supabase
+  configured, and both surfaced the real configuration error as
+  readable UI with zero uncaught page errors, not a crash. 36/36 tests
+  pass (29 from round 1, plus 7 new), strict-mode typecheck clean.
+  Round 1's `parseHookResponse` bug-fix stands unchanged. Noted rather
+  than silently force-upgraded: `npm audit` still reports one open
+  PostCSS advisory, pulled in transitively by Next.js itself, whose fix
+  needs a breaking Next 16 jump not validated this round.
 
 ---
 

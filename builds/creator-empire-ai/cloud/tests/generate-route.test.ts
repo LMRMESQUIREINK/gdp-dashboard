@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { handleGenerateRequest } from "../app/api/generate/route";
+import { handleGenerateRequest } from "../lib/generateHandler";
 import { AIGenerationError } from "../lib/ai";
 
 const validBody = {

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type Stripe from "stripe";
-import { handleStripeWebhook } from "../app/api/stripe/webhook/route";
+import { handleStripeWebhook } from "../lib/stripeWebhookHandler";
 
 function fakeStripe(behavior: "ok" | "bad-signature", eventType = "customer.subscription.created"): Stripe {
   return {
