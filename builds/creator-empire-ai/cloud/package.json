@@ -1,0 +1,20 @@
+{
+  "name": "creator-empire-ai-cloud",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Creator Empire AI -- Cloud Edition scaffold: auth-gated AI generation route, Supabase persistence, Stripe webhook skeleton. Not deployed; see README.md for what's real vs. stubbed.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "stripe": "^23.0.1"
+  }
+}

@@ -1793,6 +1793,81 @@ yourself every time.
   one would guard against the wrong threat model), no multi-agent swarm, no
   recon/triage/severity stages — just the two stages that are genuinely
   load-bearing and fully verifiable without a model in the loop.
+- **New build from a pasted planning conversation, not an uploaded
+  document to audit: `/builds/creator-empire-ai/`** — an 18-app
+  creator/marketing SaaS plan (6 suites of 3 apps, one master
+  dashboard) with a Phase 1 six-app flagship workflow: product image →
+  hook → sales script → storyboard → music transition → ad creatives →
+  exported campaign package, demoed against a "Goli Nutrition" example.
+  The source text's own honesty was carried through rather than
+  smoothed over: no 18-app library exists yet, this is a build
+  blueprint, and the UI itself tags only the 6 Phase 1 apps `LIVE`
+  against 12 `PLANNED`. DNA Lock added to `design-rules.md` as a third,
+  distinct brand — **Creator Empire AI**, ember red-orange
+  (`#FF4D3D`) on a violet-near-black (`#110B14`), Sora/Manrope/
+  JetBrains Mono — deliberately not the generic violet/indigo "AI
+  dashboard" gradient this file already bans by default, and the
+  source plan's own named margin risk ("unlimited AI video generation")
+  and brand-endorsement risk (the Goli demo) both converted into hard
+  don't-say rules rather than left as advice to remember later. Built
+  **both** editions the user explicitly asked for, matching the user's
+  own final instruction ("PLUS" both, not either/or):
+  - **Standalone Edition** (`standalone/`) — a real, fully working,
+    zero-dependency local app (plain HTML/CSS/JS, template-based
+    generation, no API key, no network call) driving all 7 steps of the
+    flagship workflow, with `localStorage` project save and
+    `campaign.json`/`campaign-brief.md` export. Proven two ways:
+    `test_pure.mjs` (40/40 — generator-function correctness, including
+    that storyboard scenes tile the full duration with zero gaps/
+    overlaps and the beat-map transition-second arithmetic is exactly
+    right) and a real-Chromium `test_playwright.py` (25/25 — drives the
+    complete 7-step UI flow, confirms the script's Hook part matches
+    the picked hook exactly, confirms both file exports and the
+    localStorage round-trip, screenshots at 1280px/375px with zero
+    console errors and zero overflow). **Two real bugs found and fixed
+    while testing, both in the test harness, not the app**: `inner_text()`
+    picked up the `.part-name` CSS's `text-transform: uppercase`
+    instead of the real DOM text (fixed by switching to
+    `text_content()`), and a range `<input>` can't be driven with
+    Playwright's `Locator.fill()` (fixed by setting `.value` via
+    `page.evaluate()` and dispatching the same `input` event a real
+    drag fires). A third, real app issue was also caught and fixed: the
+    browser's automatic `favicon.ico` 404 surfaced as a console error,
+    fixed with an inline SVG favicon.
+  - **Cloud Edition** (`cloud/`) — not deployed (no Supabase project,
+    OpenAI key, or Stripe account exists in this sandbox), but real,
+    type-checked, dependency-injection-tested TypeScript for the parts
+    that are architecturally new over the Standalone Edition rather
+    than a line-for-line React port of UI already proven there: the
+    shared `Campaign` record + a server-side `validateBrief()` that
+    never trusts a client-typed body, a real OpenAI Chat Completions
+    call with an injectable `fetch` for testing, two Supabase client
+    factories matching its real documented anon-key/service-role split,
+    the one secure `/api/generate` auth-gated AI endpoint the source
+    plan calls its "immediate next milestone," a real
+    `stripe.webhooks.constructEvent` signature-verification call (not a
+    hand-rolled HMAC check), and a `projects` table with real
+    Supabase row-level-security policies. Both the generate route and
+    the Stripe webhook split a pure, dependency-injected handler out
+    from their thin framework wrapper (the same pattern on both),
+    which is what makes the actual branch logic testable without a
+    live Supabase project or Stripe account. `npm run typecheck`
+    (strict mode) clean; `npm test` 29/29 passing. **One real bug found
+    and fixed while writing those tests, not a harness artifact**:
+    `parseHookResponse`'s first draft scanned for the first `[` to the
+    last `]` anywhere in the model's raw text, which silently accepted
+    `{"hooks": ["a"]}` — a plausible off-spec response — by finding the
+    *nested* array's own brackets, exactly the kind of off-spec output
+    that should fail loudly instead of being guessed at (the prompt
+    asks for "ONLY a JSON array... nothing else"). Fixed by requiring
+    the entire fence-stripped response to parse as JSON directly,
+    dropping the bracket-scanning fallback. Stated plainly rather than
+    silently stubbed: the Stripe webhook's actual subscription→Supabase
+    write is a real, named gap (needs a live Stripe account's real
+    object shape to design against), not a silent no-op pretending to
+    be done. 12 of the 18 apps, a deployed cloud instance, and any
+    rendered video remain explicitly out of scope, stated in the
+    build's README rather than implied as present.
 
 ---
 
