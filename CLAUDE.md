@@ -1928,6 +1928,31 @@ yourself every time.
   than silently force-upgraded: `npm audit` still reports one open
   PostCSS advisory, pulled in transitively by Next.js itself, whose fix
   needs a breaking Next 16 jump not validated this round.
+- **Analysis-only round: a bare one-page PDF upload, "The $10K
+  Checklist" (Metics Media, "Field Guide No. 01 · Claude Code Era ·
+  MMXXVI")** — no accompanying text, same bare-file-reference pattern
+  as the WordPress prompt pack round. Full write-up in
+  `/notes/metics-media-10k-checklist-analysis.md`. Measured via
+  `pdftotext -layout` rather than retyped by eye: 297 words, 8 numbered
+  items, zero links/URLs/affiliate markers anywhere in the document
+  (grepped and confirmed) — a real, checkable contrast with the other
+  two Metics Media pieces this project has already audited, both of
+  which carried embedded funnel links. The one finding that matters,
+  checked directly rather than eyeballed: grepped
+  `/builds/ten-k-website-grader/ten_k_grader.py`'s own pillar names
+  (point-of-view, typography, colour, hierarchy, imagery, motion,
+  mobile, invisible-stuff — built several rounds ago from a *separate*
+  source, a "$10,000 Websites using Claude Code" video) against this
+  PDF's eight numbered items and found an exact 8-for-8 match, same
+  order, near-identical wording on several points — with neither
+  document citing the other or any shared source for the taxonomy.
+  Stated as an open finding rather than resolved in either direction
+  (shared uncited source, one operator behind both, or coincidence too
+  precise to easily credit), since nothing in either document settles
+  which. **No build this round** — the one concrete idea in the PDF is
+  already implemented, more rigorously, in the grader built from the
+  earlier video round; a second implementation of the same eight
+  categories from a shorter restatement would add nothing.
 
 ---
 
