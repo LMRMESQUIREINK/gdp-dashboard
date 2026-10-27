@@ -1953,6 +1953,57 @@ yourself every time.
   already implemented, more rigorously, in the grader built from the
   earlier video round; a second implementation of the same eight
   categories from a shorter restatement would add nothing.
+- **Deep analysis + new build from a bare repo link: `bytedance/deer-flow`
+  ("DeerFlow 2.0")** — a bare GitHub URL with no accompanying text, same
+  bare-reference pattern as every prior upload, cloned and read directly
+  rather than summarized from its own README. Full write-up in
+  `/notes/deer-flow-analysis.md`. This is a real, large, continuously
+  shipping open-source agent harness (829 merged PRs toward one milestone
+  in roughly a month per its own changelog, MIT-licensed, ByteDance), not a
+  claim-heavy article or a toy — so the round focused on reading one
+  concrete, fully-specified, independently verifiable mechanism in full
+  rather than surveying the whole 4,389-file stack: the authoritative
+  run-terminal-outcome protocol in
+  `backend/packages/harness/deerflow/runtime/events/terminal.py` (316
+  lines) plus its 373-line design doc, both read completely before writing
+  anything. Checked two claims rather than repeating them: the README's
+  "ground-up rewrite, shares no code with v1" held up structurally (the
+  real `main-1.x` branch exists, 451 files, flat layout; a direct
+  path-overlap diff against `main`'s 4,389 files found exactly 13 shared
+  paths, every one of them repo boilerplate — README/LICENSE/Makefile/
+  gitignore/one workflow file — zero shared implementation code); the
+  "#1 on GitHub Trending" / "41,700 stars" claim is self-reported and only
+  found mirrored elsewhere, not independently confirmed, same "source is
+  silent" treatment as every other unverifiable popularity claim this
+  project has flagged (Factory.ai's white paper, REA's "300,000 stars").
+  **Built**: `/builds/run-terminal-ledger/` — a standalone, dependency-free
+  Python reimplementation of the real mechanism (not guessed from docs
+  prose): an idempotent `put_if_absent`-based singleton confirmation with
+  four outcomes (`CONFIRMED_NEW`/`CONFIRMED_EXISTING`/`CONFLICT`/`UNKNOWN`),
+  a bounded two-attempt lost-ACK retry, and a one-shot `RecoveryTarget`
+  (immutable, raises on double-use) issued only from a genuine
+  claim-for-takeover result, with a lifecycle guard ensuring a stale target
+  issued before a run's deletion can't resurrect an orphan event — closing
+  a real coordination gap this project's existing `/builds/
+  agent-checkpoint-layer/` and `/builds/policy-control-plane/` don't cover
+  (a disputed-outcome singleton that converges correctly even when two
+  processes each wrongly believe they won a takeover race). Deliberately
+  narrowed to just the terminal-outcome protocol and its seq watermark, not
+  DeerFlow's full event envelope/categories/consumer projections, and not
+  the upstream Evidence Ordering barrier sequence (concerns *when*
+  confirmation may be called, not the protocol itself). **Found and fixed a
+  real gap in this build's own first draft, not the source**: the first
+  concurrency test shared one `TerminalLedger` instance across 20 racing
+  threads, so that instance's own `threading.Lock` — not SQLite's `UNIQUE`
+  constraint — was what actually prevented a double insert, leaving the
+  `sqlite3.IntegrityError` fallback branch (the literal code backing the
+  module's central atomicity claim) unexercised. Fixed by adding a genuine
+  cross-process test: six separate OS processes, each constructing its own
+  `TerminalLedger` against one shared SQLite file, with a seventh,
+  independent connection verifying exactly one row after all six exit.
+  16/16 tests pass on the real run, including the original 20-thread race
+  (one status, and a harsher version where half the threads race a
+  different, contradictory status) and the new cross-process race.
 
 ---
 
