@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creator Empire AI — Standalone Edition</title>
+<meta name="description" content="Phase 1 flagship workflow: one product image to one finished campaign package. Runs fully offline, no paid services.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23110B14%22/><rect x=%228%22 y=%228%22 width=%2216%22 height=%2216%22 rx=%224%22 fill=%22%23FF4D3D%22/></svg>">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Creator Empire <span class="accent">AI</span></span>
+    </div>
+    <p class="brand-tagline">One product image. One finished campaign.</p>
+    <span class="edition-pill">Standalone Edition — runs offline, no paid services</span>
+  </header>
+
+  <section class="suites" id="suites" aria-label="The 6-suite, 18-app library">
+    <h2 class="section-label">The library — what's live today vs. planned</h2>
+    <div class="suite-grid" id="suite-grid"></div>
+  </section>
+
+  <main class="workflow" aria-label="Phase 1 flagship workflow">
+    <nav class="stepper" id="stepper" aria-label="Workflow steps"></nav>
+
+    <div class="panels" id="panels">
+
+      <section class="panel" data-step="1" id="panel-1">
+        <h2>01 · Campaign basics</h2>
+        <p class="hint">This feeds every app below — fill it in once.</p>
+        <div class="field-grid">
+          <label>Brand / product name
+            <input type="text" id="f-brand" placeholder="e.g. Goli Nutrition" value="Goli Nutrition">
+          </label>
+          <label>Product in one phrase
+            <input type="text" id="f-product" placeholder="e.g. Apple Cider Vinegar gummies" value="Apple Cider Vinegar gummies">
+          </label>
+          <label>Target audience
+            <input type="text" id="f-audience" placeholder="e.g. busy parents who want an easy wellness habit" value="busy parents who want an easy wellness habit">
+          </label>
+          <label>Main benefit / outcome
+            <input type="text" id="f-benefit" placeholder="e.g. a gut-health habit that actually tastes good" value="a gut-health habit that actually tastes good">
+          </label>
+          <label>Campaign duration
+            <select id="f-duration">
+              <option value="15">15 seconds</option>
+              <option value="40" selected>40 seconds</option>
+              <option value="60">60 seconds</option>
+            </select>
+          </label>
+          <label>Aspect ratio
+            <select id="f-ratio">
+              <option value="9:16" selected>9:16 (Reels/TikTok/Shorts)</option>
+              <option value="1:1">1:1 (Feed)</option>
+              <option value="16:9">16:9 (YouTube)</option>
+            </select>
+          </label>
+        </div>
+        <label class="upload-field">Product image (optional — used for the preview only, nothing is uploaded anywhere)
+          <input type="file" id="f-image" accept="image/*">
+        </label>
+        <div class="image-preview" id="image-preview" hidden>
+          <img id="image-preview-img" alt="Uploaded product preview">
+        </div>
+        <div class="panel-actions">
+          <button class="btn-primary" id="btn-to-2">Generate hooks →</button>
+        </div>
+      </section>
+
+      <section class="panel" data-step="2" id="panel-2" hidden>
+        <h2>02 · Hook Generator</h2>
+        <p class="hint">Scroll-stopping opening lines for your campaign basics above.</p>
+        <div class="panel-actions"><button class="btn-secondary" id="btn-regen-hooks">↻ Generate new set</button></div>
+        <div class="card-list" id="hook-list"></div>
+        <div class="panel-actions">
+          <button class="btn-ghost" id="btn-back-1">← Back</button>
+          <button class="btn-primary" id="btn-to-3" disabled>Build the script →</button>
+        </div>
+      </section>
+
+      <section class="panel" data-step="3" id="panel-3" hidden>
+        <h2>03 · Sales Video Scriptwriter</h2>
+        <p class="hint">A 7-part script built from your chosen hook.</p>
+        <div class="script-parts" id="script-parts"></div>
+        <div class="panel-actions">
+          <button class="btn-ghost" id="btn-back-2">← Back</button>
+          <button class="btn-primary" id="btn-to-4">Build the storyboard →</button>
+        </div>
+      </section>
+
+      <section class="panel" data-step="4" id="panel-4" hidden>
+        <h2>04 · Cinematic Storyboard Studio</h2>
+        <p class="hint">A timed shot list for your campaign length. Edit any field directly.</p>
+        <div class="storyboard" id="storyboard"></div>
+        <div class="panel-actions">
+          <button class="btn-ghost" id="btn-back-3">← Back</button>
+          <button class="btn-primary" id="btn-to-5">Pick the music transition →</button>
+        </div>
+      </section>
+
+      <section class="panel" data-step="5" id="panel-5" hidden>
+        <h2>05 · Music Video Director + Beat Transition Designer</h2>
+        <p class="hint">Pick the intro genre and the drop genre — the storyboard's beat map updates to match.</p>
+        <div class="field-grid">
+          <label>Intro genre
+            <select id="f-genre-intro">
+              <option value="R&B">R&amp;B</option>
+              <option value="Lo-fi">Lo-fi</option>
+              <option value="Acoustic">Acoustic</option>
+              <option value="Ambient">Ambient</option>
+            </select>
+          </label>
+          <label>Drop genre
+            <select id="f-genre-drop">
+              <option value="Hip-Hop">Hip-Hop</option>
+              <option value="EDM">EDM</option>
+              <option value="Pop">Pop</option>
+              <option value="Afrobeat">Afrobeat</option>
+            </select>
+          </label>
+          <label>Transition lands at
+            <input type="range" id="f-transition-pct" min="20" max="70" value="30">
+            <output id="f-transition-pct-out"></output>
+          </label>
+        </div>
+        <div class="beat-map" id="beat-map"></div>
+        <div class="panel-actions">
+          <button class="btn-ghost" id="btn-back-4">← Back</button>
+          <button class="btn-primary" id="btn-to-6">Generate ad creatives →</button>
+        </div>
+      </section>
+
+      <section class="panel" data-step="6" id="panel-6" hidden>
+        <h2>06 · Ad Creative Generator</h2>
+        <p class="hint">Three distinct ad angles, not one ad trying to speak to everyone.</p>
+        <div class="card-list" id="ad-list"></div>
+        <div class="panel-actions">
+          <button class="btn-ghost" id="btn-back-5">← Back</button>
+          <button class="btn-primary" id="btn-to-export">Export campaign package →</button>
+        </div>
+      </section>
+
+      <section class="panel" data-step="7" id="panel-7" hidden>
+        <h2>Campaign package</h2>
+        <p class="hint">Everything above, assembled into one project record. Save it locally or export the files.</p>
+        <div class="export-actions">
+          <button class="btn-primary" id="btn-save-local">💾 Save project to this browser</button>
+          <button class="btn-secondary" id="btn-export-json">⬇ Export campaign.json</button>
+          <button class="btn-secondary" id="btn-export-md">⬇ Export campaign-brief.md</button>
+        </div>
+        <pre class="json-view" id="json-view"></pre>
+        <div class="panel-actions">
+          <button class="btn-ghost" id="btn-back-6">← Back</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="disclosure">
+    <p>
+      This is a reference/demo workflow. Nothing here is a claimed Goli
+      Nutrition partnership or an endorsement, and nothing renders a
+      finished video — the output is a structured campaign package
+      (hooks, script, storyboard, beat map, ad copy, export), not a
+      rendered clip. Of the 18-app library above, 6 are real and working
+      here; 12 remain planned.
+    </p>
+  </footer>
+
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

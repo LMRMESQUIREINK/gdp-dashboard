@@ -2,16 +2,18 @@
 
 The design system for anything visual in this project — a web page, app
 screen, or component. Any build that touches a UI MUST follow this file.
-**Status: two locked brands, scoped by build.** Recovery Desk is locked
-below (see `business-brain.md`). This project also holds an unrelated
-RUTHLESS TRADING GOLD trading-tools portfolio under `/builds/` — those
-builds keep their own established black/gold branding (set before this
-file was ever filled in). As of 2026-09-22, one specific RUTHLESS build —
-`/builds/prop-firm-dashboard` — has that branding formally locked here
-too, under its own product name ("The Pass Line," see below), through
-Build Brain Stage 3. Each section below is scoped to the brand it names;
-don't cross-apply Recovery Desk's green to a RUTHLESS build or vice
-versa.
+**Status: three locked brands, scoped by build.** Recovery Desk is
+locked below (see `business-brain.md`). This project also holds an
+unrelated RUTHLESS TRADING GOLD trading-tools portfolio under `/builds/`
+— those builds keep their own established black/gold branding (set
+before this file was ever filled in). As of 2026-09-22, one specific
+RUTHLESS build — `/builds/prop-firm-dashboard` — has that branding
+formally locked here too, under its own product name ("The Pass Line,"
+see below), through Build Brain Stage 3. As of 2026-10-24, a third,
+unrelated business — Creator Empire AI, an 18-app creator/marketing
+SaaS suite (`/builds/creator-empire-ai/`) — has its own DNA Lock below.
+Each section below is scoped to the brand it names; don't cross-apply
+one brand's palette to a build under a different one.
 
 ---
 
@@ -105,6 +107,112 @@ trader, not a finance-app onboarding flow.
   exact overselling this brand's honesty hook exists to avoid.
 - Stock photos of trading floors, candlestick charts as decoration, or
   a generic "guy pointing at up-and-to-the-right chart" hero image.
+
+---
+
+## Brand: Creator Empire AI (18-app creator/marketing SaaS)
+
+Build Brain DNA Lock for `/builds/creator-empire-ai/`. The idea arrived
+pre-planned, not through this project's own Interview stage: a pasted
+planning conversation proposing an 18-app product library (6 suites of
+3 apps each — Video, Music, Content, Sales, Automation, Agency labs)
+behind one dashboard, with a Phase 1 six-app flagship workflow (product
+image → hook → storyboard → music transition → video prompts → export)
+demoed against a "Goli Nutrition" sales-video concept. That source text
+is explicit, and this file repeats the same honesty rather than
+smoothing over it: no 18 apps exist yet, nothing here claims an
+existing library or verified customer base — this is a build blueprint,
+Interview/Idea skipped in favor of a ready-made plan, same shortcut this
+project already took once for `/builds/prop-firm-dashboard` (Stages
+3–6 run, Interview/Idea explicitly skipped, context given inline).
+
+- **Name**: **Creator Empire AI**, per the source plan's own stated
+  decision — kept rather than re-named, since it's a clear, accurate
+  description of the product (a dashboard "empire" of creator tools),
+  not a name this file invented.
+- **Tagline**: **"One product image. One finished campaign."** — a
+  tighter version of the source plan's own positioning ("turn one
+  product idea into a complete sales-video campaign... from one
+  workspace"), shortened to fit a hero line without losing the point:
+  the promise is the finished campaign, not the 18-button dashboard.
+- **Logo direction**: a bold, condensed wordmark, no crown/shield/badge
+  iconography (that register belongs to the unrelated RUTHLESS
+  portfolio) — if a mark is ever needed, a single stacked-layers glyph
+  (three bars suggesting "suite → app → output"), nothing literal like
+  a film clapper or music note, which would narrow the brand to one
+  lab instead of six.
+
+### Palette
+
+Deliberately distinct from both other locked brands in this file
+(RUTHLESS/The Pass Line's gold-on-black, Recovery Desk's green-on-black)
+and from the generic violet/indigo gradient every AI-SaaS dashboard
+already uses by default — this file's own "Generic-AI tells to avoid"
+list bans exactly that default, so a third brand repeating it would be
+the mistake this file exists to prevent:
+
+- Brand colour: **`#FF4D3D`** (ember red-orange) — cinematic and warm,
+  evoking studio lights and a music "drop" rather than a tech-dashboard
+  gradient. Bright variant for highlights/active states: `#FF8A5B`.
+  Muted variant for borders/dividers: `#A8392D`.
+- Background: **`#110B14`** (near-black with a faint violet undertone —
+  distinct from RUTHLESS's pure `#0A0A0A` and Recovery Desk's warm-green
+  `#101210`). Surface/card: `#1B1420`. Elevated: `#241A2B`.
+- Text: `#F2EDEE` primary, `#A79AA0` secondary.
+- One functional accent only (never a second brand colour): a cool cyan
+  `#3FE0D0` used strictly for the "music transition / beat drop" UI
+  moments (the R&B→Hip-Hop selector, beat-map markers) — the one place
+  in the product where a second colour genuinely means something
+  (the drop), not decoration.
+
+### Type
+
+- Display font: **Sora** (headings, suite/app names, big numbers) —
+  geometric and confident, distinct from both other brands' display
+  fonts (Cinzel Decorative, Space Grotesk).
+- Body font: **Manrope**.
+- Monospace (campaign JSON, IDs, exports): **JetBrains Mono**.
+- Same caveat already recorded for every other brand in this file:
+  Google Fonts do not load from this sandbox (confirmed network block),
+  so any screenshot taken here shows the system-font fallback, not
+  Sora/Manrope/JetBrains Mono rendering live — flagged, not claimed.
+
+### Voice (do-say / don't-say)
+
+Direct and outcome-first, matching the source plan's own best instinct
+("people don't buy a dashboard because it has 18 buttons — they buy the
+time saved, the campaigns produced") while correcting its own stated
+risk areas into hard rules rather than leaving them as advice to
+remember later:
+
+- **Do say**: "one workspace," "the finished campaign," "hook to
+  export," "six apps, one workflow," "upload one product image." Name
+  the real six-app flagship path plainly rather than gesturing at "AI
+  magic."
+- **Don't say**: "revolutionary," "game-changing," "unlimited AI video
+  generation" (the source plan's own flagged margin risk — video-
+  generation credits are metered and separate from planning/drafting
+  usage, and copy must never imply otherwise), "guaranteed sales,"
+  "double your money" or any guarantee stronger than a stated refund
+  window, "endorsed by" or any brand-endorsement implication for a demo
+  built against a real product name (the source plan's own Goli example
+  is a reference/demo, never a claimed partnership), "AI-powered"
+  (generic filler — name what the AI actually does instead).
+- **Signature phrase**: "One product image. One finished campaign."
+
+### Generic-AI tells to avoid (on top of the shared list below)
+
+- The violet/indigo "AI dashboard" gradient this file already bans by
+  default — doubly relevant here since this brand's whole category
+  (AI SaaS tool suites) defaults to it hardest.
+- Fake "18 apps, all live" framing — the UI must always make clear
+  which of the six Phase 1 apps are real and working versus which of
+  the remaining twelve are planned, never implying a finished 18-app
+  library that doesn't exist.
+- A rendered "finished video" anywhere in marketing material for a
+  product that only plans storyboards/prompts/scripts — the source
+  plan itself draws this line ("neither should pretend to render
+  finished video without a connected video-generation service").
 
 ---
 
