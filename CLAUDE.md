@@ -2004,6 +2004,57 @@ yourself every time.
   16/16 tests pass on the real run, including the original 20-thread race
   (one status, and a harsher version where half the threads race a
   different, contradictory status) and the new cross-process race.
+- **Deep analysis + new build from a pasted article: "AI System Design: A
+  Practical Guide to Production AI"** (Piyush Kashyap). Full write-up in
+  `/notes/ai-system-design-guide-analysis.md`. A genuine first for this
+  project's run of deep-dives: no code to run and no dated/external claim
+  to check — pure prose plus one running worked example (a fictional "AI
+  helpdesk" company's capacity-planning arithmetic), so the only things
+  to verify were its own numbers. Independently recomputed all 12 worked
+  figures in a standalone script: every one checked out exactly, the
+  cleanest arithmetic record of any source analyzed here — **except one
+  small, real finding**: the article's peak-RPS figure (0.69 × 8 ≈ 5.52)
+  computes from its own already-rounded 0.69, while the exact fraction
+  (20,000 ÷ 28,800 = 0.69444...) × 8 = 5.5556 — both round to
+  "approximately 5.5" so the practical conclusion is unaffected, but 5.52
+  is a rounding-propagation artifact, not what the stated inputs actually
+  produce. Credited: the "model requests, application executes" rule and
+  the approval-must-be-payload-bound requirement are both independently
+  the same principles `/builds/policy-control-plane/` and `/builds/
+  defender-loop-verifier/` were already built around, arrived at by an
+  unrelated author — the same kind of convergent-finding this project has
+  flagged before. Found a real **internal tension**, not an external
+  error: Section 9 proposes a cost-saving cascade ("try a cheap model,
+  escalate if a quality threshold isn't met") two paragraphs before
+  warning "don't confuse confidence with correctness" — and never
+  reconciles how the cascade's own quality check avoids exactly the
+  self-confidence trap the very next paragraph warns against. This
+  project's own `/builds/jev-pattern-router/` hit a live version of this
+  same failure during its own testing (a reworded destructive request
+  dropping from 0.77 to 0.50 confidence, under its escalation threshold)
+  — cited directly as a demonstration of the article's own unresolved
+  warning. **Built**: `/builds/ai-system-design-toolkit/` — two of the
+  article's ideas that are genuinely new to this project (everything
+  else — HITL approval, idempotent outcome confirmation, confidence-gated
+  routing, rate limiting, tool validation — already has a real build
+  here, cross-referenced in the analysis rather than rebuilt): (1)
+  `capacity_planner.py`, a real implementation of the article's exact
+  sizing formulas (daily/peak RPS, Little's Law concurrency, token/cost
+  estimation) — a gap this project's existing prop-firm sizing tools
+  don't fill, since those size trading risk, not AI infrastructure; (2)
+  `provider_breaker.py`, the circuit-breaker/bounded-retry/backoff
+  algorithm `/builds/prop-firm-mcp-server/` explicitly deferred in an
+  earlier round ("no upstream network call exists to protect against") —
+  now built for real against a genuinely simulated flaky dependency, with
+  real thread safety: the standard closed/open/half-open state machine,
+  equal-jitter exponential backoff, a time budget that stops retrying
+  early, and a fallback path when the breaker is open. 29/29 tests pass
+  on the real run, including a deterministic backoff-value check (fake
+  clock/sleep/rand injection, no real sleeping) and — the test that
+  actually proves the concurrency claim rather than asserting it — 8 real
+  OS threads racing the instant a cooldown elapses, with exactly one
+  becoming the half-open probe (confirmed by a call counter) while the
+  other 7 are rejected until it resolves.
 
 ---
 
