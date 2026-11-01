@@ -2055,6 +2055,53 @@ yourself every time.
   OS threads racing the instant a cooldown elapses, with exactly one
   becoming the half-open probe (confirmed by a call counter) while the
   other 7 are rejected until it resolves.
+- **Deep analysis + new build from a pasted three-article AgentsKit.co
+  bundle** ("Claude Coding Tools: What to Install in 2026," "The Best
+  MCP Servers for Claude," "Claude Productivity Tools: The Hidden
+  Features"). Full write-up in
+  `/notes/agentskit-claude-tooling-bundle-analysis.md`. Measured rather
+  than skimmed: 1,769 words, exactly 8 links, every single one pointing
+  back at `agentskit.co` itself with zero query-string tracking
+  parameters and zero links to any third party — a real, checkable
+  contrast with this project's two earlier Metics Media rounds, whose
+  links carried per-campaign tracking suffixes on third-party partner
+  pages. Every concrete technical claim checked out: real
+  `npm install -g @anthropic-ai/claude-code` and `claude mcp add`/
+  `claude mcp list` CLI syntax, and (checked by web search since the
+  article's July 2026 dateline sits past this project's own knowledge
+  cutoff) GitHub Copilot's real Claude-model support, confirmed current
+  via GitHub's own changelog. Flagged as unverifiable rather than
+  repeated as fact: "the AgentsKit Engineering Kit, 58 agents, 61
+  skills, and 159 commands" — a paid product with no public repository
+  to check, same treatment as every other unverifiable vendor-capability
+  claim this project has flagged (Factory.ai's white paper, REA's star
+  count before independent corroboration). **Built**: `/builds/
+  skill-md-validator/` — the bundle's own named "SKILL.md validator"
+  idea (a web product with no inspectable source, so built independently
+  from this project's own eleven real skills rather than ported),
+  checking frontmatter shape, name/directory match, description quality,
+  broken file references, and duplicate-name collisions (the exact
+  failure class `bytedance/deer-flow`'s own `docs/
+  SKILL_NAME_CONFLICT_FIX.md` documents, from the deer-flow round two
+  entries back). **Found and fixed two real bugs in this build's own
+  first draft, not in the real skills it was tested against**: (1) the
+  broken-reference check's first draft assumed every reference was
+  relative to the skill's own folder, producing 16 false-positive
+  errors across 7 of this project's 11 real skills on the very first
+  run, since several skills legitimately use repo-root-relative paths
+  (`/builds/...`, `/notes/...`) and bare sibling-skill references
+  (`.claude/skills/other-skill`) — fixed by resolving against both the
+  skill's own directory and the repo root, failing only if neither
+  resolves; (2) the "states a usage condition" heuristic missed real,
+  correctly-phrased trigger language in `code-structure` and
+  `review-loop` ("Use while implementing...", "Before calling a build
+  finished..."), caught by reading the two flagged files by hand before
+  trusting the tool's own warning, confirming the gap was in the
+  heuristic, not those two skills — fixed by widening the trigger-word
+  list. 19/19 tests pass on the real run, including the real deliverable
+  (`test_all_real_skills_pass_clean`): this repo's actual eleven skills
+  now validate with zero errors and zero warnings, spot-checked by hand
+  rather than taken on the tool's own word.
 
 ---
 
