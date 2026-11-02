@@ -2151,6 +2151,74 @@ yourself every time.
   from within this sandbox — the same honestly-flagged limitation this
   project already stated for `/builds/claude-code-mods/`'s three mods,
   which also can't be exercised live from here.
+- **First real run of `/analyze-and-ship`** on a pasted Fareed Khan
+  article, "Engineering Multi-Agent AI for a 100 GB Data Warehouse" — a
+  repeat author (five prior rounds) but a genuinely new article,
+  confirmed by title first. Full write-up in
+  `/notes/agentic-warehouse-analyst-analysis.md`. Cloned the real named
+  repo (`FareedKhan-dev/agentic-warehouse-analyst`, MIT) rather than
+  trusting the pasted code samples alone — the most thoroughly
+  independently-verifiable source this project has analyzed to date:
+  a real 6,679-line executed notebook, a real `run_manifest_sf100.json`,
+  a real 12-row `revisions_sf100.csv` revision ledger, and a real
+  `llm_cache.sqlite` with 4,005 cached model calls (consistent with
+  roughly a dozen revisions over ~100 dev questions times several calls
+  each — not a number easy to fake convincingly). Every specific number
+  checked against the real executed notebook output matched exactly:
+  "92/93 official answers reproduced," the "469,796x" planner
+  underestimate, "85,927,834,294,703" vs. the real exact count
+  "135,299,781,560,539" (ratio 1.575, matching the article's own
+  "within a factor of 1.6" precisely), the warehouse's 28,609,622,016
+  bytes, and every dated test/live-stopwatch figure. Credited: the
+  article's own "Known Limits" section discloses both missed targets
+  (9.8% false-success vs. a 5% goal, 24.55s live p95 vs. a 15s goal)
+  unprompted, right where the numbers appear — the same honest-
+  negative-result credit this project has given the Jev and quantum-
+  computing articles in earlier rounds. **Found a real, well-evidenced
+  gap, checked directly in the source, not inferred**: the revision
+  loop's `revise()` function (`notebook/agentic_data_analyst.py:3738`)
+  computes and prints a 95% paired-bootstrap confidence interval for
+  every keep/revert decision, but the actual decision —
+  `keep_if=lambda new, old: new["utility"] > old["utility"]` — never
+  looks at it; the interval is real and genuinely displayed, just not
+  load-bearing. Confirmed against the real ledger: r09 ("sorted copy +
+  rollups") was KEPT with an accuracy confidence interval of
+  `[-0.0098, +0.0686]` that includes zero — not a wrong call (its real
+  justification was a latency win, stated plainly in the article's own
+  prose), but the printed interval creates an appearance of statistical
+  rigor for the accuracy claim specifically that the code doesn't
+  enforce anywhere. **Built**: `/builds/paired-bootstrap-ratchet/` — not
+  a port of the article's own TPC-DS-specific revision loop (inseparable
+  from a 28.6GB warehouse this sandbox doesn't have), but the one
+  generalizable mechanism the finding points directly at: a
+  paired-bootstrap significance gate that actually enforces the interval,
+  with two modes (strict significant-improvement, and a non-regression
+  mode correctly modeling the legitimate r09-style case — a regression is
+  only significant when the *entire* interval, including its best-case
+  upper bound, sits below a floor). Tested against the real, unmodified
+  `revisions_sf100.csv` (MIT licensed, copied in as a fixture) rather
+  than only synthetic data: confirmed the four clear accuracy-claim
+  revisions (r01/r02/r06/r12) pass a strict gate, confirmed r09 fails the
+  strict gate but passes non-regression, and found a second, more
+  granular instance of the same phenomenon purely by building and running
+  the gate rather than reading the CSV by eye — r05 ("repair=2") was KEPT
+  in the real repo with a real reported `delta_lo` of exactly `0.0`,
+  touching but not excluding zero, which a strict gate correctly refuses
+  to call significant even though the real repo's point-estimate rule
+  called it an improvement. **Found and fixed a real bug in this build's
+  own first draft while writing those same real-ledger tests**: the
+  non-regression gate's first version checked `ci_lo >= -epsilon`, which
+  is actually a strict "must never dip below zero" rule, the wrong bound
+  for "not significantly worse" — caught immediately because r09's own
+  real interval failed the gate it was supposed to pass under that wrong
+  logic. Fixed by checking `ci_hi` instead (a regression is significant
+  only when the whole interval, including its best case, sits below the
+  floor). Also rewrote two test assertions mid-build after the real data
+  disagreed with the first draft's assumptions (r05's boundary case; r13/
+  r15 touching exactly `ci_hi = 0.0`, correctly distinguished as
+  "not confirmed better" rather than forced into "confirmed worse")
+  rather than adjusting the data or the gate to force a pass. 17/17 tests
+  pass on the real run.
 
 ---
 
