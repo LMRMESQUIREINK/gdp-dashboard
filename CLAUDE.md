@@ -2102,6 +2102,55 @@ yourself every time.
   (`test_all_real_skills_pass_clean`): this repo's actual eleven skills
   now validate with zero errors and zero warnings, spot-checked by hand
   rather than taken on the tool's own word.
+- **Shown two AgentsKit.co screenshots (12 more of their tools) and
+  asked which to recommend** — strategist-mode judgment call, not a
+  build request: picked the Slash Command Generator as the clear top
+  pick, reasoning from this project's own actual pattern rather than
+  the tools' own marketing copy — the single most repetitive thing this
+  session does, over and over, is source-arrives → measure → verify →
+  credit/flag → decide build-or-not → build+test if warranted →
+  `/notes/` write-up → `CLAUDE.md` status-log update → commit → push,
+  executed by hand well over a dozen times. Named CLAUDE.md Grader as a
+  real second pick (this file is now 2,000+ lines, a plausible fit for
+  its stated "token budget, vague rules, linter duplication" checks),
+  named the SKILL.md Validator as already covered (built independently
+  last round, more rigorously tested than taking theirs on faith), and
+  gave a one-line reason each for skipping the other nine rather than
+  surveying all twelve. **Built, per the user's follow-up**: a real
+  slash command, `.claude/commands/analyze-and-ship.md` —
+  `/analyze-and-ship [source]`. Not a port of AgentsKit's own tool (a
+  generator for an unrelated kind of command entirely — turning one
+  repeated *prompt* into a command, not encoding a multi-stage audit
+  procedure); written directly from this session's own real,
+  repeatedly-executed loop. Encodes, as an actual operational playbook
+  rather than a vague pointer: check-before-assuming for an unrelated-
+  project source (the `outage-alert` precedent), diff a repeat upload
+  against the repo before touching anything (the Trading Jarvis
+  round-4/Week-21-survey precedent), measure-before-meaning, verify via
+  direct recomputation and web search rather than repeating claims,
+  require at least one real credit and one real gap, check `/builds/`
+  for an existing implementation before building a duplicate, extract
+  the generalizable mechanism rather than cloning a vendor's own
+  branded instance (the RemixForge/REA/deer-flow precedent), prefer
+  testing against this project's own real material over synthetic
+  fixtures alone (the `skill-md-validator`/`ten-k-website-grader`
+  precedent, both of which found real bugs exactly that way), and the
+  existing git/PR workflow rule for shipping. Explicitly distinguished
+  from `ruthless-gate` in the command's own text, so a cold session
+  doesn't confuse the two. Also added a short TECHNIQUES entry
+  (**Deep-analysis-and-ship loop**) pointing to it, matching how
+  Goal/Loop, Software Factory, and Build Brain are each documented
+  there. **Proof available, and its real limit stated plainly**: no
+  official `claude command validate` exists in this project the way
+  `claude plugin validate` does for mods, so this was checked the way
+  `skill_md_validator.py`'s own frontmatter parser checks a SKILL.md —
+  a standalone script confirming well-formed YAML frontmatter
+  (`description`, `argument-hint`, both non-empty), a non-empty body,
+  and a real `$ARGUMENTS` reference. What isn't proven: the command
+  hasn't been invoked inside a live, interactive Claude Code session
+  from within this sandbox — the same honestly-flagged limitation this
+  project already stated for `/builds/claude-code-mods/`'s three mods,
+  which also can't be exercised live from here.
 
 ---
 
@@ -2283,6 +2332,28 @@ Software Factory).
 Full template and copy-paste starter prompt: `/prompts/build-brain-method.md`.
 Source analysis this was generalized from:
 `/notes/ruthless-affiliate-gold-build-brain-analysis.md`.
+
+### Deep-analysis-and-ship loop (for a new upload, link, or pasted source)
+
+This is the pattern behind nearly every entry in the Current status log
+above: a source arrives → measure its hard facts before reading for
+meaning → verify its checkable claims (recompute arithmetic, check
+against the real file/repo, web-search anything external) → credit what
+holds up and flag what doesn't → decide whether a real, generalizable,
+testable build is warranted (and if so, build and test it for real,
+preferring this project's own real material over synthetic fixtures) →
+write the `/notes/` analysis (and `/builds/` README if something got
+built) → update this file's status log in the same register as every
+existing entry → commit and push per the Git/PR workflow rule below.
+
+Now a real slash command: `.claude/commands/analyze-and-ship.md` — run
+`/analyze-and-ship [source]`, or just `/analyze-and-ship` against the
+most recently pasted/uploaded content. Distinct from `ruthless-gate`
+(that one's a different, stricter four-file HTML-verdict-page procedure
+behind its own explicit trigger phrase) — this is the lighter-weight
+default this project has actually been running the whole time, now
+written down so a cold session doesn't have to reconstruct it from
+reading every prior status-log entry.
 
 ---
 
