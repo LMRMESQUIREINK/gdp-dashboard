@@ -2219,6 +2219,75 @@ yourself every time.
   "not confirmed better" rather than forced into "confirmed worse")
   rather than adjusting the data or the gate to force a pass. 17/17 tests
   pass on the real run.
+- **An exact duplicate re-paste correctly declined.** The user pasted
+  the same Fareed Khan warehouse-analyst article a second time, verbatim,
+  immediately after the round above shipped it. Per this project's own
+  "diff a repeat upload before touching anything" rule, confirmed the
+  commit/build/notes already existed (`c89588e`, `/builds/
+  paired-bootstrap-ratchet/`, `/notes/agentic-warehouse-analyst-analysis.md`)
+  and reported that back instead of redoing the work. The user's
+  follow-up ("SOMETHING DIFFERENT!!") named no new source, so rather
+  than guess which of several real meanings was intended (strategist
+  mode, one of the 3 suggested next-moves, or a genuinely new source),
+  asked via `AskUserQuestion` — the user dismissed the question without
+  answering and sent a new source directly instead, handled below.
+- **Deep analysis + new build from a pasted newsletter article**: "12
+  Open-Source GitHub Repositories to Learn AI and LLM Engineering From
+  Scratch" (vijayasekhardeepak.com). Full write-up in
+  `/notes/learning-path-12-repos-analysis.md`. Unlike most sources this
+  project analyzes, there's no pipeline of the author's own to audit —
+  it's a curated pointer list to 12 independent, real repos, so the
+  checkable surface is whether every link is real and whether the
+  article's specific claims about each one hold up. All 12 repos
+  confirmed to exist via anonymous `git ls-remote` (zero link rot) before
+  reading any for meaning. Five were cloned and read in full for their
+  most specific, numeric/status claims: `huggingface/ml-intern`'s
+  claimed archived status confirmed exactly (the real README even names
+  the exact repo it moved to, `huggingface/chat-ui`, a detail the
+  article omitted); `microsoft/AI-For-Beginners`'s claimed "24 lessons"
+  and `microsoft/generative-ai-for-beginners`'s claimed "21-lesson"
+  figure both matched their real READMEs' own stated counts exactly;
+  `mlabonne/llm-course`'s claimed three-part structure (LLM
+  Fundamentals/Scientist/Engineer) matched verbatim; `mml-book/
+  mml-book.github.io`'s description as the *Mathematics for Machine
+  Learning* companion repo (linear regression + PCA notebooks) matched
+  exactly. **One real, well-evidenced miss found**: item #5 is headed
+  "LLM Course by Maarten Grootendorst," but the real repo's own README
+  names its actual maintainer three separate ways (`@maximelabonne` on
+  X, `huggingface.co/mlabonne`, co-author credit for a *different* book,
+  *LLM Engineer's Handbook*). Web-verified before calling it an error
+  rather than an obscure alias: Maarten Grootendorst is a real, different
+  person — BERTopic/KeyBERT's creator, a Developer Relations Engineer at
+  Google DeepMind, co-author of a *different* LLM book (*Hands-On Large
+  Language Models*, with Jay Alammar) — not this repo's author. Two
+  real, both-active authors in the same adjacent space, swapped; every
+  other claim about that same repo (link, structure, content) was
+  accurate, only the byline was wrong. **Built**: `/builds/
+  curriculum-link-auditor/` — not a port of any of the 12 repos (they're
+  independent, unrelated projects with nothing to extract), but the
+  generalizable version of the by-hand check that found the
+  misattribution: given a repo's real README text and a curated list's
+  specific claims about it (lesson count, archived status, structure
+  keywords, claimed author), report what holds up and what doesn't,
+  with a conservative author-attribution check that only flags a
+  mismatch when the README actively names a real handle inconsistent
+  with the claim, never from a README's mere silence. Tested against the
+  real, unmodified README fixtures from three of this exact article's
+  repos (not synthetic text) as committed regression fixtures, including
+  the real misattribution as a permanent test case. **Found and fixed a
+  real bug while actually running the CLI end-to-end against the real
+  llm-course README**, not caught by reading the regex: the first draft
+  of the handle-extraction function matched Hugging Face's own
+  site-navigation paths (`huggingface.co/blog`, `/docs`, `/learn`,
+  `/models`, `/spaces`, …) as if they were usernames, polluting the
+  mismatch evidence with noise alongside the real `mlabonne`/
+  `maximelabonne` handles. Fixed with an explicit reserved-path-segment
+  exclusion list. Proven two ways: 21/21 unit tests against the real
+  fixtures, and a real, live, network-backed end-to-end run of the CLI
+  itself (`audit.py --check-live`) against all 5 actually-cloned repos,
+  reproducing the same result — 4 clean matches, 1 correctly-flagged
+  mismatch — with a live no-token `git ls-remote` confirming every repo
+  still exists today.
 
 ---
 
