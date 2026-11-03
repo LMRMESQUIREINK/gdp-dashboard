@@ -2344,6 +2344,55 @@ yourself every time.
   merely unnecessary. Caught by the test itself failing on exactly that
   case; fixed by removing the exclusion. 38/38 tests pass across both
   modules on the real run (21 original + 17 new).
+- **Deep analysis of Part 2 of the same newsletter series**: "12
+  Open-Source GitHub Repositories to Become an AI Engineer: Agents, RAG,
+  MCP & System Design" (vijayasekhardeepak.com) — a different,
+  independently-written article with 12 different repos, confirmed by
+  title/content before touching anything, not a repeat upload. Full
+  write-up in `/notes/learning-path-12-repos-part2-analysis.md`. All 12
+  repos confirmed real via anonymous `git ls-remote` (zero link rot):
+  `openai/openai-cookbook`, `anthropics/claude-cookbooks`,
+  `Shubhamsaboo/awesome-llm-apps`, `huggingface/agents-course`,
+  `NirDiamant/GenAI_Agents`, `KalyanM45/AI-Project-Gallery`,
+  `asgeirtj/system_prompts_leaks`, `priyanshop754/vibe-coding-playbook`,
+  `ombharatiya/ai-system-design-guide`, `donnemartin/system-design-primer`,
+  `florinpop17/app-ideas`, `The-Cool-Coders/Project-Ideas-And-Resources`.
+  A real structural difference from Part 1 confirmed by reading the
+  whole article rather than assumed from its shape: zero lesson-count
+  claims and zero author bylines anywhere in it — every claim here is a
+  topic/scope description instead. Four repos cloned and read in full:
+  `huggingface/agents-course`'s claimed `smolagents`/LangGraph/
+  LlamaIndex/MCP coverage confirmed substantial, not name-dropped (156,
+  94, 16 file mentions respectively, plus a dedicated `llama-index/` unit
+  per translated language); `NirDiamant/GenAI_Agents`'s claimed
+  multi-agent tutorial coverage confirmed via 65 real notebooks;
+  `ombharatiya/ai-system-design-guide`'s claimed RAG/interview-prep
+  content confirmed exactly (a real 155-question interview bank);
+  `asgeirtj/system_prompts_leaks`'s claimed broad multi-vendor system-
+  prompt collection confirmed real and current (its own "most recent
+  additions" table carries an entry dated the same day as this
+  analysis — confirmed as evidence of active maintenance, with that
+  specific entry's content deliberately not opened, since reading
+  content purporting to describe this session's own operating
+  instructions wasn't needed to confirm the repo is actively
+  maintained). Flagged rather than repeated as fact: the same repo's own
+  self-cited Simon Willison endorsement couldn't be independently
+  confirmed by a web search this round — noted as unverified from this
+  check, not as the analyzed article's own claim (the article doesn't
+  repeat that quote). **No new build** — per this project's "check
+  `/builds/` for an existing implementation before building a
+  duplicate" rule, this is exactly the source type `/builds/
+  curriculum-link-auditor/` already handles. Ran its
+  `auto_extract_manifest()` directly against this second, independently-
+  written article's raw text and it correctly extracted all 12 repos in
+  order with **zero false-positive claims** — the honest-negative-result
+  case, since a cruder extractor could have mismatched the article's own
+  incidental numbers/names ("1,000 users," "smolagents," "LangGraph") as
+  structured claims about a repo. Added as a permanent regression test
+  (`TestGeneralizationToASecondIndependentArticle`, using a committed
+  fixture of this real article's text) proving the tool generalizes
+  beyond the one article it was originally built from. 40/40 tests pass
+  across both modules on the real run (up from 38).
 
 ---
 

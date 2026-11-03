@@ -27,6 +27,24 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "tests", "fixtures")
 with open(os.path.join(FIXTURES, "12-repo-learning-path-article.txt"), encoding="utf-8") as f:
     ARTICLE_TEXT = f.read()
 
+with open(os.path.join(FIXTURES, "12-repo-learning-path-part2-article.txt"), encoding="utf-8") as f:
+    PART2_ARTICLE_TEXT = f.read()
+
+PART2_EXPECTED_REPOS = [
+    "openai/openai-cookbook",
+    "anthropics/claude-cookbooks",
+    "Shubhamsaboo/awesome-llm-apps",
+    "huggingface/agents-course",
+    "NirDiamant/GenAI_Agents",
+    "KalyanM45/AI-Project-Gallery",
+    "asgeirtj/system_prompts_leaks",
+    "priyanshop754/vibe-coding-playbook",
+    "ombharatiya/ai-system-design-guide",
+    "donnemartin/system-design-primer",
+    "florinpop17/app-ideas",
+    "The-Cool-Coders/Project-Ideas-And-Resources",
+]
+
 EXPECTED_REPOS = [
     "mml-book/mml-book.github.io",
     "microsoft/AI-For-Beginners",
@@ -161,6 +179,32 @@ class TestAutoExtractManifest(unittest.TestCase):
         self.assertFalse(llm_course.clean)
         self.assertEqual(len(llm_course.mismatches), 1)
         self.assertIn("author attribution", llm_course.mismatches[0])
+
+
+class TestGeneralizationToASecondIndependentArticle(unittest.TestCase):
+    """tests/fixtures/12-repo-learning-path-part2-article.txt is Part 2
+    of the same newsletter series this build's own source article
+    (Part 1) came from -- a different, independently-written piece
+    with a different author's-own wording throughout, no lesson-count
+    claims, and no "by <Name>" bylines anywhere in it (a real structural
+    difference from Part 1). This class proves the extractor generalizes
+    to a source it wasn't built from, not just the one it was."""
+
+    def test_extracts_all_12_part2_repos_correctly(self):
+        claims = auto_extract_manifest(PART2_ARTICLE_TEXT)
+        self.assertEqual([c.repo for c in claims], PART2_EXPECTED_REPOS)
+
+    def test_no_false_positive_claims_on_an_article_with_none_to_find(self):
+        """The honest-negative-result test: Part 2 states no lesson
+        counts and no author bylines for any of its 12 repos, so a
+        correct extractor should report none -- not invent one from
+        unrelated numbers or names that appear elsewhere in the prose
+        (e.g. "1,000 users", "smolagents", "LangGraph")."""
+        claims = auto_extract_manifest(PART2_ARTICLE_TEXT)
+        for claim in claims:
+            self.assertIsNone(claim.claimed_lesson_count, claim.repo)
+            self.assertIsNone(claim.claimed_author, claim.repo)
+            self.assertIsNone(claim.claimed_archived, claim.repo)
 
 
 if __name__ == "__main__":

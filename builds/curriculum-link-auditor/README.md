@@ -36,8 +36,19 @@ results = audit_manifest(claims, readmes_by_repo)
 This reproduces exactly the same 4-matches-plus-1-misattribution result
 as the hand-written `manifest_12_repo_learning_path.json` — proof the
 auto-extraction isn't just plausible-looking, it's actually equivalent
-to what a human transcribed by hand for this same article. This is the
-step that makes the tool a real drop-in for `/analyze-and-ship` whenever
+to what a human transcribed by hand for this same article.
+
+**Generalization proven against a second, independently-written
+article**: when Part 2 of the same newsletter series arrived
+(`tests/fixtures/12-repo-learning-path-part2-article.txt`, 12 different
+repos, no lesson-count claims and no author bylines anywhere in it — a
+real structural difference from Part 1), no new build was needed —
+`auto_extract_manifest()` was run directly against it and correctly
+extracted all 12 repos in order with **zero false-positive claims**,
+rather than mismatching the article's own incidental numbers/names
+("1,000 users," "smolagents," "LangGraph") as if they were structured
+claims about a repo. See `/notes/learning-path-12-repos-part2-analysis.md`.
+This is the step that makes the tool a real drop-in for `/analyze-and-ship` whenever
 a source is a curated list of repos rather than a single repo to audit.
 
 ## What it found when run for real
@@ -115,7 +126,8 @@ network-dependent part.
 python3 -m unittest test_curriculum_auditor test_extract_claims -v
 ```
 
-**38/38 tests pass** (21 for the core auditor, 17 for auto-extraction),
+**40/40 tests pass** (21 for the core auditor, 19 for auto-extraction,
+including the Part 2 generalization checks),
 including:
 
 - Every deterministic check (`extract_lesson_count`,
