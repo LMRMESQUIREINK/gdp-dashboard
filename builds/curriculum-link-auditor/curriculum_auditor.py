@@ -60,18 +60,6 @@ _ARCHIVED_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Profile/handle links a README commonly uses to name its real
-# maintainer: x.com/twitter.com handles, a personal github.io blog,
-# or a huggingface.co profile link under the author's own username.
-_HANDLE_RE = re.compile(
-    r"(?:twitter\.com|x\.com)/(\w+)|"
-    r"huggingface\.co/(\w+)(?:/|\"|\s|\))|"
-    r"github\.io|"
-    r"github\.com/(\w+)/(?!\1)",
-    re.IGNORECASE,
-)
-
-
 def extract_lesson_count(readme_text: str) -> int | None:
     """The first "N lesson(s)" / "N-lesson" figure the README states
     about itself, or None if it never states one."""

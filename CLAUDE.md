@@ -2288,6 +2288,62 @@ yourself every time.
   reproducing the same result — 4 clean matches, 1 correctly-flagged
   mismatch — with a live no-token `git ls-remote` confirming every repo
   still exists today.
+- **All three suggested next-moves on `curriculum-link-auditor` done in
+  one round, not a subset.** (1) **Tried the live GitHub API archived
+  check, found it genuinely isn't available without a disproportionate
+  step, and said so rather than building a fake version.** `add_repo`
+  with `access:"read"` confirmed this session's anonymous git proxy
+  already serves any public repo's clone/fetch with no attachment
+  needed — but it also states GitHub API tools require `access:"push"`,
+  which mints real write-capable credentials for that repo. A plain
+  HTTPS fetch of a repo's own GitHub.com page (no API, no git) was tried
+  as a middle ground and returned 403 — also blocked. Minting push
+  credentials to an arbitrary external repo just to read one boolean
+  flag is disproportionate to the task and wasn't done; documented
+  plainly in the build's README as a real, checked constraint rather
+  than an unexplored TODO. (2) **Re-checked three of this project's own
+  previously-flagged "self-reported, never independently re-checked"
+  figures for drift** — `/notes/stale-claims-recheck-2026-11.md`.
+  `bytedance/deer-flow`'s original "41,700 stars" figure is still
+  `source-is-silent` (sources disagree with each other on the exact
+  historical number, from "nearly 30K" to "72,000"), but all agree on
+  real continued growth, not fabrication. `morluto/rea`'s "300,000
+  stars" claim, originally judged "plausible" from a growth trajectory
+  reaching ~234,000 by Oct 14, is now confirmed by a stronger
+  independent source: it actually crossed 300,000 on Oct 17 and reached
+  347,802 by Oct 21 — the original judgment held up and was if anything
+  conservative, plus a new caveat surfaced (one fact-check source
+  questions how many of those stars are from real readers). `n8n-io/
+  n8n`'s "1,500+ integrations" vs. its real core package's node count,
+  originally found at 308 dirs/563 files and left unreconciled, was
+  re-cloned fresh and found at 309/563 — the gap is stable, not a
+  timing artifact. None of the three original findings needed
+  correcting; the "no changes needed is a common, correct outcome" rule
+  applied to claims rather than to a repeat upload. (3) **Built a
+  batch/regex auto-extraction mode**: `extract_claims.py`'s
+  `auto_extract_manifest(text)` takes a curated list's own raw article
+  text and auto-builds the same `RepoClaim` objects a human would
+  otherwise hand-write — repo links, "N lesson(s)" figures, archived/
+  retired mentions, numbered-heading "by `<Name>`" bylines — leaving
+  structure-keyword claims as manual-only, since that phrasing varies
+  too much to regex reliably without false positives. Proven against a
+  condensed reconstruction of this exact build's own source article
+  (`tests/fixtures/12-repo-learning-path-article.txt`, preserving the
+  real article's exact repo links/figures/wording): auto-extraction
+  reproduces all 12 repos in order with zero false positives, and the
+  full extract-then-audit pipeline run end-to-end reproduces the exact
+  same 4-matches-plus-1-misattribution result as the original
+  hand-written manifest — proof it's a real drop-in for
+  `/analyze-and-ship` on curated-list sources, not just plausible-
+  looking output. **Found and fixed a real bug while writing the
+  extraction tests**: the first draft of `extract_repo_links` excluded
+  links whose path continued past the repo name (`.../issues/12`), on
+  the theory that such a link points "into" a repo rather than "at"
+  it — but a link to a repo's issues page is still citing that same
+  repo, not a different one, so the exclusion was actively wrong, not
+  merely unnecessary. Caught by the test itself failing on exactly that
+  case; fixed by removing the exclusion. 38/38 tests pass across both
+  modules on the real run (21 original + 17 new).
 
 ---
 

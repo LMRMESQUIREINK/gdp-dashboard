@@ -7,6 +7,39 @@ Repositories to Learn AI and LLM Engineering From Scratch"
 (vijayasekhardeepak.com). Full analysis:
 `/notes/learning-path-12-repos-analysis.md`.
 
+## Auto-extraction mode (no hand-written manifest needed)
+
+`extract_claims.py` adds a second entry point: given a curated list's
+own raw article text, `auto_extract_manifest(text)` finds every repo
+link and the claims stated in its section — a "N lesson(s)" figure, an
+archived/retired/deprecated mention, a numbered-heading "by `<Name>`"
+byline — and builds the same `RepoClaim` objects a human would otherwise
+type by hand. Structure-keyword claims ("organized around three parts
+X, Y, Z") are deliberately **not** auto-extracted — that phrasing varies
+too much to regex reliably, and a bad guess there would be worse than
+no guess, the same discipline `check_author_attribution` already
+follows for silence vs. a real mismatch.
+
+Run end-to-end against this exact build's own source article
+(`tests/fixtures/12-repo-learning-path-article.txt`, a condensed
+reconstruction preserving the real article's exact repo links, lesson
+counts, byline wording, and archived notice):
+
+```python
+from extract_claims import auto_extract_manifest
+from curriculum_auditor import audit_manifest
+
+claims = auto_extract_manifest(article_text)  # no RepoClaim written by hand
+results = audit_manifest(claims, readmes_by_repo)
+```
+
+This reproduces exactly the same 4-matches-plus-1-misattribution result
+as the hand-written `manifest_12_repo_learning_path.json` — proof the
+auto-extraction isn't just plausible-looking, it's actually equivalent
+to what a human transcribed by hand for this same article. This is the
+step that makes the tool a real drop-in for `/analyze-and-ship` whenever
+a source is a curated list of repos rather than a single repo to audit.
+
 ## What it found when run for real
 
 All 5 claims in `manifest_12_repo_learning_path.json` were checked
@@ -79,10 +112,11 @@ network-dependent part.
 ## Proven
 
 ```bash
-python3 -m unittest test_curriculum_auditor -v
+python3 -m unittest test_curriculum_auditor test_extract_claims -v
 ```
 
-**21/21 tests pass**, including:
+**38/38 tests pass** (21 for the core auditor, 17 for auto-extraction),
+including:
 
 - Every deterministic check (`extract_lesson_count`,
   `detect_archived_banner`, `extract_maintainer_handles`,
@@ -109,6 +143,21 @@ python3 -m unittest test_curriculum_auditor -v
   Fixed with an explicit reserved-segment exclusion list; the real
   username matches (`mlabonne`, `maximelabonne`) and the real
   misattribution finding are unaffected.
+- `test_end_to_end_auto_extracted_claims_audit_the_same_as_hand_written_ones`
+  — raw article text in, audit results out, with zero `RepoClaim`
+  objects written by hand, producing the exact same 4-matches-plus-1-
+  misattribution result as the hand-written manifest. This is the test
+  that proves auto-extraction is a real drop-in, not just plausible-
+  looking output.
+- A real bug found and fixed while writing the extraction tests: the
+  first draft of `extract_repo_links` excluded links whose path
+  continued past the repo name (`.../issues/12`, `.../blob/main/x.py`)
+  via a reserved-word list — but a link into a repo's issues page is
+  still citing that same repo, not a different one, so the exclusion
+  was actively wrong, not just unnecessary. Caught by the test itself
+  failing on exactly that case. Fixed by removing the exclusion
+  entirely; the owner/repo pair is already unambiguous from the URL
+  regardless of what sub-path follows it.
 - `check_author_attribution` is deliberately conservative: a README with
   no self-named handle at all gives a **soft pass**, not an accusation
   — the tool only flags a mismatch when the README actively names a
@@ -116,11 +165,22 @@ python3 -m unittest test_curriculum_auditor -v
 
 ## What's not built here
 
-- No live GitHub API calls (archived flags, star counts, etc.) — this
-  session's GitHub API access is gated behind `add_repo`/credentials;
-  everything here works from a repo's own README text plus one
-  no-token `git ls-remote` existence check, which is also what makes
-  the core logic fully testable offline.
+- **No live GitHub API calls (archived flags, star counts, etc.) —
+  checked for real, not just assumed.** `add_repo` with `access:"read"`
+  confirmed this sandbox's anonymous git proxy already serves
+  clone/fetch of any public repo with no attachment needed — but it
+  also states plainly that GitHub API tools "do not cover unattached
+  repositories," and getting them requires calling `add_repo` again
+  with `access:"push"`, which mints real write-capable credentials for
+  that repo. A plain HTTPS fetch of a repo's own GitHub.com HTML page
+  (no API, no git) was tried as a middle ground and returned 403 — also
+  blocked. Minting push credentials to an arbitrary external repo just
+  to read one boolean flag is disproportionate and wasn't done; the
+  README-banner heuristic here is the practical approach for exactly
+  this reason, not a placeholder for a better method that just wasn't
+  gotten to yet.
 - No fuzzy-NLP author-name matching — deliberately narrow (X/Twitter and
   Hugging Face profile-link extraction only) so a flagged mismatch is
   strong evidence, not a guess from string similarity.
+- No structure-keyword auto-extraction (see "Auto-extraction mode"
+  above) — deliberately left as a manual `RepoClaim` field.
