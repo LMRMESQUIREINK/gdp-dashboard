@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solo Claude Bot Business</title>
+<meta name="description" content="Price the offer, track the client pipeline, and run the build checklist for a one-operator custom AI-agent business.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%224%22 fill=%22%230B1412%22/><rect x=%229%22 y=%229%22 width=%2214%22 height=%2214%22 fill=%22%231C7C74%22/></svg>">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Solo Claude Bot Business</h1>
+    <p class="tagline">Build it once. They own it forever.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section id="sec-offer">
+    <h2>Offer Calculator</h2>
+    <div class="panel">
+      <div class="field-row">
+        <div class="field">
+          <label for="niche-baseline">Niche baseline price ($/month)</label>
+          <input type="number" id="niche-baseline" min="1" step="1">
+        </div>
+        <div class="field">
+          <label for="multiplier">Pricing multiplier: <span id="multiplier-value"></span></label>
+          <input type="range" id="multiplier" min="1" max="30" step="1">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="upfront-ratio">Upfront fee as a multiple of monthly retainer</label>
+          <input type="number" id="upfront-ratio" min="0" step="0.1">
+        </div>
+        <div class="field">
+          <label for="hours-per-month">Hours/month assumption (for the hourly-rate figure below)</label>
+          <input type="number" id="hours-per-month" min="1" step="1">
+        </div>
+      </div>
+      <p class="error-text" id="offer-error"></p>
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="label">Recommended monthly retainer</div>
+          <div class="value mono" id="result-monthly">--</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Suggested upfront fee</div>
+          <div class="value mono" id="result-upfront">--</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Effective hourly rate</div>
+          <div class="value mono" id="result-hourly">--</div>
+          <div class="basis" id="result-hourly-basis"></div>
+        </div>
+        <div class="result-card">
+          <div class="label">First-year value</div>
+          <div class="value mono" id="result-first-year">--</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-pipeline">
+    <h2>Client Pipeline</h2>
+    <div class="panel">
+      <p class="mono" id="call-goal-progress">0 / 50 contacted</p>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="call-goal-bar" style="width:0%"></div></div>
+      <p>Case studies started: <span class="mono" id="case-studies-started">0</span> &middot;
+         Referrals: <span class="mono" id="total-referrals">0 / 0</span></p>
+
+      <form id="add-contact-form">
+        <input type="text" id="new-contact-name" placeholder="Name of someone you know who runs a business...">
+        <button type="submit">Add</button>
+      </form>
+      <p class="error-text" id="contact-error"></p>
+      <div id="contact-list"></div>
+    </div>
+  </section>
+
+  <section id="sec-checklist">
+    <h2>Build Checklist</h2>
+    <div class="panel">
+      <p class="mono" id="checklist-progress">0 / 4 steps complete</p>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="checklist-bar" style="width:0%"></div></div>
+
+      <div class="checklist-step">
+        <h3>1. Research</h3>
+        <label class="checkbox-label"><input type="checkbox" id="research-done"> Researched the existing platforms in this niche</label>
+        <div class="field" style="margin-top:0.6rem">
+          <label for="research-notes">What did you research?</label>
+          <input type="text" id="research-notes" placeholder="e.g. the 3 platforms competitors in this niche already use">
+        </div>
+      </div>
+
+      <div class="checklist-step">
+        <h3>2. Design</h3>
+        <label class="checkbox-label"><input type="checkbox" id="design-done"> Designed the look/flow before building</label>
+        <div class="field" style="margin-top:0.6rem">
+          <label for="design-tool">Which design tool?</label>
+          <input type="text" id="design-tool" placeholder="e.g. Paper, Figma">
+        </div>
+      </div>
+
+      <div class="checklist-step">
+        <h3>3. Pick the stack</h3>
+        <div class="stack-category">
+          <span class="cat-name">Compute</span>
+          <input type="text" id="stack-compute-tool" placeholder="tool name">
+          <label class="checkbox-label"><input type="checkbox" id="stack-compute-docs"> docs read</label>
+        </div>
+        <div class="stack-category">
+          <span class="cat-name">Email</span>
+          <input type="text" id="stack-email-tool" placeholder="tool name">
+          <label class="checkbox-label"><input type="checkbox" id="stack-email-docs"> docs read</label>
+        </div>
+        <div class="stack-category">
+          <span class="cat-name">Phone</span>
+          <input type="text" id="stack-phone-tool" placeholder="tool name">
+          <label class="checkbox-label"><input type="checkbox" id="stack-phone-docs"> docs read</label>
+        </div>
+        <div class="stack-category">
+          <span class="cat-name">Connectors</span>
+          <input type="text" id="stack-connectors-tool" placeholder="tool name">
+          <label class="checkbox-label"><input type="checkbox" id="stack-connectors-docs"> docs read</label>
+        </div>
+      </div>
+
+      <div class="checklist-step">
+        <h3>4. Build</h3>
+        <label class="checkbox-label"><input type="checkbox" id="build-done"> Shipped a working version</label>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="wrap">
+  <footer>
+    Everything on this page is stored only in this browser (localStorage) &mdash; nothing is sent anywhere.
+    Built from an audited course transcript about selling a custom AI-agent
+    platform to small businesses, see
+    <code>/notes/solo-bot-business-gate-analysis.md</code>.
+  </footer>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/ui.js"></script>
+</body>
+</html>

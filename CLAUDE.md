@@ -2460,6 +2460,53 @@ yourself every time.
   deliberately deferred rather than guessed at, since "the other 2
   articles" names no specific source; clarification requested
   separately before any code gets written for it.
+- **The app got built**: the clarification came back "no incorporation
+  needed — just build from this PDF." **`/builds/solo-claude-bot-business/`**
+  — a real, zero-dependency local app (plain HTML/CSS/JS, localStorage,
+  no API key, no network call, same convention as this project's other
+  standalone builds) with three panels built from the audit's own
+  credited findings, not the source's unverified claims: an **Offer
+  Calculator** (reproduces the source's real $200/mo baseline → $3,000/mo
+  retainer → $25,000 upfront exactly when fed the source's own real
+  numbers, but computes the effective hourly rate from a visible,
+  editable hours-per-month input rather than hiding the 250hr/month
+  assumption the audit found baked into the source's own "$12/hour"
+  line), a **Client Pipeline tracker** (operationalizes the audit's
+  credited client-acquisition sequence — call 50 people you know, free
+  first build for a case study, trade for 3 referrals — with real add/
+  status-change/remove and a referral-goal counter), and a **Build
+  Checklist** (Research → Design → Build, the four generalized stack
+  categories left for the user's own tool names rather than hardcoded
+  to the source's own named vendors, since the audit found "Agent
+  Mail"/"Agent Phone" don't exactly match any locatable real product
+  under those literal names). New DNA Lock added to `design-rules.md`
+  (fourth locked brand) — deep teal `#1C7C74` on near-black `#0B1412`,
+  IBM Plex Sans/Source Sans 3/JetBrains Mono, deliberately distinct
+  from all three other locked brands' hues, voice rules carrying the
+  audit's own findings forward as hard don't-say rules (no "$1M+" or
+  unbacked revenue claim, no "fork the repo" promise without a real
+  link, no bare hourly rate without a stated hours basis, never cite a
+  statistic to a name without checking it's real first — the audit's
+  own "Andre Horowitz" finding). **Every mention of "Grok"/"GrokBot"
+  eliminated from the app itself**, confirmed by a real DOM-text check
+  in the Playwright suite, not just a source-file grep (one
+  developer-facing provenance comment in `assets/app.js` factually
+  names the real source title, per this project's standing
+  documentation convention — not user-facing branding). **A real bug
+  found and fixed during screenshot verification**: the pricing-
+  multiplier range slider rendered with the browser's native blue
+  thumb, clashing with the locked teal palette — caught on the first
+  screenshot pass, fixed with `accent-color`, clean on the second
+  pass. Proven two ways: `test_pure.js` (21/21 — the offer math
+  reproduces the source's own real numbers exactly when given the
+  source's own real inputs, pipeline/checklist logic, a real
+  localStorage round-trip including graceful fallback on corrupted
+  JSON and a merge-with-defaults path for an older saved profile
+  missing newer fields) and `test_playwright.py` (22/22 — a real
+  Chromium render driving the full add-contact/change-status/log-
+  referral/remove flow, a real page reload confirming state
+  persistence, zero console errors, zero overflow at 375px, and the
+  zero-Grok-mentions check run directly against the live rendered DOM).
 
 ---
 

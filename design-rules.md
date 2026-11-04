@@ -2,7 +2,7 @@
 
 The design system for anything visual in this project — a web page, app
 screen, or component. Any build that touches a UI MUST follow this file.
-**Status: three locked brands, scoped by build.** Recovery Desk is
+**Status: four locked brands, scoped by build.** Recovery Desk is
 locked below (see `business-brain.md`). This project also holds an
 unrelated RUTHLESS TRADING GOLD trading-tools portfolio under `/builds/`
 — those builds keep their own established black/gold branding (set
@@ -12,8 +12,110 @@ formally locked here too, under its own product name ("The Pass Line,"
 see below), through Build Brain Stage 3. As of 2026-10-24, a third,
 unrelated business — Creator Empire AI, an 18-app creator/marketing
 SaaS suite (`/builds/creator-empire-ai/`) — has its own DNA Lock below.
+As of 2026-11-04, a fourth — Solo Claude Bot Business
+(`/builds/solo-claude-bot-business/`) — has its own DNA Lock below.
 Each section below is scoped to the brand it names; don't cross-apply
 one brand's palette to a build under a different one.
+
+---
+
+## Brand: Solo Claude Bot Business
+
+Build Brain DNA Lock for `/builds/solo-claude-bot-business/`. Source:
+the `ruthless-gate` audit of "The $1M+ Solo Grok Bot Business (Full
+Course)" PDF (`/notes/solo-bot-business-gate-analysis.md`) — a single
+podcast transcript (Nick Vasilescu, Orgo's co-founder, describing a
+$25K-upfront + $3K/mo retainer offer: build a custom AI-agent team for
+an SMB, each agent with its own email/phone/compute, sold for the SMB
+to own outright). Rebuilt here under the user's explicit rename —
+**every mention of "Grok"/"GrokBot" eliminated, replaced throughout**
+— and built on the audit's own findings rather than the PDF's
+unverified claims: no "$1M+" headline (never substantiated anywhere in
+the source), no "fork the open-source repo" promise with nothing to
+fork, and the effective-hourly-rate math shown honestly (the real hours
+assumption visible, not hidden the way the source's own "$12/hour"
+line was).
+
+- **Name**: **Solo Claude Bot Business** — the user's own explicit
+  instruction, not a name this file invented.
+- **Tagline**: **"Build it once. They own it forever."** — the audit's
+  own strongest credited finding, sharpened into a line: SMB owners
+  don't want to feel "held by the neck" on a retainer for AI employees
+  (the source's own words); they want to own the system. The retainer
+  stays optional, not the hook.
+- **Logo direction**: a plain wordmark, lowercase, no bot/robot
+  iconography (every competitor in this space uses a cute robot mark —
+  the whole pitch is "a real operator built this in a weekend," not a
+  mascot). If a mark is ever needed: a single filled square standing
+  for "one deliverable, done," nothing literal.
+
+### Palette
+
+Deliberately distinct from all three other locked brands in this file
+(RUTHLESS/The Pass Line's gold-on-black, Recovery Desk's green-on-black,
+Creator Empire AI's ember-red-orange-on-violet-black) and from the
+cream+terracotta palette this project's own `/notes/
+10k-website-claude-code-analysis.md` already identified as Anthropic's
+own UI accent and a named generic-AI tell — not reused here on purpose:
+
+- Brand colour: **`#1C7C74`** (deep teal) — grounded and technical
+  without reading as "AI dashboard," distinct from every other hue
+  already claimed in this file. Bright/highlight: `#2EA89C`. Muted
+  (borders/dividers): `#134D48`.
+- Background: **`#0B1412`** (near-black, cool teal undertone) — distinct
+  from RUTHLESS's neutral `#0A0A0A`, Recovery Desk's warm `#101210`, and
+  Creator Empire's violet `#110B14`. Surface/card: `#121C1A`. Elevated:
+  `#1A2826`.
+- Text: `#E9F2F0` primary, `#93A8A4` secondary.
+- One functional accent only: amber `#D9A441` for a pipeline-stage
+  warning (e.g. a stalled client-pipeline entry) — never used as a
+  second brand colour or CTA.
+
+### Type
+
+- Display font: **IBM Plex Sans** (headings, numbers) — plain and
+  engineered-feeling, distinct from every other brand's display font in
+  this file (Cinzel Decorative, Space Grotesk, Sora).
+- Body font: **Source Sans 3**.
+- Monospace (dollar figures, the client pipeline, exported data):
+  **JetBrains Mono** — same convention as Creator Empire AI, reused
+  rather than re-decided, since both brands treat a real number as
+  something the reader should trust at a glance.
+- Same caveat recorded for every other brand in this file: Google Fonts
+  do not load from this sandbox (confirmed network block), so any
+  screenshot here shows the system-font fallback, not these fonts
+  rendering live — flagged, not claimed.
+
+### Voice (do-say / don't-say)
+
+Direct, built-by-one-operator, numbers-shown-not-hidden — carrying the
+audit's own findings forward as hard rules rather than leaving them as
+things to remember:
+
+- **Do say**: "you own it," "built in a weekend, not a platform,"
+  "your real hourly math" (always shown with the stated hours
+  assumption visible, never a bare rate), "call the people you
+  know first." Name the real offer structure plainly: upfront fee,
+  optional retainer, case-study-for-referrals.
+- **Don't say**: "$1M+" or any revenue claim not backed by this
+  business's own real numbers (the source's own headline was never
+  substantiated anywhere in its body — don't repeat that mistake here);
+  "fork the open-source repo" or any promise of a deliverable this
+  build doesn't actually supply a link to; a bare "$X/hour" figure with
+  no stated hours basis (the audit's own found bug); "AI-powered,"
+  "unlock," "revolutionary," "guaranteed income," "proven system."
+  Never cite a statistic to a named individual without checking the
+  name is real first (the audit's own "Andre Horowitz" finding).
+- **Signature phrase**: "Build it once. They own it forever."
+
+### Generic-AI tells to avoid (on top of the shared list below)
+
+- A cute robot/bot mascot or icon — the whole positioning is a real
+  operator's own work, not a product mascot.
+- An invented "$X made" or "N clients served" counter — this build has
+  no real customer base yet; don't fabricate one.
+- The cream+terracotta palette this project has already named as
+  Anthropic's own accent and flagged as a generic-AI tell elsewhere.
 
 ---
 
