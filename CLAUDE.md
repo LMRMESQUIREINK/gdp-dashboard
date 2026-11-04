@@ -2393,6 +2393,73 @@ yourself every time.
   fixture of this real article's text) proving the tool generalizes
   beyond the one article it was originally built from. 40/40 tests pass
   across both modules on the real run (up from 38).
+- **Third `ruthless-gate` round**: "The $1M+ Solo Grok Bot Business (Full
+  Course)" PDF (23 pages, converted the same day it was uploaded per its
+  own metadata). Full pointer in
+  `/notes/solo-bot-business-gate-analysis.md`; verdict page at
+  `/builds/solo-bot-business-gate/`, same four-file shape and METAL
+  HEAVY palette as `wp-prompt-pack-gate`/`agentic-concepts-gate`, this
+  round's skill copy carrying updated exact contrast numbers
+  (`--stop-ink:#ED7066`, not the earlier `#E8615A`) — independently
+  recomputed and confirmed exact (4.94/4.49/3.93 for `--stop`,
+  6.30/5.73/5.01 for `--stop-ink`) before trusting them. Measured first:
+  this "course" is actually a single podcast episode (Greg Isenberg
+  interviewing Nick Vasilescu, Orgo's co-founder) run through a PDF
+  converter, with an AI-cleaned "Key Points" summary layer pasted over
+  an unedited ASR transcript — proven precisely by the product's own
+  name spelled correctly (`GrokBot`, 7×) only before the exact line
+  where real podcast prose starts, and garbled (`Grockbot`, 29×) only
+  after it, zero crossover. 15 findings (6 credit, 9 stop — an honest,
+  not-forced ratio, asserted as such in the suite rather than padding
+  credits to force balance). Two headline findings: the title's "$1M+"
+  claim never appears again anywhere in 834 lines (one hit total — the
+  title), and a direct arithmetic error in the transcript itself
+  (`"$36,000 plus 25K, $51,000 of value"` — the real sum is $61,000,
+  understated by exactly $10,000, direction and size both asserted).
+  Also found: the single most actionable promise in the pitch ("fork
+  the open-source repo") never supplies a repo name or URL anywhere in
+  the source; the "$3,000/month is like $12/hour" framing is exact only
+  under a hidden, never-stated 250-hours-a-month assumption; and the
+  real, dated "2% of US households pay for AI tools" statistic
+  (Andreessen Horowitz's 2026 report, web-confirmed) is attributed on
+  the page to "Andre Horowitz," an individual who doesn't appear to
+  exist — almost certainly the real firm name clipped by the same
+  ASR-garbling pattern already confirmed for GrokBot/Grockbot,
+  misattributing institutional research to a fictional person.
+  Credited: Nick/Orgo's real identity and accurately-self-described
+  product; the concrete, falsifiable client-acquisition sequence (call
+  50 people, free first build for a case study, trade for 3 intros);
+  Paper's real, current MCP server matching the claimed design
+  workflow; and the "10-20x niche pricing power" claim checking out
+  arithmetically against the actual $3,000/mo price sold elsewhere in
+  the same transcript. **A real correction made mid-build, caught by
+  the suite itself**: the first draft of the GrokBot/Grockbot finding
+  assumed the clean/garbled boundary was the "1. Why Businesses..."
+  heading (line 34) and claimed a 7-vs-30 split; running the suite
+  immediately surfaced 6 false positives (clean "GrokBot" spellings
+  inside what should have been the garbled region) — reading those
+  lines directly rather than trusting the regex found the real boundary
+  46 lines later, at the actual first line of podcast prose. Corrected
+  to the true boundary (verified 7-vs-29, zero crossover) rather than
+  adjusting the regex to force the wrong original boundary to pass. A
+  second, smaller correction: a palette assertion copied the skill's
+  own prose claim that `--stop` "clears the text floor nowhere" without
+  re-deriving it — but `--stop` on `--engrave` is 4.94:1, which does
+  clear 4.5. Fixed by dropping the blanket claim and asserting only
+  what the real rendered page actually guarantees: `--stop` is never
+  applied as a `color` property anywhere in the CSS, confirmed via real
+  computed-style inspection in the Chromium phase, not the raw contrast
+  number alone. Both new detector types (the arithmetic-error check,
+  the section-5/6/7-gap check) proven to actually fire via a planted
+  counterexample before being trusted. 170/170 assertions pass,
+  including a real Chromium render at 1280px and 375px, zero console
+  errors, zero overflow, and coverage confirmed above the verdict by
+  real `getBoundingClientRect` position, not just DOM order. The second
+  half of this round's instruction — "create code for an app... called
+  Solo Claude Bot Business, incorporating the other 2 articles" — was
+  deliberately deferred rather than guessed at, since "the other 2
+  articles" names no specific source; clarification requested
+  separately before any code gets written for it.
 
 ---
 
