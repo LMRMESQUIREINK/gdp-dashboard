@@ -1,0 +1,68 @@
+/* Creator Empire AI -- brand tokens from /design-rules.md (DNA Lock).
+   Kept byte-for-byte consistent with standalone/assets/styles.css's
+   :root block so the two editions are visually the same brand. */
+:root {
+  --bg: #110B14;
+  --surface: #1B1420;
+  --elevated: #241A2B;
+  --ember: #FF4D3D;
+  --ember-bright: #FF8A5B;
+  --ember-muted: #A8392D;
+  --cyan: #3FE0D0;
+  --ink: #F2EDEE;
+  --ink2: #A79AA0;
+  --rule: #342A3A;
+
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); overflow-x: clip; }
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+a { color: var(--cyan); }
+
+input[type="text"], input[type="email"], input[type="password"], select, textarea {
+  background: var(--elevated);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: var(--sp-3);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+button {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  border-radius: 8px;
+  padding: var(--sp-3) var(--sp-5);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--ember); color: #1B0806; font-weight: 700; }
+.btn-secondary { background: var(--elevated); color: var(--ink); border-color: var(--rule); }
+
+.error-banner {
+  background: rgba(255, 77, 61, 0.12);
+  border: 1px solid var(--ember-muted);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>From Notes — Interactive Flowchart Generator</title>
+<style>
+:root {
+    color-scheme: light;
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    background: #f4f4f2;
+    color: #111;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f4f4f2;
+}
+
+.toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 18px 20px;
+    border-bottom: 1px solid #d7d7d2;
+    background: #fff;
+}
+
+button {
+    appearance: none;
+    border: 1px solid #242424;
+    background: #fff;
+    color: #111;
+    padding: 10px 16px;
+    border-radius: 4px;
+    font: 600 15px/1.2 Georgia, serif;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #f6f6f3;
+}
+
+button:focus-visible {
+    outline: 2px solid #111;
+    outline-offset: 3px;
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+button.active {
+    background: #242424;
+    color: #fff;
+}
+
+.preview-shell {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+}
+
+.preview {
+    width: min(1200px, 100%);
+    background: #fff;
+    border: 1px solid #dfdfda;
+    box-shadow: 0 10px 36px rgba(0,0,0,.06);
+    overflow: auto;
+}
+
+.preview svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+}
+
+.node-shape {
+    fill: #ffffff;
+    stroke: #242424;
+    stroke-width: 1.7;
+    vector-effect: non-scaling-stroke;
+}
+
+.node-shape.selected {
+    stroke-width: 3;
+}
+
+.node-shape.connection-source {
+    stroke: #8a6d00;
+    stroke-dasharray: 5 3;
+}
+
+.node-shape.type-group {
+    fill: #f4f4f2;
+    stroke-dasharray: 6 4;
+}
+
+.connector {
+    fill: none;
+    stroke: #242424;
+    stroke-width: 1.7;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+    vector-effect: non-scaling-stroke;
+}
+
+.connector.selected {
+    stroke-width: 3;
+}
+
+.connector-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 16;
+    cursor: pointer;
+}
+
+.node-label {
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    font-size: 24px;
+    font-weight: 400;
+    fill: #111111;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    cursor: pointer;
+    user-select: none;
+}
+
+.decision-label {
+    font-size: 20px;
+}
+
+.branch-label {
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    font-size: 18px;
+    font-style: italic;
+    fill: #242424;
+    text-anchor: middle;
+    cursor: pointer;
+    user-select: none;
+}
+
+.branch-label-bg {
+    fill: #f4f4f2;
+}
+
+.edit-box textarea {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: 1.7px solid #8a6d00;
+    border-radius: 4px;
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    font-size: 20px;
+    text-align: center;
+    resize: none;
+    background: #fffef8;
+    padding: 4px;
+}
+
+.node-group { cursor: grab; }
+.node-group.dragging { cursor: grabbing; }
+
+.intake {
+    padding: 16px 20px;
+    background: #fff;
+    border-bottom: 1px solid #d7d7d2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.intake label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.intake textarea {
+    width: 100%;
+    min-height: 110px;
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    font-size: 16px;
+    padding: 10px;
+    border: 1px solid #242424;
+    border-radius: 4px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.intake-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.intake-hint {
+    font-size: 13px;
+    font-style: italic;
+    color: #5e6572;
+}
+
+.intake-message {
+    font-size: 13px;
+    color: #a83232;
+}
+</style>
+</head>
+<body>
+
+<div class="intake">
+    <label for="notes-input">Paste your flowchart content</label>
+    <textarea id="notes-input" placeholder="One step per line. Use &quot;A -&gt; B&quot; for an explicit connection, &quot;A -&gt; B [label]&quot; for an edge label, end a line with &quot;?&quot; for a decision, and prefix a line with &quot;feedback:&quot; to route it as a loop-back."></textarea>
+    <div class="intake-row">
+        <button id="generate-from-notes" type="button">Generate Flowchart</button>
+        <button id="load-example-notes" type="button">Load Example Notes</button>
+        <span class="intake-hint">Sequential lines chain automatically; use arrows only where the flow branches, merges, or loops back.</span>
+    </div>
+    <div class="intake-message" id="intake-message"></div>
+</div>
+
+<div class="toolbar" aria-label="Diagram controls">
+    <button id="add-node" type="button">Add Node</button>
+    <button id="add-connection" type="button">Add Connection</button>
+    <button id="toggle-layout" type="button">Toggle Orientation</button>
+    <button id="change-direction" type="button" disabled>Change Direction</button>
+    <button id="reconnect-edge" type="button" disabled>Reconnect</button>
+    <button id="delete-selected" type="button" disabled>Delete</button>
+    <button id="download-svg" type="button">Download Editable SVG</button>
+    <button id="download-png" type="button">Download PNG</button>
+</div>
+
+<main class="preview-shell">
+    <div class="preview" id="preview">
+        <svg id="canvas"
+             xmlns="http://www.w3.org/2000/svg"
+             width="1200"
+             height="900"
+             viewBox="0 0 1200 900"
+             role="img"
+             aria-labelledby="diagram-title diagram-desc">
+
+            <title id="diagram-title">Flowchart</title>
+            <desc id="diagram-desc">Interactive editable flowchart generated from pasted notes.</desc>
+
+            <defs>
+                <marker id="arrowhead"
+                        viewBox="0 0 10 10"
+                        refX="9"
+                        refY="5"
+                        markerWidth="7"
+                        markerHeight="7"
+                        orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#242424" />
+                </marker>
+            </defs>
+
+            <g id="edges-layer"></g>
+            <g id="nodes-layer"></g>
+            <g id="overlay-layer"></g>
+        </svg>
+    </div>
+</main>
+
+<script>
+(function () {
+    "use strict";
+
+    // ============================================================
+    // 1. DIAGRAM STATE — CHANGES PER FLOWCHART
+    // ============================================================
+
+    // Placeholder state until the user generates a real diagram from
+    // pasted notes — see parseFlowchartText() and the intake panel wiring
+    // near the bottom of this script.
+    let nodes = [
+        { id: "placeholder", x: 400, y: 405, width: 400, height: 90, text: "Paste your content above and click Generate Flowchart", type: "process", rotation: 0 }
+    ];
+
+    let edges = [];
+
+    let orientation = "vertical";
+
+    let selectedNodeId = null;
+    let selectedEdgeId = null;
+
+    let connectionMode = false;
+    let connectionSourceId = null;
+
+    let reconnectMode = false;
+    let reconnectEdgeId = null;
+    let reconnectStage = null; // 'source' | 'target'
+    let reconnectNewSource = null;
+
+    let editingNodeId = null;
+    let editingEdgeId = null;
+
+    const CANVAS_W = 1200;
+    const CANVAS_H = 900;
+    const MARGIN = 60;
+
+    // ============================================================
+    // UTIL
+    // ============================================================
+
+    function generateId(prefix) {
+        let id;
+        const existing = new Set([...nodes.map(n => n.id), ...edges.map(e => e.id)]);
+        do {
+            id = prefix + "-" + Math.random().toString(36).slice(2, 8);
+        } while (existing.has(id));
+        return id;
+    }
+
+    function getNode(id) { return nodes.find(n => n.id === id); }
+    function getEdge(id) { return edges.find(e => e.id === id); }
+
+    function svgEl(tag, attrs) {
+        const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        for (const k in attrs) el.setAttribute(k, attrs[k]);
+        return el;
+    }
+
+    // ============================================================
+    // 1b. ROUGH-NOTES INTERPRETER
+    // ============================================================
+    // Turns plain pasted text into real nodes/edges state, per the specs'
+    // own "paste rough notes -> interactive flowchart" promise. Supported
+    // syntax (documented in the textarea placeholder and README):
+    //   - one step per line, chained sequentially to the line before it
+    //   - "A -> B" or "A -> B -> C" for explicit connections
+    //   - "A -> B [label]" to label that edge
+    //   - a line ending in "?" is auto-typed as a decision
+    //   - a "feedback:" prefix routes that line's edge(s) as a loop-back
+    //     (perimeter routing) instead of a normal forward connector
+    //   - a node with no incoming edges is auto-typed "start"; one with
+    //     no outgoing edges is auto-typed "end" (unless already decision)
+    function parseFlowchartText(text) {
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const parsedNodes = [];
+        const parsedEdges = [];
+        const idByKey = new Map();
+        const usedIds = new Set();
+        let prevId = null;
+
+        function freshId(prefix) {
+            let id;
+            do {
+                id = prefix + "-" + Math.random().toString(36).slice(2, 8);
+            } while (usedIds.has(id));
+            usedIds.add(id);
+            return id;
+        }
+
+        function stripListMarker(s) {
+            return s.replace(/^(\d+[.)]|[-*•])\s*/, "").trim();
+        }
+
+        function getOrCreateNode(rawLabel) {
+            const label = stripListMarker(rawLabel);
+            const key = label.toLowerCase();
+            if (idByKey.has(key)) return idByKey.get(key);
+            const isDecision = label.endsWith("?");
+            const node = {
+                id: freshId("node"), x: 0, y: 0,
+                width: 300, height: isDecision ? 130 : 80,
+                text: label, type: isDecision ? "decision" : "process", rotation: 0
+            };
+            parsedNodes.push(node);
+            idByKey.set(key, node.id);
+            return node.id;
+        }
+
+        function addEdge(fromId, toId, type, label) {
+            if (fromId === toId) return;
+            if (parsedEdges.some(e => e.from === fromId && e.to === toId)) return;
+            parsedEdges.push({
+                id: freshId("edge"), from: fromId, to: toId,
+                type, direction: "forward", label: label || ""
+            });
+        }
+
+        lines.forEach(rawLine => {
+            let line = rawLine;
+            let isFeedback = false;
+            const fbMatch = line.match(/^feedback:\s*(.+)$/i);
+            if (fbMatch) { isFeedback = true; line = fbMatch[1]; }
+
+            if (line.includes("->")) {
+                const segments = line.split("->").map(s => s.trim());
+                let fromId = null;
+                segments.forEach((seg, i) => {
+                    const bracket = seg.match(/^(.*?)\s*\[(.+)\]\s*$/);
+                    const text = bracket ? bracket[1].trim() : seg;
+                    const label = bracket ? bracket[2].trim() : "";
+                    const id = getOrCreateNode(text);
+                    if (i > 0 && fromId) {
+                        addEdge(fromId, id, isFeedback ? "feedback" : "direct", label);
+                    }
+                    fromId = id;
+                });
+                prevId = fromId;
+            } else {
+                // Only auto-chain to a brand-new node. Re-mentioning an
+                // already-defined node on its own line (common after an
+                // arrow line referenced it) just moves the "current
+                // cursor" there for the next sequential line — it must
+                // not fabricate an edge from wherever the cursor was.
+                const alreadyExists = idByKey.has(stripListMarker(line).toLowerCase());
+                const id = getOrCreateNode(line);
+                if (prevId && prevId !== id && !alreadyExists) {
+                    addEdge(prevId, id, isFeedback ? "feedback" : "direct", "");
+                }
+                prevId = id;
+            }
+        });
+
+        // An edge is a "branch" if its source has more than one non-feedback
+        // outgoing edge — upgraded here, after the full graph is known,
+        // rather than guessed line-by-line.
+        const outCount = new Map();
+        parsedEdges.forEach(e => {
+            if (e.type !== "feedback") outCount.set(e.from, (outCount.get(e.from) || 0) + 1);
+        });
+        parsedEdges.forEach(e => {
+            if (e.type !== "feedback" && outCount.get(e.from) > 1) e.type = "branch";
+        });
+
+        const hasIncoming = new Set(parsedEdges.map(e => e.to));
+        const hasOutgoing = new Set(parsedEdges.map(e => e.from));
+        parsedNodes.forEach(n => {
+            if (n.type !== "process") return;
+            if (!hasIncoming.has(n.id) && hasOutgoing.has(n.id)) n.type = "start";
+            else if (hasIncoming.has(n.id) && !hasOutgoing.has(n.id)) n.type = "end";
+        });
+
+        return { nodes: parsedNodes, edges: parsedEdges };
+    }
+
+    // ============================================================
+    // 2. LAYOUT ENGINE
+    // ============================================================
+
+    function recalculateLayout(direction) {
+        // Depth via longest path over non-feedback edges, from roots (no non-feedback incoming edge).
+        const forward = edges.filter(e => e.type !== "feedback");
+        const incoming = new Map(nodes.map(n => [n.id, 0]));
+        forward.forEach(e => incoming.set(e.to, (incoming.get(e.to) || 0) + 1));
+
+        const depth = new Map(nodes.map(n => [n.id, 0]));
+        const roots = nodes.filter(n => (incoming.get(n.id) || 0) === 0).map(n => n.id);
+        const queue = roots.length ? [...roots] : [nodes[0].id];
+        const visited = new Set();
+
+        while (queue.length) {
+            const id = queue.shift();
+            if (visited.has(id)) continue;
+            visited.add(id);
+            const d = depth.get(id) || 0;
+            forward.filter(e => e.from === id).forEach(e => {
+                const nd = d + 1;
+                if (nd > (depth.get(e.to) || 0)) depth.set(e.to, nd);
+                queue.push(e.to);
+            });
+        }
+
+        const levels = new Map();
+        nodes.forEach(n => {
+            const d = depth.get(n.id) || 0;
+            if (!levels.has(d)) levels.set(d, []);
+            levels.get(d).push(n);
+        });
+
+        const maxDepth = Math.max(...levels.keys());
+        const hasFeedback = edges.some(e => e.type === "feedback");
+        const feedbackReserve = hasFeedback ? 140 : 0;
+
+        const flowAxisLength = direction === "vertical" ? CANVAS_H : CANVAS_W;
+        const crossAxisLength = direction === "vertical" ? CANVAS_W : CANVAS_H;
+
+        // Flow axis (the direction of progression): each level needs room
+        // for its tallest/widest node, not an arbitrary fixed row gap —
+        // using a fixed gap here (the original bug) let a level's nodes
+        // keep their full cross-orientation extent while being spaced far
+        // too close together, so adjacent levels overlapped in horizontal
+        // mode (node width stayed ~300-340px against a ~170px column gap).
+        const perLevelExtent = [];
+        levels.forEach((rowNodes, d) => {
+            perLevelExtent[d] = Math.max(...rowNodes.map(n => direction === "vertical" ? n.height : n.width));
+        });
+
+        const idealLevelGap = 70;
+        const flowBudget = flowAxisLength - 2 * MARGIN;
+        const totalIdealFlow = perLevelExtent.reduce((s, e) => s + e, 0) + idealLevelGap * maxDepth;
+        const flowScale = totalIdealFlow > flowBudget ? flowBudget / totalIdealFlow : 1;
+
+        const levelPosition = [];
+        let flowCursor = MARGIN;
+        for (let d = 0; d <= maxDepth; d++) {
+            const extent = (perLevelExtent[d] || 80) * flowScale;
+            levelPosition[d] = flowCursor + extent / 2;
+            flowCursor += extent + idealLevelGap * flowScale;
+        }
+
+        levels.forEach((rowNodes, d) => {
+            const idealGap = 50;
+            const crossExtent = rowNodes.reduce((s, n) => s + (direction === "vertical" ? n.width : n.height), 0)
+                + idealGap * Math.max(0, rowNodes.length - 1);
+            const crossBudget = crossAxisLength - 2 * MARGIN - feedbackReserve;
+            const crossScale = crossExtent > crossBudget ? crossBudget / crossExtent : 1;
+            const gap = idealGap * crossScale;
+
+            let cursor = MARGIN + (crossBudget - crossExtent * crossScale) / 2;
+
+            rowNodes.forEach(n => {
+                if (direction === "vertical") {
+                    n.width = Math.max(140, n.width * crossScale);
+                    n.height = Math.max(50, n.height * flowScale);
+                    n.x = cursor;
+                    n.y = levelPosition[d] - n.height / 2;
+                    cursor += n.width + gap;
+                } else {
+                    n.height = Math.max(50, n.height * crossScale);
+                    n.width = Math.max(140, n.width * flowScale);
+                    n.y = cursor;
+                    n.x = levelPosition[d] - n.width / 2;
+                    cursor += n.height + gap;
+                }
+            });
+        });
+
+        orientation = direction;
+    }
+
+    // ============================================================
+    // 3. RENDERING ENGINE
+    // ============================================================
+
+    function render() {
+        renderEdges();
+        renderNodes();
+        updateToolbarState();
+    }
+
+    function nodeCenter(n) {
+        return { cx: n.x + n.width / 2, cy: n.y + n.height / 2 };
+    }
+
+    function nodeAnchor(n, side) {
+        const { cx, cy } = nodeCenter(n);
+        switch (side) {
+            case "top": return { x: cx, y: n.y };
+            case "bottom": return { x: cx, y: n.y + n.height };
+            case "left": return { x: n.x, y: cy };
+            case "right": return { x: n.x + n.width, y: cy };
+        }
+    }
+
+    function calculateEdgePath(edge) {
+        const from = getNode(edge.from);
+        const to = getNode(edge.to);
+        if (!from || !to) return { d: "", mid: { x: 0, y: 0 } };
+
+        if (edge.type === "feedback") {
+            return calculateFeedbackPath(from, to);
+        }
+
+        if (orientation === "vertical") {
+            const start = nodeAnchor(from, "bottom");
+            const end = nodeAnchor(to, "top");
+            if (Math.abs(start.x - end.x) < 2) {
+                return { d: `M ${start.x} ${start.y} L ${end.x} ${end.y}`, mid: { x: start.x, y: (start.y + end.y) / 2 } };
+            }
+            const midY = start.y + (end.y - start.y) / 2;
+            const d = `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
+            return { d, mid: { x: (start.x + end.x) / 2, y: midY } };
+        } else {
+            const start = nodeAnchor(from, "right");
+            const end = nodeAnchor(to, "left");
+            if (Math.abs(start.y - end.y) < 2) {
+                return { d: `M ${start.x} ${start.y} L ${end.x} ${end.y}`, mid: { x: (start.x + end.x) / 2, y: start.y } };
+            }
+            const midX = start.x + (end.x - start.x) / 2;
+            const d = `M ${start.x} ${start.y} L ${midX} ${start.y} L ${midX} ${end.y} L ${end.x} ${end.y}`;
+            return { d, mid: { x: midX, y: (start.y + end.y) / 2 } };
+        }
+    }
+
+    function calculateFeedbackPath(from, to) {
+        // Route around the outer edge of the canvas rather than through the diagram.
+        if (orientation === "vertical") {
+            const start = nodeAnchor(from, "right");
+            const end = nodeAnchor(to, "right");
+            const corridor = Math.min(Math.max(start.x, end.x) + 70, CANVAS_W - 50);
+            const d = `M ${start.x} ${start.y} L ${corridor} ${start.y} L ${corridor} ${end.y} L ${end.x} ${end.y}`;
+            return { d, mid: { x: corridor, y: (start.y + end.y) / 2 } };
+        } else {
+            const start = nodeAnchor(from, "bottom");
+            const end = nodeAnchor(to, "bottom");
+            const corridor = Math.min(Math.max(start.y, end.y) + 70, CANVAS_H - 50);
+            const d = `M ${start.x} ${start.y} L ${start.x} ${corridor} L ${end.x} ${corridor} L ${end.x} ${end.y}`;
+            return { d, mid: { x: (start.x + end.x) / 2, y: corridor } };
+        }
+    }
+
+    function renderEdges() {
+        const layer = document.getElementById("edges-layer");
+        layer.innerHTML = "";
+
+        edges.forEach(edge => {
+            const { d, mid } = calculateEdgePath(edge);
+
+            const g = svgEl("g", { "data-edge-id": edge.id });
+
+            const hit = svgEl("path", { d, class: "connector-hit" });
+            const visible = svgEl("path", {
+                d,
+                class: "connector" + (edge.id === selectedEdgeId ? " selected" : "")
+            });
+
+            if (edge.direction === "forward" || edge.direction === "both") {
+                visible.setAttribute("marker-end", "url(#arrowhead)");
+            }
+            if (edge.direction === "reverse" || edge.direction === "both") {
+                visible.setAttribute("marker-start", "url(#arrowhead)");
+            }
+
+            g.appendChild(hit);
+            g.appendChild(visible);
+
+            if (edge.label) {
+                const bg = svgEl("rect", {
+                    x: mid.x - (edge.label.length * 5 + 10),
+                    y: mid.y - 12,
+                    width: edge.label.length * 10 + 20,
+                    height: 24,
+                    class: "branch-label-bg"
+                });
+                const label = svgEl("text", { x: mid.x, y: mid.y + 1, class: "branch-label" });
+                label.textContent = edge.label;
+                g.appendChild(bg);
+                g.appendChild(label);
+            }
+
+            g.addEventListener("click", (evt) => {
+                evt.stopPropagation();
+                if (connectionMode || reconnectMode) return;
+                selectedEdgeId = edge.id;
+                selectedNodeId = null;
+                render();
+            });
+
+            g.addEventListener("dblclick", (evt) => {
+                evt.stopPropagation();
+                startEdgeLabelEditing(edge.id);
+            });
+
+            layer.appendChild(g);
+        });
+    }
+
+    function renderNodes() {
+        const layer = document.getElementById("nodes-layer");
+        layer.innerHTML = "";
+
+        nodes.forEach(node => {
+            const g = svgEl("g", { "data-node-id": node.id, class: "node-group" });
+
+            let shapeClass = "node-shape";
+            if (node.type === "group") shapeClass += " type-group";
+            if (node.id === selectedNodeId) shapeClass += " selected";
+            if (connectionMode && node.id === connectionSourceId) shapeClass += " connection-source";
+            if (reconnectMode && reconnectStage === "target" && node.id === reconnectNewSource) shapeClass += " connection-source";
+
+            let shape;
+            if (node.type === "decision") {
+                const cx = node.x + node.width / 2;
+                const cy = node.y + node.height / 2;
+                const points = [
+                    [cx, node.y],
+                    [node.x + node.width, cy],
+                    [cx, node.y + node.height],
+                    [node.x, cy]
+                ].map(p => p.join(",")).join(" ");
+                shape = svgEl("polygon", { points, class: shapeClass });
+            } else if (node.type === "start" || node.type === "end") {
+                shape = svgEl("rect", {
+                    x: node.x, y: node.y, width: node.width, height: node.height,
+                    rx: node.height / 2, ry: node.height / 2, class: shapeClass
+                });
+            } else {
+                shape = svgEl("rect", {
+                    x: node.x, y: node.y, width: node.width, height: node.height,
+                    rx: 5, ry: 5, class: shapeClass
+                });
+            }
+
+            const { cx, cy } = nodeCenter(node);
+            const label = svgEl("text", {
+                x: cx, y: cy,
+                class: "node-label" + (node.type === "decision" ? " decision-label" : "")
+            });
+            wrapText(label, node.text, node.width - 24);
+
+            g.appendChild(shape);
+            g.appendChild(label);
+
+            attachNodeInteractions(g, node);
+
+            layer.appendChild(g);
+
+            if (node.id === editingNodeId) {
+                mountEditOverlay(node);
+            }
+        });
+    }
+
+    function wrapText(textEl, text, maxWidth) {
+        // Simple word-wrap into tspans; approximate char width for Garamond at current size.
+        const words = text.split(/\s+/);
+        const charWidth = 11;
+        const maxChars = Math.max(6, Math.floor(maxWidth / charWidth));
+        const lines = [];
+        let line = "";
+        words.forEach(w => {
+            const candidate = line ? line + " " + w : w;
+            if (candidate.length > maxChars && line) {
+                lines.push(line);
+                line = w;
+            } else {
+                line = candidate;
+            }
+        });
+        if (line) lines.push(line);
+
+        const lineHeight = 22;
+        const startY = -((lines.length - 1) * lineHeight) / 2;
+        lines.forEach((l, i) => {
+            const tspan = svgEl("tspan", { x: textEl.getAttribute("x"), dy: i === 0 ? startY : lineHeight });
+            tspan.textContent = l;
+            textEl.appendChild(tspan);
+        });
+    }
+
+    // ============================================================
+    // 4. NODE INTERACTIONS — drag, select, edit
+    // ============================================================
+
+    const DRAG_THRESHOLD = 4;
+
+    function attachNodeInteractions(g, node) {
+        let dragState = null;
+
+        g.addEventListener("pointerdown", (evt) => {
+            if (editingNodeId) return;
+            evt.stopPropagation();
+            g.setPointerCapture(evt.pointerId);
+            dragState = {
+                startX: evt.clientX,
+                startY: evt.clientY,
+                nodeStartX: node.x,
+                nodeStartY: node.y,
+                dragging: false,
+                pointerId: evt.pointerId
+            };
+        });
+
+        g.addEventListener("pointermove", (evt) => {
+            if (!dragState) return;
+            const scale = CANVAS_W / g.ownerSVGElement.getBoundingClientRect().width;
+            const dx = (evt.clientX - dragState.startX) * scale;
+            const dy = (evt.clientY - dragState.startY) * scale;
+
+            if (!dragState.dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+
+            dragState.dragging = true;
+            g.classList.add("dragging");
+            node.x = dragState.nodeStartX + dx;
+            node.y = dragState.nodeStartY + dy;
+            renderEdges();
+            updateNodeTransformOnly(g, node);
+        });
+
+        g.addEventListener("pointerup", (evt) => {
+            if (!dragState) return;
+            const wasDrag = dragState.dragging;
+            try { g.releasePointerCapture(dragState.pointerId); } catch (e) { /* noop */ }
+            dragState = null;
+            g.classList.remove("dragging");
+
+            if (wasDrag) {
+                render();
+                return;
+            }
+
+            handleNodeClick(node);
+        });
+
+        g.addEventListener("dblclick", (evt) => {
+            evt.stopPropagation();
+            startNodeEditing(node.id);
+        });
+    }
+
+    function updateNodeTransformOnly(g, node) {
+        // Cheap path during drag: reposition the existing shape/text without a full re-render.
+        const shape = g.querySelector(".node-shape");
+        const text = g.querySelector(".node-label");
+        if (node.type === "decision") {
+            const cx = node.x + node.width / 2;
+            const cy = node.y + node.height / 2;
+            const points = [
+                [cx, node.y],
+                [node.x + node.width, cy],
+                [cx, node.y + node.height],
+                [node.x, cy]
+            ].map(p => p.join(",")).join(" ");
+            shape.setAttribute("points", points);
+        } else {
+            shape.setAttribute("x", node.x);
+            shape.setAttribute("y", node.y);
+        }
+        const { cx, cy } = nodeCenter(node);
+        text.setAttribute("x", cx);
+        text.setAttribute("y", cy);
+        Array.from(text.querySelectorAll("tspan")).forEach(t => t.setAttribute("x", cx));
+    }
+
+    function handleNodeClick(node) {
+        if (connectionMode) {
+            if (!connectionSourceId) {
+                connectionSourceId = node.id;
+                render();
+            } else if (connectionSourceId !== node.id) {
+                createConnection(connectionSourceId, node.id);
+            }
+            return;
+        }
+
+        if (reconnectMode) {
+            if (reconnectStage === "source") {
+                reconnectNewSource = node.id;
+                reconnectStage = "target";
+                render();
+            } else if (reconnectStage === "target") {
+                finishReconnect(reconnectNewSource, node.id);
+            }
+            return;
+        }
+
+        selectedNodeId = node.id;
+        selectedEdgeId = null;
+        render();
+    }
+
+    // ============================================================
+    // 5. INLINE TEXT EDITING
+    // ============================================================
+
+    function startNodeEditing(nodeId) {
+        commitEditing();
+        editingNodeId = nodeId;
+        render();
+    }
+
+    function mountEditOverlay(node) {
+        const overlay = document.getElementById("overlay-layer");
+        overlay.innerHTML = "";
+
+        const fo = svgEl("foreignObject", {
+            x: node.x + 8, y: node.y + 8, width: node.width - 16, height: node.height - 16, class: "edit-box"
+        });
+        const div = document.createElementNS("http://www.w3.org/1999/xhtml", "textarea");
+        div.value = node.text;
+
+        fo.appendChild(div);
+        overlay.appendChild(fo);
+
+        div.focus();
+        div.select();
+
+        div.addEventListener("blur", () => commitEditing());
+        div.addEventListener("keydown", (evt) => {
+            evt.stopPropagation();
+            if (evt.key === "Enter" && !evt.shiftKey) {
+                evt.preventDefault();
+                div.blur();
+            } else if (evt.key === "Escape") {
+                editingNodeId = null;
+                render();
+            }
+        });
+    }
+
+    function commitEditing() {
+        if (editingNodeId) {
+            const overlay = document.getElementById("overlay-layer");
+            const textarea = overlay.querySelector("textarea");
+            const node = getNode(editingNodeId);
+            if (textarea && node) node.text = textarea.value.trim() || node.text;
+            editingNodeId = null;
+            overlay.innerHTML = "";
+            render();
+        }
+        if (editingEdgeId) {
+            const overlay = document.getElementById("overlay-layer");
+            const input = overlay.querySelector("input");
+            const edge = getEdge(editingEdgeId);
+            if (input && edge) edge.label = input.value.trim();
+            editingEdgeId = null;
+            overlay.innerHTML = "";
+            render();
+        }
+    }
+
+    function startEdgeLabelEditing(edgeId) {
+        commitEditing();
+        editingEdgeId = edgeId;
+        const edge = getEdge(edgeId);
+        const { mid } = calculateEdgePath(edge);
+
+        const overlay = document.getElementById("overlay-layer");
+        overlay.innerHTML = "";
+
+        const fo = svgEl("foreignObject", { x: mid.x - 70, y: mid.y - 14, width: 140, height: 28, class: "edit-box" });
+        const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+        input.type = "text";
+        input.value = edge.label || "";
+        input.style.fontSize = "14px";
+
+        fo.appendChild(input);
+        overlay.appendChild(fo);
+        input.focus();
+        input.select();
+
+        input.addEventListener("blur", () => commitEditing());
+        input.addEventListener("keydown", (evt) => {
+            evt.stopPropagation();
+            if (evt.key === "Enter") { evt.preventDefault(); input.blur(); }
+            else if (evt.key === "Escape") { editingEdgeId = null; render(); }
+        });
+    }
+
+    // ============================================================
+    // 6. CONNECTION / NODE CRUD
+    // ============================================================
+
+    function addNode() {
+        commitEditing();
+        const node = {
+            id: generateId("node"),
+            x: 500, y: 450, width: 300, height: 80,
+            text: "New Node", type: "process", rotation: 0
+        };
+        nodes.push(node);
+        selectedNodeId = node.id;
+        selectedEdgeId = null;
+        render();
+        startNodeEditing(node.id);
+    }
+
+    function createConnection(fromId, toId) {
+        edges.push({
+            id: generateId("edge"),
+            from: fromId, to: toId,
+            type: "direct", direction: "forward", label: ""
+        });
+        connectionMode = false;
+        connectionSourceId = null;
+        render();
+    }
+
+    function cycleEdgeDirection(edgeId) {
+        const edge = getEdge(edgeId);
+        if (!edge) return;
+        const dirs = ["forward", "reverse", "both", "none"];
+        edge.direction = dirs[(dirs.indexOf(edge.direction) + 1) % dirs.length];
+        render();
+    }
+
+    function finishReconnect(newFrom, newTo) {
+        const edge = getEdge(reconnectEdgeId);
+        if (edge) {
+            edge.from = newFrom;
+            edge.to = newTo;
+        }
+        reconnectMode = false;
+        reconnectEdgeId = null;
+        reconnectStage = null;
+        reconnectNewSource = null;
+        render();
+    }
+
+    function deleteSelected() {
+        if (selectedNodeId) {
+            nodes = nodes.filter(n => n.id !== selectedNodeId);
+            edges = edges.filter(e => e.from !== selectedNodeId && e.to !== selectedNodeId);
+            selectedNodeId = null;
+        } else if (selectedEdgeId) {
+            edges = edges.filter(e => e.id !== selectedEdgeId);
+            selectedEdgeId = null;
+        }
+        render();
+    }
+
+    // ============================================================
+    // 7. TOOLBAR STATE
+    // ============================================================
+
+    function updateToolbarState() {
+        document.getElementById("change-direction").disabled = !selectedEdgeId;
+        document.getElementById("reconnect-edge").disabled = !selectedEdgeId;
+        document.getElementById("delete-selected").disabled = !selectedNodeId && !selectedEdgeId;
+        document.getElementById("add-connection").classList.toggle("active", connectionMode);
+        document.getElementById("reconnect-edge").classList.toggle("active", reconnectMode);
+    }
+
+    // ============================================================
+    // 8. EXPORT ENGINE
+    // ============================================================
+    // Live SVG only ever contains plain <text>/<tspan> — the foreignObject
+    // edit overlay is transient and is always committed+removed before
+    // render() runs again, so export never has to convert foreignObject
+    // content and never hits the foreignObject-on-canvas rasterization
+    // bug some browsers have.
+
+    function getCleanSvgClone() {
+        commitEditing();
+        const original = document.getElementById("canvas");
+        const clone = original.cloneNode(true);
+        const overlay = clone.querySelector("#overlay-layer");
+        if (overlay) overlay.remove();
+        clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        return clone;
+    }
+
+    function exportSVG() {
+        const clone = getCleanSvgClone();
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(clone);
+        const blob = new Blob([source], { type: "image/svg+xml" });
+        downloadBlob(blob, "flowchart.svg");
+    }
+
+    function exportPNG() {
+        const clone = getCleanSvgClone();
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(clone);
+        const svgBlob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+
+        const scale = 4;
+        const width = CANVAS_W;
+        const height = CANVAS_H;
+
+        const img = new Image();
+        img.onload = function () {
+            const canvasEl = document.createElement("canvas");
+            canvasEl.width = width * scale;
+            canvasEl.height = height * scale;
+            const ctx = canvasEl.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+            ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
+            URL.revokeObjectURL(url);
+
+            canvasEl.toBlob((blob) => downloadBlob(blob, "flowchart.png"), "image/png");
+        };
+        img.src = url;
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    // ============================================================
+    // 9. EVENTS — REGISTERED ONCE
+    // ============================================================
+
+    const EXAMPLE_NOTES = `Research Question
+AI Brainstorming
+Search Papers
+Relevant Results?
+Relevant Results? -> Synthesize Findings [Yes]
+Relevant Results? -> Refine Search Query [No]
+feedback: Refine Search Query -> Search Papers [retry]
+Synthesize Findings
+Draft Literature Review
+Review Complete`;
+
+    function generateFromNotes() {
+        const textarea = document.getElementById("notes-input");
+        const message = document.getElementById("intake-message");
+        const parsed = parseFlowchartText(textarea.value);
+
+        if (parsed.nodes.length === 0) {
+            message.textContent = "Nothing to generate yet — paste at least one line of content first.";
+            return;
+        }
+
+        message.textContent = "";
+        commitEditing();
+        nodes = parsed.nodes;
+        edges = parsed.edges;
+        selectedNodeId = null;
+        selectedEdgeId = null;
+        connectionMode = false;
+        connectionSourceId = null;
+        reconnectMode = false;
+        reconnectEdgeId = null;
+        recalculateLayout("vertical");
+        render();
+    }
+
+    function initializeEvents() {
+        document.getElementById("generate-from-notes").addEventListener("click", generateFromNotes);
+        document.getElementById("load-example-notes").addEventListener("click", () => {
+            document.getElementById("notes-input").value = EXAMPLE_NOTES;
+            generateFromNotes();
+        });
+
+        document.getElementById("add-node").addEventListener("click", addNode);
+
+        document.getElementById("add-connection").addEventListener("click", () => {
+            reconnectMode = false;
+            reconnectEdgeId = null;
+            connectionMode = !connectionMode;
+            connectionSourceId = null;
+            render();
+        });
+
+        document.getElementById("toggle-layout").addEventListener("click", () => {
+            const next = orientation === "vertical" ? "horizontal" : "vertical";
+            recalculateLayout(next);
+            render();
+        });
+
+        document.getElementById("change-direction").addEventListener("click", () => {
+            if (selectedEdgeId) cycleEdgeDirection(selectedEdgeId);
+        });
+
+        document.getElementById("reconnect-edge").addEventListener("click", () => {
+            if (!selectedEdgeId) return;
+            connectionMode = false;
+            connectionSourceId = null;
+            reconnectMode = !reconnectMode;
+            reconnectEdgeId = selectedEdgeId;
+            reconnectStage = "source";
+            reconnectNewSource = null;
+            render();
+        });
+
+        document.getElementById("delete-selected").addEventListener("click", deleteSelected);
+        document.getElementById("download-svg").addEventListener("click", exportSVG);
+        document.getElementById("download-png").addEventListener("click", exportPNG);
+
+        document.getElementById("canvas").addEventListener("click", (evt) => {
+            if (evt.target.id === "canvas") {
+                selectedNodeId = null;
+                selectedEdgeId = null;
+                connectionMode = false;
+                connectionSourceId = null;
+                reconnectMode = false;
+                reconnectEdgeId = null;
+                render();
+            }
+        });
+
+        document.addEventListener("keydown", (evt) => {
+            const active = document.activeElement;
+            const isEditing = active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT");
+            if (isEditing) return;
+
+            if (evt.key === "Delete" || evt.key === "Backspace") {
+                if (selectedNodeId || selectedEdgeId) {
+                    evt.preventDefault();
+                    deleteSelected();
+                }
+            } else if (evt.key === "Escape") {
+                connectionMode = false;
+                connectionSourceId = null;
+                reconnectMode = false;
+                reconnectEdgeId = null;
+                reconnectStage = null;
+                reconnectNewSource = null;
+                selectedNodeId = null;
+                selectedEdgeId = null;
+                render();
+            }
+        });
+    }
+
+    initializeEvents();
+    render();
+})();
+</script>
+</body>
+</html>

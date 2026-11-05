@@ -2,16 +2,120 @@
 
 The design system for anything visual in this project — a web page, app
 screen, or component. Any build that touches a UI MUST follow this file.
-**Status: two locked brands, scoped by build.** Recovery Desk is locked
-below (see `business-brain.md`). This project also holds an unrelated
-RUTHLESS TRADING GOLD trading-tools portfolio under `/builds/` — those
-builds keep their own established black/gold branding (set before this
-file was ever filled in). As of 2026-09-22, one specific RUTHLESS build —
-`/builds/prop-firm-dashboard` — has that branding formally locked here
-too, under its own product name ("The Pass Line," see below), through
-Build Brain Stage 3. Each section below is scoped to the brand it names;
-don't cross-apply Recovery Desk's green to a RUTHLESS build or vice
-versa.
+**Status: four locked brands, scoped by build.** Recovery Desk is
+locked below (see `business-brain.md`). This project also holds an
+unrelated RUTHLESS TRADING GOLD trading-tools portfolio under `/builds/`
+— those builds keep their own established black/gold branding (set
+before this file was ever filled in). As of 2026-09-22, one specific
+RUTHLESS build — `/builds/prop-firm-dashboard` — has that branding
+formally locked here too, under its own product name ("The Pass Line,"
+see below), through Build Brain Stage 3. As of 2026-10-24, a third,
+unrelated business — Creator Empire AI, an 18-app creator/marketing
+SaaS suite (`/builds/creator-empire-ai/`) — has its own DNA Lock below.
+As of 2026-11-04, a fourth — Solo Claude Bot Business
+(`/builds/solo-claude-bot-business/`) — has its own DNA Lock below.
+Each section below is scoped to the brand it names; don't cross-apply
+one brand's palette to a build under a different one.
+
+---
+
+## Brand: Solo Claude Bot Business
+
+Build Brain DNA Lock for `/builds/solo-claude-bot-business/`. Source:
+the `ruthless-gate` audit of "The $1M+ Solo Grok Bot Business (Full
+Course)" PDF (`/notes/solo-bot-business-gate-analysis.md`) — a single
+podcast transcript (Nick Vasilescu, Orgo's co-founder, describing a
+$25K-upfront + $3K/mo retainer offer: build a custom AI-agent team for
+an SMB, each agent with its own email/phone/compute, sold for the SMB
+to own outright). Rebuilt here under the user's explicit rename —
+**every mention of "Grok"/"GrokBot" eliminated, replaced throughout**
+— and built on the audit's own findings rather than the PDF's
+unverified claims: no "$1M+" headline (never substantiated anywhere in
+the source), no "fork the open-source repo" promise with nothing to
+fork, and the effective-hourly-rate math shown honestly (the real hours
+assumption visible, not hidden the way the source's own "$12/hour"
+line was).
+
+- **Name**: **Solo Claude Bot Business** — the user's own explicit
+  instruction, not a name this file invented.
+- **Tagline**: **"Build it once. They own it forever."** — the audit's
+  own strongest credited finding, sharpened into a line: SMB owners
+  don't want to feel "held by the neck" on a retainer for AI employees
+  (the source's own words); they want to own the system. The retainer
+  stays optional, not the hook.
+- **Logo direction**: a plain wordmark, lowercase, no bot/robot
+  iconography (every competitor in this space uses a cute robot mark —
+  the whole pitch is "a real operator built this in a weekend," not a
+  mascot). If a mark is ever needed: a single filled square standing
+  for "one deliverable, done," nothing literal.
+
+### Palette
+
+Deliberately distinct from all three other locked brands in this file
+(RUTHLESS/The Pass Line's gold-on-black, Recovery Desk's green-on-black,
+Creator Empire AI's ember-red-orange-on-violet-black) and from the
+cream+terracotta palette this project's own `/notes/
+10k-website-claude-code-analysis.md` already identified as Anthropic's
+own UI accent and a named generic-AI tell — not reused here on purpose:
+
+- Brand colour: **`#1C7C74`** (deep teal) — grounded and technical
+  without reading as "AI dashboard," distinct from every other hue
+  already claimed in this file. Bright/highlight: `#2EA89C`. Muted
+  (borders/dividers): `#134D48`.
+- Background: **`#0B1412`** (near-black, cool teal undertone) — distinct
+  from RUTHLESS's neutral `#0A0A0A`, Recovery Desk's warm `#101210`, and
+  Creator Empire's violet `#110B14`. Surface/card: `#121C1A`. Elevated:
+  `#1A2826`.
+- Text: `#E9F2F0` primary, `#93A8A4` secondary.
+- One functional accent only: amber `#D9A441` for a pipeline-stage
+  warning (e.g. a stalled client-pipeline entry) — never used as a
+  second brand colour or CTA.
+
+### Type
+
+- Display font: **IBM Plex Sans** (headings, numbers) — plain and
+  engineered-feeling, distinct from every other brand's display font in
+  this file (Cinzel Decorative, Space Grotesk, Sora).
+- Body font: **Source Sans 3**.
+- Monospace (dollar figures, the client pipeline, exported data):
+  **JetBrains Mono** — same convention as Creator Empire AI, reused
+  rather than re-decided, since both brands treat a real number as
+  something the reader should trust at a glance.
+- Same caveat recorded for every other brand in this file: Google Fonts
+  do not load from this sandbox (confirmed network block), so any
+  screenshot here shows the system-font fallback, not these fonts
+  rendering live — flagged, not claimed.
+
+### Voice (do-say / don't-say)
+
+Direct, built-by-one-operator, numbers-shown-not-hidden — carrying the
+audit's own findings forward as hard rules rather than leaving them as
+things to remember:
+
+- **Do say**: "you own it," "built in a weekend, not a platform,"
+  "your real hourly math" (always shown with the stated hours
+  assumption visible, never a bare rate), "call the people you
+  know first." Name the real offer structure plainly: upfront fee,
+  optional retainer, case-study-for-referrals.
+- **Don't say**: "$1M+" or any revenue claim not backed by this
+  business's own real numbers (the source's own headline was never
+  substantiated anywhere in its body — don't repeat that mistake here);
+  "fork the open-source repo" or any promise of a deliverable this
+  build doesn't actually supply a link to; a bare "$X/hour" figure with
+  no stated hours basis (the audit's own found bug); "AI-powered,"
+  "unlock," "revolutionary," "guaranteed income," "proven system."
+  Never cite a statistic to a named individual without checking the
+  name is real first (the audit's own "Andre Horowitz" finding).
+- **Signature phrase**: "Build it once. They own it forever."
+
+### Generic-AI tells to avoid (on top of the shared list below)
+
+- A cute robot/bot mascot or icon — the whole positioning is a real
+  operator's own work, not a product mascot.
+- An invented "$X made" or "N clients served" counter — this build has
+  no real customer base yet; don't fabricate one.
+- The cream+terracotta palette this project has already named as
+  Anthropic's own accent and flagged as a generic-AI tell elsewhere.
 
 ---
 
@@ -105,6 +209,112 @@ trader, not a finance-app onboarding flow.
   exact overselling this brand's honesty hook exists to avoid.
 - Stock photos of trading floors, candlestick charts as decoration, or
   a generic "guy pointing at up-and-to-the-right chart" hero image.
+
+---
+
+## Brand: Creator Empire AI (18-app creator/marketing SaaS)
+
+Build Brain DNA Lock for `/builds/creator-empire-ai/`. The idea arrived
+pre-planned, not through this project's own Interview stage: a pasted
+planning conversation proposing an 18-app product library (6 suites of
+3 apps each — Video, Music, Content, Sales, Automation, Agency labs)
+behind one dashboard, with a Phase 1 six-app flagship workflow (product
+image → hook → storyboard → music transition → video prompts → export)
+demoed against a "Goli Nutrition" sales-video concept. That source text
+is explicit, and this file repeats the same honesty rather than
+smoothing over it: no 18 apps exist yet, nothing here claims an
+existing library or verified customer base — this is a build blueprint,
+Interview/Idea skipped in favor of a ready-made plan, same shortcut this
+project already took once for `/builds/prop-firm-dashboard` (Stages
+3–6 run, Interview/Idea explicitly skipped, context given inline).
+
+- **Name**: **Creator Empire AI**, per the source plan's own stated
+  decision — kept rather than re-named, since it's a clear, accurate
+  description of the product (a dashboard "empire" of creator tools),
+  not a name this file invented.
+- **Tagline**: **"One product image. One finished campaign."** — a
+  tighter version of the source plan's own positioning ("turn one
+  product idea into a complete sales-video campaign... from one
+  workspace"), shortened to fit a hero line without losing the point:
+  the promise is the finished campaign, not the 18-button dashboard.
+- **Logo direction**: a bold, condensed wordmark, no crown/shield/badge
+  iconography (that register belongs to the unrelated RUTHLESS
+  portfolio) — if a mark is ever needed, a single stacked-layers glyph
+  (three bars suggesting "suite → app → output"), nothing literal like
+  a film clapper or music note, which would narrow the brand to one
+  lab instead of six.
+
+### Palette
+
+Deliberately distinct from both other locked brands in this file
+(RUTHLESS/The Pass Line's gold-on-black, Recovery Desk's green-on-black)
+and from the generic violet/indigo gradient every AI-SaaS dashboard
+already uses by default — this file's own "Generic-AI tells to avoid"
+list bans exactly that default, so a third brand repeating it would be
+the mistake this file exists to prevent:
+
+- Brand colour: **`#FF4D3D`** (ember red-orange) — cinematic and warm,
+  evoking studio lights and a music "drop" rather than a tech-dashboard
+  gradient. Bright variant for highlights/active states: `#FF8A5B`.
+  Muted variant for borders/dividers: `#A8392D`.
+- Background: **`#110B14`** (near-black with a faint violet undertone —
+  distinct from RUTHLESS's pure `#0A0A0A` and Recovery Desk's warm-green
+  `#101210`). Surface/card: `#1B1420`. Elevated: `#241A2B`.
+- Text: `#F2EDEE` primary, `#A79AA0` secondary.
+- One functional accent only (never a second brand colour): a cool cyan
+  `#3FE0D0` used strictly for the "music transition / beat drop" UI
+  moments (the R&B→Hip-Hop selector, beat-map markers) — the one place
+  in the product where a second colour genuinely means something
+  (the drop), not decoration.
+
+### Type
+
+- Display font: **Sora** (headings, suite/app names, big numbers) —
+  geometric and confident, distinct from both other brands' display
+  fonts (Cinzel Decorative, Space Grotesk).
+- Body font: **Manrope**.
+- Monospace (campaign JSON, IDs, exports): **JetBrains Mono**.
+- Same caveat already recorded for every other brand in this file:
+  Google Fonts do not load from this sandbox (confirmed network block),
+  so any screenshot taken here shows the system-font fallback, not
+  Sora/Manrope/JetBrains Mono rendering live — flagged, not claimed.
+
+### Voice (do-say / don't-say)
+
+Direct and outcome-first, matching the source plan's own best instinct
+("people don't buy a dashboard because it has 18 buttons — they buy the
+time saved, the campaigns produced") while correcting its own stated
+risk areas into hard rules rather than leaving them as advice to
+remember later:
+
+- **Do say**: "one workspace," "the finished campaign," "hook to
+  export," "six apps, one workflow," "upload one product image." Name
+  the real six-app flagship path plainly rather than gesturing at "AI
+  magic."
+- **Don't say**: "revolutionary," "game-changing," "unlimited AI video
+  generation" (the source plan's own flagged margin risk — video-
+  generation credits are metered and separate from planning/drafting
+  usage, and copy must never imply otherwise), "guaranteed sales,"
+  "double your money" or any guarantee stronger than a stated refund
+  window, "endorsed by" or any brand-endorsement implication for a demo
+  built against a real product name (the source plan's own Goli example
+  is a reference/demo, never a claimed partnership), "AI-powered"
+  (generic filler — name what the AI actually does instead).
+- **Signature phrase**: "One product image. One finished campaign."
+
+### Generic-AI tells to avoid (on top of the shared list below)
+
+- The violet/indigo "AI dashboard" gradient this file already bans by
+  default — doubly relevant here since this brand's whole category
+  (AI SaaS tool suites) defaults to it hardest.
+- Fake "18 apps, all live" framing — the UI must always make clear
+  which of the six Phase 1 apps are real and working versus which of
+  the remaining twelve are planned, never implying a finished 18-app
+  library that doesn't exist.
+- A rendered "finished video" anywhere in marketing material for a
+  product that only plans storyboards/prompts/scripts — the source
+  plan itself draws this line ("neither should pretend to render
+  finished video without a connected video-generation service").
 
 ---
 

@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ember Pour — a scroll-scrubbed hero, built to spec</title>
+<meta name="description" content="A demo coffee-brand page proving a real implementation of scrub-pipeline.md's scroll-scrubbed hero engineering standard.">
+<meta name="theme-color" content="#1a120b">
+<!-- DEPLOY STEP: og:image / og:url need absolute URLs, patched at deploy time. Not deployed in this build. -->
+<meta property="og:title" content="Ember Pour">
+<meta property="og:image" content="assets/hero-poster.jpg">
+<meta property="og:url" content="">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2214%22 fill=%22%236b3a1f%22/></svg>">
+<style>
+  :root{
+    --canvas:#1a120b;
+    --panel:#241a12;
+    --accent:#d89a4e;
+    --accent-hover:#e8b26b;
+    --accent-muted:rgba(216,154,78,.35);
+    --text-secondary:#c7b8a6;
+    --text-primary:#f3ead9;
+    --tshadow:0 1px 2px rgba(5,5,10,.95),0 3px 12px rgba(5,5,10,.78),0 10px 44px rgba(5,5,10,.8);
+    --ease:cubic-bezier(.22,.8,.3,1);
+  }
+  *{box-sizing:border-box}
+  html,body{overflow-x:hidden}
+  html{overflow-x:clip}
+  body{overflow-x:clip}
+  body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:'Fraunces',Georgia,serif;}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  a{color:var(--accent)}
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--panel);color:var(--text-primary);padding:.6rem 1rem;z-index:100}
+  .skip-link:focus{left:0}
+
+  /* ---------- Hero: pinned stage, scroll-scrubbed video ---------- */
+  .hero-wrap{height:400vh;position:relative}
+  .hero-stage{position:sticky;top:0;height:100vh;overflow:hidden;background:var(--canvas)}
+  .poster,.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .poster{background-size:cover;background-position:center;transition:opacity .6s var(--ease)}
+  .hero-video{opacity:0;transition:opacity .6s var(--ease)}
+  .hero-stage.video-ready .hero-video{opacity:1}
+  .hero-stage.video-ready .poster{opacity:0}
+  .hero-video{will-change:transform;transform:translateZ(0)}
+
+  .scrim{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 120% 90% at 50% 45%,rgba(10,8,5,0) 35%,rgba(10,8,5,.62) 100%)}
+
+  .ring{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;color:var(--accent);transition:opacity .3s}
+  .ring.done{opacity:0;pointer-events:none}
+  .ring circle{transition:stroke-dashoffset .1s linear}
+
+  .band{position:absolute;inset:0;display:flex;align-items:center;pointer-events:none;opacity:0;text-shadow:var(--tshadow)}
+  .band::before{content:"";position:absolute;inset:-4%;pointer-events:none;opacity:calc(.25 + .75*var(--k,1));background:radial-gradient(ellipse 74% 62% at 50% 50%,rgba(5,5,10,.66) 0%,rgba(5,5,10,.44) 46%,rgba(5,5,10,0) 76%)}
+  .band .inner{position:relative;max-width:min(90vw,56ch);padding:0 6vw}
+  .band h2{font-size:clamp(2.2rem,6vw,4.2rem);margin:0 0 .4rem;line-height:1.05;font-weight:600}
+  .band p{font-size:clamp(1rem,2vw,1.3rem);color:var(--text-secondary);margin:0;font-family:'Fraunces',serif}
+  .band[data-align="right"] .inner{margin-left:auto}
+
+  .w{display:inline-block}
+  .c{display:inline-block}
+  /* Entrance (b): drift-down, echoing the pour */
+  .band .w{--kc:clamp(0,(var(--k,0) - var(--th,0))*2.8,1);opacity:var(--kc);
+    transform:translateY(calc((1 - var(--kc))*-24px))}
+
+  .cta-row{margin-top:1.2rem}
+  .btn{display:inline-block;background:var(--accent);color:#1a120b;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.95rem;letter-spacing:.02em;padding:.85rem 1.8rem;border-radius:8px;border:none;cursor:pointer;text-decoration:none;text-shadow:none;transition:transform .2s var(--ease),background .2s var(--ease);pointer-events:auto}
+  .btn:hover{background:var(--accent-hover);transform:translateY(-2px)}
+  @media (pointer:coarse){.btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center}}
+
+  .scroll-cue{position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);opacity:.7;font-family:'IBM Plex Mono',monospace;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary)}
+
+  /* ---------- The static-hero copy block (hidden unless a gate matches) ---------- */
+  .static-hero{display:none;position:absolute;inset:0;align-items:center}
+  .static-hero .inner{position:relative;max-width:min(90vw,56ch);padding:0 6vw;text-shadow:var(--tshadow)}
+  .static-hero h1{font-size:clamp(2.2rem,8vw,3.4rem);margin:0 0 .5rem;line-height:1.05;font-weight:600}
+  .static-hero p{font-size:clamp(1rem,3vw,1.2rem);color:var(--text-secondary);margin:0 0 1.2rem}
+
+  /* ---------- Static-hero gates (5 conditions, CSS side) ---------- */
+  @media (max-width: 720px),
+         (orientation: portrait) and (max-width: 1024px),
+         (orientation: portrait) and (pointer: coarse),
+         (orientation: landscape) and (pointer: coarse) and (max-height: 560px),
+         (prefers-reduced-motion: reduce) {
+    .hero-wrap{height:100vh}
+    .hero-stage{position:static;overflow:visible}
+    .hero-video,.ring,.scroll-cue,.band{display:none}
+    .static-hero{display:flex}
+    .poster{opacity:1;position:absolute}
+  }
+  @media (max-height:560px){.scroll-cue{display:none}}
+
+  /* ---------- Below-fold: a real, small website ---------- */
+  main{position:relative;background:var(--canvas)}
+  section{padding:7rem 6vw;max-width:72rem;margin:0 auto}
+  section h3{font-size:clamp(1.6rem,3vw,2.4rem);margin:0 0 1.2rem}
+  .menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.6rem;margin-top:2rem}
+  .menu-item{background:var(--panel);border-radius:12px;padding:1.6rem;opacity:0;transform:translateY(16px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+  .menu-item.in{opacity:1;transform:none}
+  .menu-item h4{margin:0 0 .4rem;font-size:1.15rem}
+  .menu-item p{margin:0;color:var(--text-secondary);font-size:.95rem}
+
+  /* the one interactive moment: press-and-hold to pull a shot */
+  .pull-wrap{background:var(--panel);border-radius:16px;padding:3rem 2rem;text-align:center;margin-top:2rem}
+  .pull-btn{width:140px;height:140px;border-radius:50%;border:3px solid var(--accent-muted);background:var(--canvas);color:var(--text-primary);font-family:'IBM Plex Mono',monospace;font-size:.85rem;cursor:pointer;position:relative;overflow:hidden}
+  .pull-btn::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--pull,0)*360deg),transparent 0);opacity:.5;transition:opacity .2s}
+  .pull-result{margin-top:1.2rem;min-height:1.4rem;color:var(--accent)}
+
+  footer{padding:3rem 6vw;text-align:center;color:var(--text-secondary);font-family:'IBM Plex Mono',monospace;font-size:.8rem}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  body.paused *,body.paused *::before,body.paused *::after{animation-play-state:paused!important}
+
+  @keyframes glow{0%,100%{opacity:.4}50%{opacity:.9}}
+  .living{position:relative}
+  .living::after{content:"";position:absolute;inset:-6px;border-radius:inherit;background:radial-gradient(circle at 30% 20%,var(--accent-muted),transparent 60%);opacity:.6;animation:glow 7s ease-in-out infinite;animation-delay:-3.1s;pointer-events:none}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+    .menu-item{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<nav aria-label="Primary" style="position:absolute;top:1.5rem;left:6vw;z-index:5;font-family:'IBM Plex Mono',monospace;font-size:.85rem;letter-spacing:.04em">EMBER&nbsp;POUR</nav>
+
+<div class="hero-wrap" id="heroWrap">
+  <div class="hero-stage" id="heroStage">
+    <div class="poster" id="poster" aria-hidden="true"></div>
+    <video id="heroVideo" class="hero-video" aria-hidden="true" tabindex="-1" muted playsinline preload="none"></video>
+    <div class="scrim" aria-hidden="true"></div>
+    <svg class="ring" id="ring" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="3"
+              stroke-dasharray="126" style="stroke-dashoffset:var(--ld,126)"/>
+    </svg>
+
+    <!-- The composed static-hero copy block (design-package.md section 5):
+         one headline, one subline, one CTA, standing over the poster with
+         no scroll journey behind it. Phones, portrait tablets, coarse-
+         pointer, and reduced-motion visitors get this instead of the
+         three scroll bands below - never a cramped stack of all three
+         crammed into one clipped box, which is what a first draft of
+         this page did and is exactly the "fallback apology" the spec
+         explicitly warns the static hero must not read as. -->
+    <div class="static-hero" id="staticHero">
+      <div class="inner">
+        <h1>Ember Pour</h1>
+        <p>Six beans, one fire. Roasted slow, poured slower, one cup at a time.</p>
+        <div class="cta-row"><a class="btn" href="#menu">See the menu</a></div>
+      </div>
+    </div>
+
+    <div class="band" id="band0" data-band="0" data-a="0.00" data-b="0.26">
+      <div class="inner"><h2 aria-hidden="true"></h2><p aria-hidden="true">Six beans, one fire.</p>
+        <span class="sr-only" style="position:absolute;left:-9999px">Ember Pour. Six beans, one fire.</span>
+      </div>
+    </div>
+    <div class="band" id="band1" data-band="1" data-a="0.30" data-b="0.58" data-align="right">
+      <div class="inner"><h2 aria-hidden="true"></h2>
+        <span class="sr-only" style="position:absolute;left:-9999px">Roasted slow. Poured slower.</span>
+      </div>
+    </div>
+    <div class="band" id="band2" data-band="2" data-a="0.62" data-b="1.0">
+      <div class="inner"><h2 aria-hidden="true"></h2><p aria-hidden="true">Open at dawn. Closed by choice, never by rush.</p>
+        <span class="sr-only" style="position:absolute;left:-9999px">One cup at a time. Open at dawn. Closed by choice, never by rush.</span>
+        <div class="cta-row"><a class="btn" href="#menu">See the menu</a></div>
+      </div>
+    </div>
+
+    <div class="scroll-cue" aria-hidden="true">scroll</div>
+  </div>
+</div>
+
+<main id="main" tabindex="-1">
+  <section id="menu" aria-labelledby="menu-h">
+    <h3 id="menu-h">The pour list</h3>
+    <div class="menu-grid">
+      <div class="menu-item" data-reveal><h4>Single Origin Pour</h4><p>One farm, one harvest, poured by hand over four minutes.</p></div>
+      <div class="menu-item" data-reveal><h4>Dark Roast Espresso</h4><p>Short, strong, no apology.</p></div>
+      <div class="menu-item" data-reveal><h4>Cold Steep</h4><p>Eighteen hours in the dark, served over one block of ice.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="pull-h">
+    <h3 id="pull-h">Pull your own shot</h3>
+    <div class="pull-wrap living">
+      <button class="pull-btn" id="pullBtn" type="button" aria-describedby="pull-result">Hold to pull</button>
+      <p class="pull-result mono" id="pullResult" role="status">Hold the button. Release early and it eases back.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="about-h">
+    <h3 id="about-h">About the shop</h3>
+    <p style="color:var(--text-secondary);max-width:42rem">Ember Pour is a demo brand built to prove a scroll-scrubbed hero engine, not a real business. Every word on this page is placeholder copy, written plainly so the engineering underneath it is easy to see.</p>
+  </section>
+
+  <section aria-labelledby="faq-h">
+    <h3 id="faq-h">Questions</h3>
+    <div style="color:var(--text-secondary);max-width:42rem">
+      <p><strong style="color:var(--text-primary)">Is this a real coffee shop?</strong> No. This is a demo page proving a real implementation of a scroll-scrubbed hero engineering spec.</p>
+      <p><strong style="color:var(--text-primary)">Is the hero video AI-generated?</strong> No. This sandbox has no access to the paid video generator the source spec calls for, so a synthetic placeholder animation stands in, stated here plainly.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Demo build. The hero footage is a synthetic placeholder, not AI-generated art, because this environment has no access to the paid generator the source spec names. &middot; <a href="#main">Back to top</a>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Caption text + seeded split (once at load) ----------------
+  var COPY = {
+    0: {h: "Ember Pour", align: "left"},
+    1: {h: "Roasted slow. Poured slower.", align: "right"},
+    2: {h: "One cup at a time.", align: "left"}
+  };
+  function rng(seed){ var s = seed >>> 0; return function(){ s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+  function splitWords(el, text, seed){
+    var r = rng(seed);
+    el.innerHTML = "";
+    var words = text.split(" ");
+    words.forEach(function(word, i){
+      var w = document.createElement("span");
+      w.className = "w";
+      w.style.setProperty("--th", (i / words.length * 0.55 + r() * 0.06).toFixed(3));
+      w.textContent = word + (i < words.length - 1 ? " " : "");
+      el.appendChild(w);
+    });
+  }
+
+  [0,1,2].forEach(function(n){
+    var band = document.getElementById("band" + n);
+    var h2 = band.querySelector("h2");
+    if (COPY[n].align === "right") band.setAttribute("data-align", "right");
+    splitWords(h2, COPY[n].h, 1000 + n);
+  });
+
+  // ---------------- The five static-hero gates (character-for-character identical to CSS) ----------------
+  var GATES = [
+    '(max-width: 720px)',
+    '(orientation: portrait) and (max-width: 1024px)',
+    '(orientation: portrait) and (pointer: coarse)',
+    '(orientation: landscape) and (pointer: coarse) and (max-height: 560px)',
+    '(prefers-reduced-motion: reduce)'
+  ];
+  window.__SCRUB_HERO_GATES__ = GATES; // exposed for the test suite's string-identity check
+
+  var video = document.getElementById("heroVideo");
+  var stage = document.getElementById("heroStage");
+  var poster = document.getElementById("poster");
+  var ring = document.getElementById("ring");
+  var heroWrap = document.getElementById("heroWrap");
+  var bands = [0,1,2].map(function(n){
+    var el = document.getElementById("band" + n);
+    return { el: el, a: parseFloat(el.dataset.a), b: parseFloat(el.dataset.b), op: -1, k: -1 };
+  });
+
+  // The production asset is always H.264 (assets/hero-scrub.mp4), the
+  // universally-compatible choice scrub-pipeline.md calls for. The
+  // override exists only for this sandbox's test suite: this sandbox's
+  // open-source Chromium build ships with zero H.264 decoding support
+  // (canPlayType('video/mp4; codecs="avc1..."') === ''), confirmed
+  // directly rather than assumed, so the real browser test points at a
+  // VP9 re-encode of the identical footage to exercise the same JS
+  // engine code path. Real Chrome, Safari, and Firefox all decode H.264
+  // natively; this is a testing-environment gap, not a production one.
+  var VIDEO_URL = window.__SCRUB_HERO_VIDEO_URL_OVERRIDE__ || "assets/hero-scrub.mp4";
+  var POSTER_URL = "assets/hero-poster.jpg";
+  var started = false, videoFailed = false, scrubOn = false;
+  var seekBusy = false, pendingTime = null;
+  var target = 0, shown = 0, rafId = null, lastTick = 0;
+  var heroOnScreen = false;
+
+  poster.style.backgroundImage = "url('" + POSTER_URL + "')";
+
+  function startBlobFetch(){
+    if (started || videoFailed) return;
+    started = true;
+    loadHeroBlob().catch(failVideo);
+  }
+
+  function loadHeroBlob(){
+    var ctrl = new AbortController();
+    var watchdog = setTimeout(function(){ ctrl.abort(); }, 20000);
+    return fetch(VIDEO_URL, { signal: ctrl.signal }).then(function(res){
+      if (!res.ok) throw new Error("hero video fetch failed: " + res.status);
+      var total = Number(res.headers.get("Content-Length")) || 0;
+      var reader = res.body ? res.body.getReader() : null;
+      if (!reader) { // environments without streaming Response bodies
+        return res.blob().then(function(blob){ clearTimeout(watchdog); onBlobReady(new Blob([blob], { type: "video/mp4" })); });
+      }
+      var chunks = [], got = 0, lastRing = 0;
+      function pump(){
+        return reader.read().then(function(r){
+          if (r.done){
+            clearTimeout(watchdog);
+            ring.classList.add("done");
+            // The MIME type is required: a type-less Blob fails Chromium's
+            // demuxer with DEMUXER_ERROR_NO_SUPPORTED_STREAMS even though
+            // the bytes are a perfectly valid mp4 (found by actually
+            // running this against a real browser, not by inspection;
+            // the reference spec's own sample code has this same bug).
+            onBlobReady(new Blob(chunks, { type: "video/mp4" }));
+            return;
+          }
+          clearTimeout(watchdog);
+          watchdog = setTimeout(function(){ ctrl.abort(); }, 20000);
+          chunks.push(r.value);
+          got += r.value.length;
+          if (total){
+            var frac = Math.min(1, got / total);
+            var now = performance.now();
+            if (now - lastRing > 100 || frac === 1){
+              lastRing = now;
+              ring.style.setProperty("--ld", Math.round(126 * (1 - frac)));
+            }
+          }
+          return pump();
+        });
+      }
+      return pump();
+    });
+  }
+
+  function onBlobReady(blob){
+    video.src = URL.createObjectURL(blob);
+    video.load();
+    video.addEventListener("canplay", function once(){
+      video.removeEventListener("canplay", once);
+      requestSeek(heroProgress() * (video.duration || 0));
+      stage.classList.add("video-ready");
+    });
+  }
+
+  function failVideo(){
+    videoFailed = true;
+    ring.classList.add("done");
+    stage.classList.add("video-failed");
+    // Complete-without-video: poster stays, bands still drive off scroll.
+  }
+  video.addEventListener("error", failVideo);
+
+  // ---------------- Gated seeks ----------------
+  function requestSeek(t){
+    if (!video.duration || videoFailed) return;
+    if (seekBusy){ pendingTime = t; return; }
+    seekBusy = true;
+    try { video.currentTime = t; } catch(e){ seekBusy = false; }
+  }
+  video.addEventListener("seeked", function(){
+    seekBusy = false;
+    if (pendingTime !== null){
+      var t = pendingTime; pendingTime = null;
+      requestSeek(t);
+    }
+  });
+  video.addEventListener("error", function(){ seekBusy = false; pendingTime = null; });
+
+  // ---------------- Scroll progress + the lerp drive loop ----------------
+  function heroProgress(){
+    var rect = heroWrap.getBoundingClientRect();
+    var total = heroWrap.offsetHeight - window.innerHeight;
+    if (total <= 0) return 0;
+    var scrolled = -rect.top;
+    return Math.min(1, Math.max(0, scrolled / total));
+  }
+
+  function smoothstep(p, e0, e1){
+    var t = Math.min(1, Math.max(0, (p - e0) / (e1 - e0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  // Band one's load ramp: a one-time, time-based assembly that hands over
+  // to scroll. Without this, at scroll position zero band 0's opacity and
+  // --k are both 0 by the same formula every other band uses, so the hero
+  // opens on bare footage with no words until the visitor scrolls -
+  // exactly the failure scrub-pipeline.md names and warns against. Caught
+  // by this build's own Playwright test (band 0 measured opacity 0 at
+  // scroll top) before being fixed here, not by re-reading the spec.
+  var loadK = 0, loadStart = null;
+  function tickLoadRamp(now){
+    if (loadStart === null) loadStart = now;
+    loadK = Math.min(1, (now - loadStart) / 900);
+    updateCaptions(target);
+    if (loadK < 1) requestAnimationFrame(tickLoadRamp);
+  }
+  requestAnimationFrame(tickLoadRamp);
+
+  function updateCaptions(p){
+    bands.forEach(function(band, idx){
+      var a = band.a, b = band.b;
+      var f = Math.min(0.02, (b - a) / 3);
+      var isFirstBand = idx === 0;
+      // Band one skips the opacity ease-in: it is visible from p=0, only
+      // fading out at its own far edge like every band's ease-out.
+      var op = isFirstBand
+        ? (1 - smoothstep(p, b - f, b))
+        : smoothstep(p, a, a + f) * (1 - smoothstep(p, b - f, b));
+      var ramp = Math.min(0.025, (b - a) * 0.35);
+      var scrollK = Math.min(1, Math.max(0, (p - a) / ramp));
+      var k = isFirstBand ? Math.max(scrollK, loadK) : scrollK;
+      if (Math.abs(op - band.op) > 0.004){ band.op = op; band.el.style.opacity = op.toFixed(3); }
+      if (Math.abs(k - band.k) > 0.004){ band.k = k; band.el.style.setProperty("--k", k.toFixed(3)); }
+    });
+  }
+
+  function tick(now){
+    var dt = Math.min(100, now - (lastTick || now));
+    lastTick = now;
+    var k = 0.16;
+    shown += (target - shown) * (1 - Math.pow(1 - k, dt / 16.667));
+    if (Math.abs(target - shown) < 0.0005){
+      shown = target;
+      rafId = null;
+      lastTick = 0;
+    } else {
+      rafId = requestAnimationFrame(tick);
+    }
+    requestSeek(shown * (video.duration || 0));
+    updateCaptions(shown);
+  }
+
+  function onScroll(){
+    target = heroProgress();
+    updateCaptions(target); // keep bands correct even while the rAF loop is idle/off
+    if (rafId === null && heroOnScreen) { lastTick = 0; rafId = requestAnimationFrame(tick); }
+  }
+
+  var io = new IntersectionObserver(function(entries){
+    heroOnScreen = entries[0].isIntersecting;
+    if (heroOnScreen && rafId === null && scrubOn) { lastTick = 0; rafId = requestAnimationFrame(tick); }
+  });
+  io.observe(heroWrap);
+
+  // ---------------- The static-hero gate decision, live in both directions ----------------
+  function pinToFinalStates(){
+    bands.forEach(function(band){
+      band.el.style.opacity = "1";
+      band.el.style.setProperty("--k", "1");
+    });
+  }
+
+  function enableScrub(){
+    if (scrubOn) return;
+    scrubOn = true;
+    startBlobFetch();
+    addEventListener("scroll", onScroll, { passive: true });
+    bands.forEach(function(b){ b.op = -1; b.k = -1; });
+    updateCaptions(heroProgress());
+    onScroll();
+  }
+  function disableScrub(){
+    if (!scrubOn) return;
+    scrubOn = false;
+    removeEventListener("scroll", onScroll);
+    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    pinToFinalStates();
+  }
+  function applyHeroMode(){
+    var anyGate = GATES.some(function(q){ return matchMedia(q).matches; });
+    if (anyGate) disableScrub(); else enableScrub();
+  }
+  var MQLS = GATES.map(function(q){ return matchMedia(q); });
+  MQLS.forEach(function(m){ m.addEventListener("change", applyHeroMode); });
+  applyHeroMode();
+  window.__applyHeroMode__ = applyHeroMode; // exposed for the test suite
+
+  // ---------------- Below-fold entrances (IntersectionObserver reveal) ----------------
+  var revealIO = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.2 });
+  document.querySelectorAll("[data-reveal]").forEach(function(el){ revealIO.observe(el); });
+
+  // ---------------- The one interactive moment: press-and-hold to pull a shot ----------------
+  (function(){
+    var btn = document.getElementById("pullBtn");
+    var result = document.getElementById("pullResult");
+    var pull = 0, holding = false, raf = null;
+    var prefersReduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function setPull(v){
+      pull = Math.min(1, Math.max(0, v));
+      btn.style.setProperty("--pull", pull.toFixed(3));
+      if (pull >= 1) result.textContent = "Shot pulled. Twenty-eight seconds, just like the bar.";
+      else if (pull > 0) result.textContent = "Pulling... " + Math.round(pull * 100) + "%";
+      else result.textContent = "Hold the button. Release early and it eases back.";
+    }
+
+    function loop(){
+      if (holding) pull = Math.min(1, pull + 0.012);
+      else pull = Math.max(0, pull - 0.02);
+      setPull(pull);
+      if (holding || pull > 0) raf = requestAnimationFrame(loop);
+      else raf = null;
+    }
+    function start(){
+      holding = true;
+      if (prefersReduced){ setPull(1); return; }
+      if (raf === null) raf = requestAnimationFrame(loop);
+    }
+    function end(){
+      holding = false;
+      if (prefersReduced) return;
+      if (raf === null) raf = requestAnimationFrame(loop);
+    }
+    btn.addEventListener("mousedown", start);
+    btn.addEventListener("mouseup", end);
+    btn.addEventListener("mouseleave", end);
+    btn.addEventListener("touchstart", function(e){ e.preventDefault(); start(); }, { passive: false });
+    btn.addEventListener("touchend", end);
+    if (prefersReduced) setPull(0);
+  })();
+
+  // ---------------- Reduced motion, live, both directions ----------------
+  matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", function(e){
+    if (e.matches) pinToFinalStates();
+    else applyHeroMode();
+  });
+
+  document.addEventListener("visibilitychange", function(){
+    document.body.classList.toggle("paused", document.hidden);
+  });
+
+  // Expose internals for the test suite without polluting globals carelessly.
+  window.__scrubHeroTest__ = {
+    heroProgress: heroProgress,
+    smoothstep: smoothstep,
+    bands: bands,
+    isScrubOn: function(){ return scrubOn; }
+  };
+})();
+</script>
+</body>
+</html>

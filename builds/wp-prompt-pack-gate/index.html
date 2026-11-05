@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gate: WordPress Prompt Pack</title>
+<meta name="description" content="RUTHLESS GATE audit of the Metics Media WordPress-with-Claude free prompt pack.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%224%22 fill=%22%231A1D21%22/><rect x=%228%22 y=%228%22 width=%2216%22 height=%2216%22 fill=%22%23E2534C%22/></svg>">
+<style>
+  :root{
+    --panel:#1A1D21; --plate:#24282E; --engrave:#111316;
+    --go:#3BD17E; --caution:#F2A93B; --stop:#E2534C; --stop-ink:#E8615A;
+    --ink:#E8EAED; --ink2:#9AA2AC; --ink3:#6B747E;
+    --rule:#333941; --rule2:#2A2F36;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--engrave);overflow-x:clip}
+  body{
+    font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    color:var(--ink);
+    line-height:1.5;
+    padding:0 0 4rem;
+  }
+  a{color:var(--go)}
+  header.top{
+    background:var(--panel);
+    border-bottom:1px solid var(--rule);
+    padding:1.75rem 1.25rem;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 1.25rem}
+  header.top .wrap{padding:0}
+  h1{font-size:1.15rem;margin:0 0 .35rem;letter-spacing:.01em}
+  .subtitle{color:var(--ink2);font-size:.85rem;margin:0}
+  .fingerprint{
+    margin-top:1rem;font-size:.78rem;color:var(--ink3);
+    background:var(--engrave);border:1px solid var(--rule2);
+    border-radius:4px;padding:.6rem .8rem;word-break:break-all;
+  }
+  .fingerprint b{color:var(--ink2)}
+
+  section{margin-top:2.25rem}
+  section > h2{
+    font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--ink3);border-bottom:1px solid var(--rule);
+    padding-bottom:.5rem;margin:0 0 1rem;
+  }
+
+  .counts{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:.5rem}
+  .counts > div{
+    background:var(--plate);border:1px solid var(--rule2);border-radius:6px;
+    padding:.85rem;text-align:center;
+  }
+  .counts .n{font-size:1.4rem;font-weight:700;display:block}
+  .counts .l{font-size:.68rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em}
+  .counts .go-n{color:var(--go)}
+  .counts .stop-n{color:var(--stop-ink)}
+
+  ul.coverage{list-style:none;margin:0;padding:0}
+  ul.coverage li{
+    padding:.6rem .9rem;margin-bottom:.5rem;
+    background:var(--plate);border-left:3px solid var(--caution);
+    border-radius:0 4px 4px 0;font-size:.85rem;color:var(--ink2);
+  }
+
+  table.rules{width:100%;border-collapse:collapse;font-size:.85rem;table-layout:fixed}
+  table.rules th{text-align:left;color:var(--ink3);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;padding:.4rem .6rem;border-bottom:1px solid var(--rule)}
+  table.rules td{padding:.6rem;border-bottom:1px solid var(--rule2);vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
+  .verdict-tag{font-weight:700;font-size:.75rem;padding:.15rem .5rem;border-radius:3px;display:inline-block}
+  .verdict-clears{color:var(--go);border:1px solid var(--go)}
+  .verdict-collides{color:var(--stop-ink);border:1px solid var(--stop)}
+  .verdict-na{color:var(--ink3);border:1px solid var(--rule)}
+
+  .level-group{margin-bottom:1.75rem}
+  .level-head{
+    font-size:.95rem;font-weight:700;letter-spacing:.03em;
+    color:var(--ink);margin-bottom:.75rem;
+    display:flex;align-items:center;gap:.6rem;
+  }
+  .level-head .tag{
+    font-size:.65rem;font-weight:700;color:var(--ink3);
+    background:var(--engrave);border:1px solid var(--rule2);
+    border-radius:3px;padding:.15rem .45rem;letter-spacing:.06em;
+  }
+
+  .finding{
+    background:var(--plate);border:1px solid var(--rule2);border-radius:6px;
+    padding:1rem 1.1rem;margin-bottom:.85rem;border-left-width:4px;border-left-style:solid;
+  }
+  .finding.credit{border-left-color:var(--go)}
+  .finding.stop{border-left-color:var(--stop)}
+  .finding .ftitle{font-size:.92rem;font-weight:600;margin-bottom:.5rem;color:var(--ink)}
+  .finding .fmeta{font-size:.68rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+  .finding .fmeta .type-credit{color:var(--go)}
+  .finding .fmeta .type-stop{color:var(--stop-ink)}
+  .finding .evidence{
+    font-size:.78rem;color:var(--ink2);background:var(--engrave);
+    border:1px solid var(--rule2);border-radius:4px;padding:.6rem .75rem;
+    margin-bottom:.5rem;
+  }
+  .finding .evidence b{color:var(--ink3);font-style:normal}
+  .finding .note{font-size:.78rem;color:var(--ink3);font-style:italic}
+  .finding .prov{
+    display:inline-block;font-size:.65rem;letter-spacing:.05em;
+    color:var(--ink3);border:1px solid var(--rule2);border-radius:3px;
+    padding:.1rem .4rem;margin-top:.4rem;
+  }
+
+  footer{
+    margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--rule);
+    font-size:.72rem;color:var(--ink3);
+  }
+
+  @media (max-width:600px){
+    .counts{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1 id="gate-title">RUTHLESS GATE</h1>
+    <p class="subtitle" id="gate-subtitle"></p>
+    <div class="fingerprint" id="gate-fingerprint"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section id="sec-coverage">
+    <h2>Coverage — read this before the verdict</h2>
+    <ul class="coverage" id="coverage-list"></ul>
+  </section>
+
+  <section id="sec-counts">
+    <h2>Verdict counts</h2>
+    <div class="counts" id="counts-grid"></div>
+  </section>
+
+  <section id="sec-rules">
+    <h2>Operator business rules</h2>
+    <table class="rules">
+      <thead><tr><th>Rule</th><th>Verdict</th><th>Evidence</th></tr></thead>
+      <tbody id="rules-body"></tbody>
+    </table>
+  </section>
+
+  <section id="sec-findings">
+    <h2>Findings, by level</h2>
+    <div id="findings-container"></div>
+  </section>
+</div>
+
+<div class="wrap">
+  <footer>
+    Built with the RUTHLESS GATE procedure. Every verdict above carries a
+    command, a file:line, or a named outside source — see <code>data.js</code>
+    for the full ledger and <code>test.js</code> for the assertions that lock it.
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  "use strict";
+  var D = window.GATE_DATA;
+
+  document.getElementById("gate-subtitle").textContent =
+    D.source.title + " — " + D.source.author + ", " + D.source.pages + " pages";
+
+  var fp = document.getElementById("gate-fingerprint");
+  fp.innerHTML =
+    "<b>file:</b> " + D.source.filename + " &middot; " +
+    "<b>sha256:</b> " + D.source.fileSha256 + "<br>" +
+    "<b>extracted text:</b> " + D.source.extractedText.lines + " lines, " +
+    D.source.extractedText.words + " words (" + D.source.extractedText.tool + ")<br>" +
+    "<b>fingerprint:</b> " + D.source.fingerprint +
+    " <span style='color:var(--ink3)'>(" + D.source.fingerprintMethod + ")</span>";
+
+  var covList = document.getElementById("coverage-list");
+  D.coverage.forEach(function(item){
+    var li = document.createElement("li");
+    li.textContent = item;
+    covList.appendChild(li);
+  });
+
+  var credits = D.findings.filter(function(f){ return f.type === "credit"; });
+  var stops = D.findings.filter(function(f){ return f.type === "stop"; });
+  var counts = [
+    { n: D.findings.length, l: "Total findings" },
+    { n: credits.length, l: "Credits", cls: "go-n" },
+    { n: stops.length, l: "Stops", cls: "stop-n" },
+    { n: D.coverage.length, l: "Coverage items" },
+  ];
+  var countsGrid = document.getElementById("counts-grid");
+  counts.forEach(function(c){
+    var div = document.createElement("div");
+    div.innerHTML = "<span class='n" + (c.cls ? " " + c.cls : "") + "'>" + c.n +
+      "</span><span class='l'>" + c.l + "</span>";
+    countsGrid.appendChild(div);
+  });
+
+  var rulesBody = document.getElementById("rules-body");
+  D.businessRules.forEach(function(r){
+    var tr = document.createElement("tr");
+    var verdictClass = r.verdict === "clears" ? "verdict-clears" :
+      (r.verdict === "COLLIDES" ? "verdict-collides" : "verdict-na");
+    tr.innerHTML =
+      "<td>" + r.rule + "</td>" +
+      "<td><span class='verdict-tag " + verdictClass + "'>" + r.verdict + "</span></td>" +
+      "<td class='evidence' style='margin:0'>" + r.evidence + "</td>";
+    rulesBody.appendChild(tr);
+  });
+
+  var LEVELS = ["DEEP", "DEEPER", "DEEPEREST", "DEEPEREST-EST"];
+  var container = document.getElementById("findings-container");
+  LEVELS.forEach(function(level){
+    var items = D.findings.filter(function(f){ return f.level === level; });
+    if (!items.length) return;
+    var group = document.createElement("div");
+    group.className = "level-group";
+    group.setAttribute("data-level", level);
+    var head = document.createElement("div");
+    head.className = "level-head";
+    head.innerHTML = level + " <span class='tag'>" + items.length + " finding(s)</span>";
+    group.appendChild(head);
+    items.forEach(function(f){
+      var card = document.createElement("div");
+      card.className = "finding " + f.type;
+      card.setAttribute("data-id", f.id);
+      card.innerHTML =
+        "<div class='ftitle'>" + f.title + "</div>" +
+        "<div class='fmeta'><span class='type-" + f.type + "'>" + f.type.toUpperCase() + "</span> &middot; " + f.category + "</div>" +
+        "<div class='evidence'><b>evidence:</b> " + f.evidence + "</div>" +
+        (f.note ? "<div class='note'>" + f.note + "</div>" : "") +
+        "<div class='prov'>provenance: " + f.provenance + "</div>";
+      group.appendChild(card);
+    });
+    container.appendChild(group);
+  });
+
+  window.__GATE_RENDERED__ = {
+    totalFindings: D.findings.length,
+    credits: credits.length,
+    stops: stops.length,
+    coverageItems: D.coverage.length,
+    levelsRendered: LEVELS.filter(function(l){ return D.findings.some(function(f){ return f.level === l; }); }),
+  };
+})();
+</script>
+</body>
+</html>
