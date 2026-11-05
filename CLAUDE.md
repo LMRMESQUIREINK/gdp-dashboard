@@ -2507,6 +2507,68 @@ yourself every time.
   referral/remove flow, a real page reload confirming state
   persistence, zero console errors, zero overflow at 375px, and the
   zero-Grok-mentions check run directly against the live rendered DOM).
+- **Fourth `ruthless-gate` round, and the first on a bare GitHub repo rather
+  than an article/PDF**: `FareedKhan-dev/ontology-driven-observability` — a
+  sixth Fareed Khan source for this project, confirmed genuinely new by
+  title/content before touching anything. The user's own pasted file tree
+  (a `kg/` directory of 13 separate Python modules) was measured against the
+  real, anonymously-cloned repo and found not to match it at all — the real
+  repo has no `kg/` directory anywhere; everything lives in one real,
+  already-executed 12,141-line jupytext notebook rebuilding Netflix's real,
+  web-verified October 2026 "Ontology-Driven Observability" knowledge-graph
+  design from its public description, measured against real public data
+  (Wikimedia's operations record, OpenRCA, RCAEval, Wikipedia pageviews).
+  Confirmed via the real `README.md`'s own "Repository layout" section
+  before writing anything else — a direct, documented instance of why this
+  project's "measure before reading for meaning" rule exists (`deep-01`,
+  `deepest-est-03`). One of the most rigorous, most independently-checkable
+  sources this project has analyzed: a real pre-registration file with a
+  SHA-256 fingerprint, a logged label-revision kept with both old and new
+  fingerprints side by side, a 51-entry bug registry (recomputed and
+  confirmed exact, matching the notebook's own `BUGS` list literally), and
+  an honest 4-of-7 explicitly-missed pre-registered-targets table. Several
+  headline figures independently recomputed and confirmed exact rather than
+  trusted: "48 notebook sections" (a first-pass digits-only regex
+  undercounted at 46, caught and corrected before publishing by widening it
+  to catch two lettered sub-sections, `1b` and `40b`, per the gate's own
+  "read the line, never the match" rule), "90 figures," "3,734/3,841
+  catalogue-gate rejections," and "14 namespaces" (web-verified against
+  Netflix's real post, which independent secondary sources consistently
+  report as 12 — fully reconciled, since the notebook and the ontology
+  file's own comments both explicitly label the extra 2 as "ours," not an
+  unstated inflation). **The round's central finding**: the committed
+  `artifacts/run_manifest.json` records sha256[:16] fingerprints for the
+  three ontology files, matching exactly what the executed notebook printed
+  when it last ran — but recomputing those same hashes directly against the
+  actually-committed ontology files in this exact clone gives three
+  different values, for all three files. Ruled out before trusting this:
+  line-ending drift (none — ASCII, LF-only, `.gitattributes`-enforced),
+  multiple commits (`git log --follow` shows exactly one), an alternate
+  repo version (one branch, zero tags). The likely explanation: the
+  ontology files were edited after the last full run and committed
+  alongside the now-stale manifest — directly contradicting the README's
+  own central claim that "the run fingerprints itself... a reader can see
+  that the two agree." Verdict page at
+  `/builds/ontology-observability-gate/` (16 findings, 11 credit / 5 stop —
+  an honest, credit-heavy ratio for an unusually rigorous source, not a
+  forced balance; a new rights table added, since this is the first
+  code-repo source analyzed that explicitly states "no licence has been
+  chosen yet, so all rights are reserved" — nothing from the repo's own
+  files is committed in this project, only this round's own measurements).
+  193/193 assertions pass, including two new detectors (the fingerprint-
+  drift check, the namespace-reconciliation check) each proven to actually
+  fire via a planted counterexample before being trusted, then restored to
+  a clean run. **Built**: `/builds/manifest-drift-guard/` — a real,
+  dependency-free Python CI-gate tool generalizing the central finding: given
+  a `{filename: hash}` manifest and a directory, recompute every hash and
+  report drift/missing/unlisted files, exit 1 on any problem. 32/32 tests
+  pass against real temp-directory files (no mocking), including five real
+  CLI subprocess calls. One real bug found and fixed while testing: a
+  malformed `--key` originally crashed with a raw, unhandled `KeyError`
+  traceback instead of a clean exit code. Also run directly against the
+  real cloned repository (transiently, never committed, consistent with its
+  unlicensed status) and reproduces the exact real-world drift found during
+  the gate round, exactly matching the finding.
 
 ---
 

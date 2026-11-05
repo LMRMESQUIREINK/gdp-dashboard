@@ -1,0 +1,139 @@
+{
+  "repo": "https://github.com/FareedKhan-dev/ontology-driven-observability",
+  "clonedAt": "2026-11-05",
+  "cloneCommand": "GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 https://github.com/FareedKhan-dev/ontology-driven-observability.git",
+  "commit": "f208f19e14598267462ec3d3a6b85415cb34f82a",
+  "commitDate": "2026-11-01T08:48:28+05:00",
+  "commitAuthor": "FareedKhan-dev",
+  "branches": ["main"],
+  "tags": [],
+  "note": "git ls-remote --heads/--tags origin: exactly one branch (main), zero tags -- no alternate version of this repo exists to reconcile against the user-pasted kg/ tree.",
+
+  "fileCount": 130,
+  "totalBytes": 34463737,
+  "fingerprintMethod": "sha256 over sorted 'path sha256' rows (file-manifest.txt), first 16 hex chars",
+  "fingerprint": "87022d61c2b04432",
+
+  "pastedTreeVsReal": {
+    "pastedTopLevel": ["ontology/ (ops.ttl, shapes.ttl)", "kg/ (13 .py files: config, data, identity, ontology, store, enrich, llm, ladder, signals, correlate, agents, exam, replay)"],
+    "realTopLevel": [".gitattributes", ".gitignore", "README.md", "artifacts/", "notebook/", "ontology/", "pyproject.toml", "scripts/", "uv.lock"],
+    "kgDirectoryExists": false,
+    "realNotebookFile": "notebook/ontology_observability.py",
+    "realNotebookLines": 12141,
+    "realNotebookBytes": 747254,
+    "readmeLayoutSectionConfirms": "README.md lines 317-339, 'Repository layout' -- matches realTopLevel exactly, names notebook/ontology_observability.py as 'source of truth, jupytext percent format'"
+  },
+
+  "ontology": {
+    "opsLines": 127, "opsWords": 1161, "opsBytes": 10467,
+    "shapesLines": 34, "shapesWords": 373, "shapesBytes": 2912,
+    "competencyLines": 22, "competencyWords": 169, "competencyBytes": 1090,
+    "domainNamespacePrefixes": ["ops","slack","alert","metric","log","tl","incident","rca","exp","e2e","corr","harvest","code","users"],
+    "domainNamespaceCount": 14,
+    "w3cVocabPrefixes": ["rdfs","owl","xsd","prov"],
+    "competencyQuestionCount": 4,
+    "oursNamespaces": ["code", "users"],
+    "oursNamespacesComment": "ops.ttl line 81: code:Change rdfs:subClassOf corr:Signal ; rdfs:comment \"ours: a merged code change\" -- line 85: users:TrafficShift ... \"ours: a surge or dip in human pageviews\""
+  },
+
+  "ontologyHashDrift": {
+    "fileHashFunction": "notebook/ontology_observability.py line 12110-12100: def file_hash(p): sha256 over raw bytes, hexdigest()[:16] -- same algorithm this round's own recomputation uses",
+    "recordedInRunManifestJson": { "ops.ttl": "db895132680a71ea", "shapes.ttl": "1a8b5be802a06a9e", "competency.rq": "2cba2f48ff7891c2" },
+    "recomputedFromCommittedFiles": { "ops.ttl": "4180b165ed2c0482", "shapes.ttl": "71c0d741cf16573c", "competency.rq": "97453bd4a5b85f10" },
+    "allThreeMatch": false,
+    "crossCheckedAgainstExecutedNotebookCellOutput": true,
+    "executedNotebookCell345Text": "90 figures; ontology files {'competency.rq': '2cba2f48ff7891c2', 'ops.ttl': 'db895132680a71ea', 'shapes.ttl': '1a8b5be802a06a9e'}",
+    "ruledOutCauses": ["CRLF/line-ending: all three files are ASCII text, zero \\r bytes, .gitattributes forces eol=lf", "multiple commits: git log --follow on ops.ttl shows exactly one commit touching the file", "clone artifact: git check-attr confirms text=set eol=lf applied identically to all three files"]
+  },
+
+  "sections": {
+    "countClaimedInReadme": 48,
+    "readmePartTableRanges": "A:0-3 B:4-10 C:11-14 D:15-24 E:25-27 F:28-33 G:34-41 H:42-45",
+    "numericHeadersFound": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45"],
+    "letteredSubsectionsFound": ["1b", "40b"],
+    "totalSectionCount": 48,
+    "firstPassNaiveRegexCount": 46,
+    "firstPassMissed": "a [0-9]+ only regex misses lettered sub-sections 1b and 40b; widening it to [0-9]+[a-zA-Z]* finds all 48, confirming the README's own headline figure rather than contradicting it"
+  },
+
+  "figures": {
+    "countInRunManifestJson": 90,
+    "countOnDisk": 90,
+    "match": true
+  },
+
+  "bugs": {
+    "countClaimedInReadme": 51,
+    "countInBugsListLiteral": 51,
+    "sectionHeader": "## 44 · What is claimed, what is not, and what is still open",
+    "exampleEntries": [
+      "section 4: scrubber missed given names in lower case ('name: ...', 'name@host'); affected reports re-scrubbed and re-read",
+      "section 16: on-disk graph kept facts written by an older, buggy version of an enricher across reruns; graph is now rebuilt from nothing every run",
+      "section 40b: 'if host' tested a pandas-created NaN as truthy, misrouting every unhosted change to a component literally named 'nan'; caught by an equivalence test before the full graph was built"
+    ]
+  },
+
+  "catalogueGate": {
+    "hostsWritten": 5593, "rolesWritten": 202, "applicationsWritten": 189, "clustersWritten": 34, "teamsWritten": 10,
+    "scrapedCandidateNames": 3841,
+    "refusedByGate": 3734,
+    "refusedAppearanceCount": 374527,
+    "acceptedCandidateNames": 107,
+    "gateCost": "most-frequent refused name is a real service's container, refused only because it is not spelt the way the catalogue spells the service -- README/notebook state this cost explicitly, Netflix's post does not mention an equivalent tradeoff"
+  },
+
+  "determinism": {
+    "profile": "FULL", "rerunsPerThread": 3, "threadsRerun": 10,
+    "allSameRate": { "closedVocabulary_qwenFlash": 0.9, "freeJson_qwenFlash": 0.0, "structuredOutputs_claude": 0.7 },
+    "distinctAnswersAvg_freeJson": 2.9,
+    "statisticalTest": "Holm-corrected, p=0.03 for closed-vs-free (results_at_a_glance.json, claim H2)",
+    "twoSeparateClaimsDistinguished": "contract (every answer is a valid triple -- true by SHACL construction, section 13) vs repetition (same triples on a second ask -- empirical, measured here) -- notebook explicitly separates these inside the Netflix post's one sentence"
+  },
+
+  "netflixSourceClaims_webVerified_2026-11": {
+    "postTitle": "Ontology-Driven Observability: Building an End-to-End Knowledge Graph at Netflix Scale",
+    "postVenue": "Netflix Technology Blog",
+    "postDateFromMirror": "2026-10-16",
+    "authorsReported": ["Prasanna Vijayanathan", "Renzo Sanchez-Silva"],
+    "namespaceCountInPost": 12,
+    "storageSystemInPost": "QuipuDB (homegrown distributed quad store on redb, Rust)",
+    "fourHourExampleInPost": true,
+    "note": "secondary-source summaries only; the Netflix Technology Blog post itself was not fetched directly in this round"
+  },
+
+  "thisRepoNamespaceReconciliation": {
+    "totalInThisRepo": 14,
+    "fromNetflixFigure4": 12,
+    "addedByThisRebuild": 2,
+    "addedNames": ["code", "users"],
+    "notebookLineConfirming": "notebook/ontology_observability.py line 4104: '---- fourteen namespaces: twelve from figure 4, two of our own ----', line 4116 prints each namespace tagged 'ours' or 'Figure 4'",
+    "reconciles": true,
+    "note": "12 (Netflix, web-verified) + 2 (this repo's own, explicitly labelled) = 14 (this repo's architecture-diagram figure) -- fully transparent, not an unstated inflation"
+  },
+
+  "storageSubstitution": {
+    "netflixUses": "QuipuDB (proprietary, unavailable)",
+    "thisRepoUses": "Oxigraph (open-source Rust SPARQL store)",
+    "notebookLineJustifying": "notebook/ontology_observability.py line 4887: 'We use Oxigraph, an open-source...' -- stated and justified, not silently substituted"
+  },
+
+  "claimsVerdictTable": {
+    "totalClaims": 12,
+    "supported": 5, "notSupported": 2, "inconclusive": 4, "notTestable": 1,
+    "sumCheck": 12,
+    "scorecardFigureCaption": "Scorecard: 5 claims supported, 4 inconclusive, 2 not supported, 1 not testable",
+    "matchesTable": true
+  },
+
+  "rowsAnalysedComputed": {
+    "pageviews": 1140000000, "openrca": 525000000, "rcaeval": 250000000,
+    "sum": 1915000000,
+    "headlineFigure": "1.9B",
+    "roundingDirection": "rounds down from 1.915B to 1.9B -- a computed sum of three sourced figures, not itself independently measured"
+  },
+
+  "rights": {
+    "licenceSection": "README.md 'Licence' section, verbatim: \"No licence has been chosen yet, so all rights are reserved.\"",
+    "datasetLicencesListed": { "Wikimedia": "wikitech pages CC BY-SA 4.0; chat logs published by wm-bot", "WikipediaPageviews": "CC0", "OpenRCA": "MIT (Microsoft)", "RCAEval": "CC BY 4.0" }
+  }
+}
