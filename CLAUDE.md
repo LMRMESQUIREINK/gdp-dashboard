@@ -2620,6 +2620,58 @@ yourself every time.
   changing the actual trigger). Clean run afterward: all 12 skills in
   this project, `retro` included, pass with zero errors and zero
   warnings.
+- **Third round on the same newsletter series: "Week 23: 5 GitHub
+  Repositories Every Developer Should Know in 2026"** (the same
+  vijayasekhardeepak.com series as Week 19/20 and Week 21). Full
+  write-up in `/notes/week23-github-repos-analysis.md`. All five named
+  repos (`ayghri/i-have-adhd`, `outline/outline`,
+  `bradautomates/claude-video`, `immich-app/immich`, `antirez/ds4`)
+  cloned and confirmed real. Credited: Outline's Business Source License
+  1.1 description (Change Date, Apache 2.0 future license, the
+  "Document Service" restriction) matches the real `LICENSE` file
+  verbatim; Immich's AGPL-3.0 and "3-2-1 backup" recommendation both
+  check out exactly against the real README/docs; `claude-video`'s
+  Gemini-vs-local privacy/engine description is accurate and precise.
+  Found a real, direction-stated gap: `ds4`'s article description
+  undercounts its real model support (the real README also lists
+  DeepSeek V4.1 Flash, GLM 5.3, GLM 5.3 Flash, and Qwen3.8 Flash Next,
+  none named by the article), an understatement not an inflation, and
+  the article's flat "96 GB" framing is actually a per-model floor in
+  the source (64 GB suffices for Qwen3.8 Flash Next). **The round's
+  strongest finding**: `ayghri/i-have-adhd` ships a real, rigorous eval
+  harness (`evals/RESULTS.md`) whose one recorded run shows the
+  candidate improving on every weighted rubric dimension and more than
+  halving its blocker count (7→3) — yet still reporting "Release gate:
+  FAILED," because an absolute "zero blocking findings" veto rule sits
+  alongside the weighted scoring, and one test case is architecturally
+  unpassable by any run (the harness strips tool access, so a criterion
+  requiring the agent to act on the repo can never be met). The
+  article's own "Productivity impact" section for this repo never
+  mentions any of this, describing it only as something that "changes
+  the response format" — not a flaw in the repo, which is exemplary in
+  disclosing its own eval failure, but a real, checkable omission of the
+  single most interesting, most load-bearing part of the source.
+  **Built**: `/builds/gate-floor-checker/` — generalizes the finding
+  into a reusable mechanism distinguishing `FAIL_IMPROVABLE` (real
+  signal exists, more work could close the gap) from `FAIL_STRUCTURAL`
+  (at least one case has never once cleared, so no amount of re-running
+  the candidate alone can satisfy an absolute gate), with a recursive
+  "excluding the structural cases" sub-report so a structural failure
+  can't hide a real regression underneath it — a genuinely new gap in
+  this project's own tooling, since `agent-readiness-scorecard`,
+  `ten-k-website-grader`, and `paired-bootstrap-ratchet` all score or
+  gate something but none of them draw this specific distinction.
+  30/30 tests pass, including a full reconstruction of the real
+  published i-have-adhd numbers reproducing both of the source's own
+  conclusions exactly. **A real design gap found and fixed while
+  building it, not a synthetic test bug**: the first draft modeled
+  gate-blocking as "did the most recent trial block," which both
+  mismatched the source's real N-trials-of-one-candidate semantics and
+  would have silently let a confirmed-structural case pass if its one
+  sampled trial happened to read clean — caught by the real-data test
+  failing against the true numbers, fixed by switching to "any recorded
+  trial blocked," with a confirmed-structural flag that always counts
+  regardless of trial data.
 
 ---
 
