@@ -2569,6 +2569,57 @@ yourself every time.
   real cloned repository (transiently, never committed, consistent with its
   unlicensed status) and reproduces the exact real-world drift found during
   the gate round, exactly matching the finding.
+- **Deep analysis + new skill from a pasted article: "Matt Pocock's AI
+  Coding Skills: A Complete Workflow From Idea to Production-Ready
+  Code"** — the first `/analyze-and-ship` round on a source that's
+  itself about agent skills, not trading/business content. Full write-up
+  in `/notes/mattpocock-skills-analysis.md`. Measured first, not
+  summarized from the article: cloned the real `mattpocock/skills`
+  GitHub repo (MIT, commit `4ae2317`, plugin `mattpocock-skills@1.3.2`,
+  27 shipped skills) rather than trusting the article's description,
+  same discipline as every other GitHub-repo source this project has
+  audited. Credited: `code-review`'s two-parallel-sub-agent Standards/
+  Spec design and `retro`'s five categories both match the article's
+  description closely and precisely, down to specific named Fowler
+  smells. Found two real gaps: the article's Claude Code install
+  command (`claude plugins install mattpocock-skills`) doesn't match
+  what the repo's own README documents
+  (`claude plugin install mattpocock-skills@claude-plugins-official` —
+  wrong verb form, missing the required marketplace suffix); and the
+  article names only `implement` (a thin 17-line single-ticket
+  orchestrator) as the step after `to-tickets`, never mentioning
+  `implement-spec` — a real, separate, more-matched skill (parallel
+  implementer sub-agents, one per worktree, across a ticket "frontier,"
+  merged onto one integration branch) that the real repo's own
+  `/ask-matt` router names explicitly as the alternative for exactly
+  the ticket-graph-with-blocking-edges structure the article's own
+  `to-tickets` section describes just before skipping past it. Also
+  noted, as a pure naming coincidence rather than a derivation either
+  way: the repo has its own in-progress, unshipped "software-factory"
+  skill (a glossary for a fully autonomous ticket/PR/schedule-driven
+  multi-agent build system), unrelated to and distinct from this
+  project's own pre-existing "Software Factory method" name for the
+  isolate→build→prove→ship discipline. **Built**:
+  `.claude/skills/retro` — this project had no retrospective/self-
+  improvement mechanism at all before this round; the real `retro`
+  skill's five lenses (navigation, automated checks, standing rules,
+  tool economy, information access) were rebuilt, not ported, retargeted
+  at this project's own real environment (`CLAUDE.md`, `design-rules.md`,
+  this project's own skills, each build's own test suite) instead of an
+  issue tracker and CI, with a worked example applying it to a real
+  prior round (the ontology-driven-observability gate) rather than a
+  hypothetical. **Verified with this project's own existing
+  `skill-md-validator`**, run against the whole `.claude/skills/`
+  directory rather than just the new file — real bugs caught exactly
+  that way on the first run, not by re-reading: a bare
+  `mattpocock/skills` reference inside backticks and a not-yet-written
+  `/notes/` path both false-tripped the broken-reference check (fixed by
+  rewording the former and writing the latter, the file this round
+  genuinely needed anyway), and the description lacked a literal "use
+  when" phrase the trigger-condition check looks for (reworded without
+  changing the actual trigger). Clean run afterward: all 12 skills in
+  this project, `retro` included, pass with zero errors and zero
+  warnings.
 
 ---
 
