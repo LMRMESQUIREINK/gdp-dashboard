@@ -14,6 +14,12 @@
 #  prop_firm_pass_probability) as a separate tool category — TPT
 #  funded-account sizing questions, independent of the EODHD/FMP
 #  symbol-trading flow above. See notes/prop-firm-sizing-analysis.md.
+#  PATCHED (4): wired in /builds/agent-memory-layer/'s real
+#  MemoryStore/SQLiteMemoryStore as a third tool category —
+#  remember_preference / recall_preferences / supersede_preference —
+#  standing trading preferences that persist across sessions
+#  (jarvis_memory.sqlite3), independent of both the symbol-trading
+#  and prop-firm flows above. See jarvis_memory.py.
 #  Data Layer: EODHD+FMP (via data_pipeline.py)
 #  Generated: 2026-07-18 | Patched: 2026-08-03 | Patched again: 2026-08-04
 #  | Patched again: 2026-09-21 | Pro fixes applied: see README.md
@@ -96,6 +102,21 @@ ALTERNATE INTERFACE — the same prop-firm math, over MCP instead of here
     ask_jarvis()'s tool-dispatch loop. See that build's README for the
     stdio vs. Streamable-HTTP transport choice and what server.py's
     --transport/--redis-url flags do.
+
+SESSION MEMORY — remember_preference / recall_preferences / supersede_preference
+    These three tools are Claude-tool-use wrappers around jarvis_memory.py,
+    which wraps /builds/agent-memory-layer/'s MemoryStore and
+    SQLiteMemoryStore — copied in unmodified (memory_layer.py,
+    persistence.py), same convention the three prop_firm_* files already
+    follow in this directory. agent-memory-layer's own test suite (57
+    assertions across test_memory_layer.py and test_persistence.py) is
+    what proves the underlying lifecycle/supersession/persistence
+    mechanics; this build's own test_jarvis_memory.py proves only that
+    THIS wiring calls those real functions correctly, not a re-test of
+    logic already covered there. Standing preferences persist in
+    jarvis_memory.sqlite3 across process restarts — the same real,
+    cross-process-tested durability agent-memory-layer's own round-3
+    next-move build gave it.
 """
 
 import os
@@ -113,6 +134,8 @@ import pandas as pd
 from prop_firm_sizing import PropFirmAccount, SessionState, TPT_TIERS
 from prop_firm_position_sizing import AccountRules, evaluate_size
 from prop_pass_simulator import PassSimulator
+
+import jarvis_memory
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_KEY"))
 MODEL = os.getenv("JARVIS_MODEL", "claude-opus-5")
@@ -275,6 +298,59 @@ TOOLS = [
                          "days_remaining", "avg_daily_pnl", "daily_pnl_std"],
         },
     },
+    {
+        "name": "remember_preference",
+        "description": (
+            "Store a NEW standing trading preference for this trader, "
+            "persisted across sessions (e.g. 'always size conservatively "
+            "for NQ', 'prefers EMA crossover signals over RSI'). Always "
+            "creates a new record — never call this to update an existing "
+            "preference; call supersede_preference with its memory_id "
+            "instead once recall_preferences has shown you what's there."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "content": {"type": "string", "description": "The preference, in the trader's own words"},
+                "importance": {"type": "number", "default": 5.0,
+                                "description": "0-10 scale; how much this should weigh in future answers"},
+            },
+            "required": ["content"],
+        },
+    },
+    {
+        "name": "recall_preferences",
+        "description": (
+            "List every standing preference currently on file for this "
+            "trader, each with its memory_id. Call this before acting on "
+            "a per-symbol or prop-firm question whenever a standing "
+            "preference might apply, and before calling remember_preference "
+            "— so you can tell whether what the trader just said is new or "
+            "should instead supersede something already recorded."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "supersede_preference",
+        "description": (
+            "Replace one SPECIFIC existing preference (named by the "
+            "memory_id recall_preferences returned) with a new one — use "
+            "this when the trader's new statement clearly contradicts or "
+            "updates a prior preference you can see in recall_preferences' "
+            "output. The old preference is marked superseded, never "
+            "deleted or silently merged. Never guess a memory_id you "
+            "haven't actually seen from a recall_preferences call."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "old_memory_id": {"type": "string", "description": "memory_id from a prior recall_preferences call"},
+                "new_content": {"type": "string"},
+                "importance": {"type": "number", "default": 5.0},
+            },
+            "required": ["old_memory_id", "new_content"],
+        },
+    },
 ]
 
 
@@ -413,6 +489,22 @@ def _run_tool(name: str, tool_input: dict) -> dict:
             "simulations": sim.simulations,
         }
 
+    if name == "remember_preference":
+        return jarvis_memory.remember_preference(
+            content=tool_input["content"],
+            importance=tool_input.get("importance", 5.0),
+        )
+
+    if name == "recall_preferences":
+        return {"preferences": jarvis_memory.recall_preferences()}
+
+    if name == "supersede_preference":
+        return jarvis_memory.supersede_preference(
+            old_memory_id=tool_input["old_memory_id"],
+            new_content=tool_input["new_content"],
+            importance=tool_input.get("importance", 5.0),
+        )
+
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -462,6 +554,26 @@ these, and don't run prop-firm tools for an ordinary symbol question.
    yourself, and say so plainly if the user hasn't given them.
 3. These tools never fetch live market data and are independent of any
    EODHD/FMP symbol lookup — they only compute from the numbers given.
+
+SESSION MEMORY TOOLS (remember_preference, recall_preferences,
+supersede_preference) are a THIRD, separate flow — call recall_preferences
+once at the start of any symbol or prop-firm question to check whether a
+standing preference applies (e.g. a recalled "always size conservatively
+for NQ" should lower risk_pct on an NQ check even if the user doesn't
+repeat it this time).
+1. When the trader states something that sounds like a standing
+   preference (not a one-off instruction for this message only), first
+   call recall_preferences to see if something similar is already on
+   file.
+2. If nothing similar exists, call remember_preference with the new
+   content.
+3. If an existing preference is what the trader is actually updating or
+   contradicting, call supersede_preference naming its exact memory_id
+   from recall_preferences' output — never guess a memory_id, and never
+   silently ignore a contradiction between what's on file and what the
+   trader just said.
+4. Don't call remember_preference for routine one-off requests ("check
+   AAPL for me") — only for things stated as standing/general.
 """
 
 

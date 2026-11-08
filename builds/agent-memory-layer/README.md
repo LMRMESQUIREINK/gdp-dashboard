@@ -46,6 +46,48 @@ conflicting preferences.
   would be a materially worse failure than the feature simply being
   missing.
 
+## Round 2: `score_candidates()` and `SQLiteMemoryStore` (this project's own suggested next moves, all three built)
+
+`score_generative_agents()`'s own docstring states a real gap: a single
+memory has no "other candidates" to normalize against, so its own
+per-record relevance/importance mapping (a fixed cosine-to-[0,1] affine
+map, importance/10) isn't a fair ranking across a candidate set. This
+round closes that gap for real:
+
+- **`score_candidates(records, query_embedding, *, now)`** — the real
+  Generative Agents retrieval step: min-max normalizes RAW recency,
+  importance, and relevance SEPARATELY across the whole candidate set,
+  then sums. A record missing an embedding gets the worst possible raw
+  relevance (-1.0) so it ranks at the pool's relevance floor rather than
+  an arbitrary fixed value; if the WHOLE pool lacks embeddings, every
+  candidate ties, so relevance becomes a correct no-op rather than a
+  penalty. Returns `(record, score)` pairs sorted descending. 9 new
+  tests, including an independent hand recomputation of the min-max
+  normalization for a 3-record pool, a tied-pool check, a single-record
+  pool (normalizes against itself without a `ZeroDivisionError`), and an
+  empty-pool `ValueError`. All passed on the first run.
+- **`persistence.SQLiteMemoryStore`** (`persistence.py`) — the
+  persistence layer `MemoryStore` doesn't have, following the exact WAL
+  convention already established in
+  `/builds/agent-checkpoint-layer/checkpoint/store.py`: SQLite's own
+  write-ahead-log journal mode plus an app-level, append-only
+  `transitions` table logging every lifecycle change. Same `add`/`get`/
+  `live_for_subject`/`supersede` surface as `MemoryStore`, backed by a
+  file instead of a dict, delegating all legality checks to
+  `memory_layer.transition()`/`supersede()` rather than re-implementing
+  them. Proven with 27 tests, including the one that actually matters:
+  a real **cross-process** restart — a genuine subprocess writes two
+  records and a status transition, exits, and this process opens a
+  fresh `SQLiteMemoryStore` against the same file and confirms
+  everything (including the transition WAL) survived. All 27 passed on
+  the first run — no bug found this round, unlike round 1's
+  normalization bug.
+
+Both extensions are wired into `/builds/trading-jarvis/jarvis_orchestrator.py`
+as a new session-memory tool category (`remember_preference`,
+`recall_preferences`, `supersede_preference`) — see that build's README
+for the integration and its own 16-assertion wiring test.
+
 ## Use
 
 ```python
@@ -70,10 +112,11 @@ store.live_for_subject("user_1")  # -> [fastapi_pref] only
 ## Proven
 
 ```bash
-python3 test_memory_layer.py
+python3 test_memory_layer.py    # 39/39
+python3 test_persistence.py     # 27/27
 ```
 
-**30/30 assertions pass**, including:
+**39/39 assertions pass in `test_memory_layer.py`**, including:
 
 - Every legal and illegal lifecycle transition in the DAG above, not just
   the happy path — both terminal states (`ARCHIVED`, `FORGOTTEN`) are
@@ -99,10 +142,11 @@ python3 test_memory_layer.py
 
 ## What's not built here
 
-- No actual vector store, embedding model, or persistence layer — this
-  is the scoring/lifecycle/supersession logic only, the generalizable
-  mechanism the article's own prose names but never implements, not a
-  full memory service.
+- No actual vector store or embedding model — embeddings are always
+  caller-supplied tuples here, never computed.
+- No multi-tenant/multi-subject identity layer beyond `subject_id` as a
+  plain string field — a real deployment scoping memories to real users
+  needs real authentication, which is out of scope for this module.
 - No implementation of the article's 30-plus-category taxonomy — that's
   prose classification with nothing to execute or test, not a
   generalizable mechanism in the sense this project's builds require.

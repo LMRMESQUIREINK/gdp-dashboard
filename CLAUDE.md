@@ -2717,6 +2717,73 @@ yourself every time.
   record with no embedding at all had its "zero relevance" sentinel
   silently inflated from 0 to 0.5 — caught by a dedicated no-embedding
   test, fixed by only normalizing when a real cosine value existed.
+- **All three suggested next-moves on `agent-memory-layer` done in one
+  round, not a subset.** (1) **`score_candidates()`** closes the real
+  gap `score_generative_agents()`'s own docstring states: a single
+  memory has no "other candidates" to normalize against. The new
+  function min-max normalizes RAW recency, importance, and relevance
+  SEPARATELY across a whole candidate set, then sums — the real
+  Generative Agents retrieval step, not what the per-record function
+  does (a fixed, pool-independent cosine-to-[0,1] map and importance/10).
+  A record missing an embedding gets the worst possible raw relevance
+  (-1.0) so it ranks at the pool's relevance floor rather than an
+  arbitrary fixed value, and correctly becomes a no-op (every candidate
+  tied) when the whole pool lacks embeddings. 9 new tests, including an
+  independent hand recomputation of the normalization for a 3-record
+  pool, a tied-pool check, a single-record pool (normalizes against
+  itself, no `ZeroDivisionError`), and an empty-pool `ValueError` — all
+  passed on the first run (39/39 total in `test_memory_layer.py`).
+  (2) **`persistence.SQLiteMemoryStore`** — the persistence layer
+  `MemoryStore` didn't have, following the exact WAL convention already
+  established in `/builds/agent-checkpoint-layer/checkpoint/store.py`:
+  SQLite's own write-ahead-log journal mode plus an app-level,
+  append-only `transitions` table logging every lifecycle change. Same
+  `add`/`get`/`live_for_subject`/`supersede` surface as `MemoryStore`,
+  delegating every legality check to `memory_layer.transition()`/
+  `supersede()` rather than re-implementing them — this module only adds
+  "and also persist it, and also log it" around those calls. Proven
+  with 27 tests, the one that actually matters being a real
+  **cross-process** restart: a genuine subprocess writes two records and
+  a status transition and exits, then the test process opens a fresh
+  `SQLiteMemoryStore` against the same file and confirms everything
+  (the transition WAL included) survived — not two in-process objects
+  sharing one Python process, which wouldn't prove persistence at all.
+  27/27 passed on the first run — no bug found this round, unlike round
+  1's normalization bug. (3) **Wired into
+  `/builds/trading-jarvis/jarvis_orchestrator.py`** as a new, third tool
+  category — `remember_preference`, `recall_preferences`,
+  `supersede_preference` — independent of both the EODHD/FMP
+  symbol-trading flow and the prop-firm flow, persisting standing
+  trading preferences ("always size conservatively for NQ," "prefers EMA
+  crossover signals") across sessions in `jarvis_memory.sqlite3`.
+  `memory_layer.py`/`persistence.py` copied in unmodified (same
+  convention the prop-firm files already follow there); a new
+  `jarvis_memory.py` applies `positions_store.py`'s own stated
+  single-trader convention exactly (a fixed `subject_id`, no auth layer
+  to scope against). Deliberately does **not** auto-supersede a
+  preference on topic match — there's no embedding or keyword-matching
+  layer in this codebase to judge "same topic" honestly, and faking that
+  judgment with a regex would be exactly the kind of fabricated-
+  intelligence shortcut this project avoids elsewhere; instead
+  `recall_preferences` surfaces every live preference with its
+  `memory_id`, and the system prompt instructs Claude — which can
+  actually read and compare the text — to call `supersede_preference`
+  naming a specific `memory_id` when a new statement clearly contradicts
+  one already on file. Proven with 16 new tests in
+  `test_jarvis_memory.py` (needed a real pinned-ish install in this
+  session — `anthropic`, `requests`, `pandas`, `numpy` — since
+  `jarvis_orchestrator.py` imports its full module graph even to test
+  only the new tools): all three tools proven directly via `_run_tool()`
+  against a real, isolated `SQLiteMemoryStore` (recall correctly ranks
+  by real `score_candidates()` output, not insertion order; superseding
+  a `memory_id` never actually returned by `recall_preferences` raises
+  `KeyError` rather than creating a dangling link), then proven again
+  through the full `ask_jarvis()` tool-dispatch loop against a mocked
+  Anthropic client — same established convention as every other
+  dispatch-loop test in this project — confirming a preference the
+  mocked model asks to remember is actually, durably persisted via the
+  real store, not just echoed back by the mock. 16/16 passed on the
+  first run.
 
 ---
 

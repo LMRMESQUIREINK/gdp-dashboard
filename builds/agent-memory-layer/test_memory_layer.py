@@ -18,6 +18,7 @@ from memory_layer import (  # noqa: E402
     supersede,
     score_generative_agents,
     score_extended,
+    score_candidates,
 )
 
 passed = 0
@@ -196,6 +197,64 @@ extended_unknown_authority = score_extended(rec_ext2, query_emb, now=NOW)
 rec_ext3 = mk("ext-3", importance=5.0, confidence=0.9, authority="user_explicit", embedding=(1.0, 0.0), created_at=NOW, last_accessed_at=NOW)
 extended_user_authority = score_extended(rec_ext3, query_emb, now=NOW)
 check(extended_user_authority > extended_unknown_authority, "user_explicit authority scores strictly higher than system_inferred authority, as this build's stated convention requires")
+
+# ---------------------------------------------------------------------
+# score_candidates(): the real multi-record normalization step
+# score_generative_agents() explicitly says it does NOT do on its own.
+# ---------------------------------------------------------------------
+pool = [
+    mk("pool-1", importance=9.0, embedding=(1.0, 0.0), created_at=NOW, last_accessed_at=NOW),      # most recent, most important, most relevant
+    mk("pool-2", importance=1.0, embedding=(0.0, 1.0), created_at=0.0, last_accessed_at=0.0),       # least recent, least important, least relevant
+    mk("pool-3", importance=5.0, embedding=(0.7071, 0.7071), created_at=NOW / 2, last_accessed_at=NOW / 2),  # middling on all three
+]
+ranked = score_candidates(pool, (1.0, 0.0), now=NOW)
+check(len(ranked) == 3, "score_candidates returns one (record, score) pair per candidate")
+check(ranked[0][0].memory_id == "pool-1", "the record that's most recent, most important, AND most relevant ranks first", [p[0].memory_id for p in ranked])
+check(ranked[-1][0].memory_id == "pool-2", "the record that's least recent, least important, AND least relevant ranks last", [p[0].memory_id for p in ranked])
+
+# Hand-recompute the min-max normalization for pool-1 and pool-3 independently,
+# not trusted from the function's own output.
+raw_recency = [0.995 ** ((NOW - r.last_accessed_at) / 3600.0) for r in pool]
+raw_importance = [r.importance for r in pool]
+raw_relevance = [
+    (1.0 * 1.0 + 0.0 * 0.0),            # pool-1: cosine((1,0),(1,0)) = 1.0
+    (0.0 * 1.0 + 1.0 * 0.0),            # pool-2: cosine((0,1),(1,0)) = 0.0
+    (0.7071 * 1.0 + 0.7071 * 0.0) / 1.0,  # pool-3: cosine((.7071,.7071),(1,0)) ~ 0.7071 (unit vector already)
+]
+
+def mm(values, i):
+    lo, hi = min(values), max(values)
+    return 1.0 if hi == lo else (values[i] - lo) / (hi - lo)
+
+expected_pool3 = mm(raw_recency, 2) + mm(raw_importance, 2) + mm(raw_relevance, 2)
+actual_pool3 = next(score for rec, score in ranked if rec.memory_id == "pool-3")
+check(abs(actual_pool3 - expected_pool3) < 1e-3, "score_candidates' middle-ranked record matches an independent hand recomputation of min-max-normalized recency+importance+relevance", f"expected={expected_pool3!r} actual={actual_pool3!r}")
+
+# Identical candidates: every raw value ties, so every normalized component
+# is 1.0 (a wash), not an undefined 0/0 division.
+tied = [mk(f"tied-{i}", importance=5.0, created_at=NOW, last_accessed_at=NOW) for i in range(3)]
+tied_ranked = score_candidates(tied, (1.0, 0.0), now=NOW)
+check(all(abs(score - 3.0) < 1e-9 for _, score in tied_ranked), "identical candidates all score exactly 3.0 (1.0 recency + 1.0 importance + 1.0 relevance) -- a tie, not a crash", tied_ranked)
+
+# A single-candidate pool also ties against itself (trivially the min AND the max).
+single_ranked = score_candidates([mk("solo", importance=3.0, created_at=NOW, last_accessed_at=NOW)], (1.0, 0.0), now=NOW)
+check(len(single_ranked) == 1 and abs(single_ranked[0][1] - 3.0) < 1e-9, "a single-record pool normalizes against itself and scores 3.0, not a ZeroDivisionError")
+
+# All-missing-embeddings pool: relevance is a wash (1.0 for everyone), not a
+# fixed 0.0/0.5 guess -- ranking falls back to recency+importance alone.
+no_emb_pool = [
+    mk("ne-1", importance=9.0, created_at=NOW, last_accessed_at=NOW),
+    mk("ne-2", importance=1.0, created_at=0.0, last_accessed_at=0.0),
+]
+ne_ranked = score_candidates(no_emb_pool, (1.0, 0.0), now=NOW)
+check(ne_ranked[0][0].memory_id == "ne-1", "with no embeddings anywhere in the pool, ranking still correctly falls back to recency+importance")
+check(all(score >= 2.99 for _, score in [(r, s) for r, s in ne_ranked if r.memory_id == "ne-1"]), "a no-embedding record still gets the full relevance=1.0 wash contribution when the whole pool lacks embeddings")
+
+try:
+    score_candidates([], (1.0, 0.0), now=NOW)
+    check(False, "an empty candidate list raises ValueError", "no exception")
+except ValueError:
+    check(True, "score_candidates refuses an empty candidate list -- nothing to normalize against")
 
 print(f"\n{passed} passed, {failed} failed.")
 if failed:

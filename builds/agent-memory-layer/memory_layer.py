@@ -215,6 +215,72 @@ def score_generative_agents(
     return recency + importance + relevance
 
 
+def _min_max_normalize(values: list[float]) -> list[float]:
+    """Min-max normalize a list of RAW values to [0, 1]. If every value in
+    the list is identical (including a list of exactly one), returns 1.0
+    for all of them -- the real Generative Agents retrieval step treats
+    "no variance in this candidate pool" as "equally maximally
+    recent/important/relevant within it," not an undefined 0/0 division.
+    """
+    lo = min(values)
+    hi = max(values)
+    if hi == lo:
+        return [1.0 for _ in values]
+    return [(v - lo) / (hi - lo) for v in values]
+
+
+def score_candidates(
+    records: list[MemoryRecord],
+    query_embedding: tuple[float, ...],
+    *,
+    now: float,
+    decay_per_hour: float = 0.995,
+) -> list[tuple[MemoryRecord, float]]:
+    """The real Generative Agents retrieval step, the one
+    `score_generative_agents()` above does NOT implement on its own (its
+    own docstring says so): min-max normalize recency, importance, and
+    relevance SEPARATELY across the WHOLE candidate set, then sum --
+    rather than each record scoring against a fixed, pool-independent
+    scale (importance/10, a fixed cosine-to-[0,1] affine map). A single
+    record has no "other candidates" to normalize against; that's exactly
+    the gap this module's own README states and previously left closed
+    only at the single-record level. This function is the real,
+    multi-record ranking a caller holding N candidates should use.
+
+    A record with no embedding gets the WORST possible raw relevance
+    (-1.0, the minimum cosine similarity) for the purposes of this
+    normalization, so it ranks at the bottom of relevance within the
+    pool rather than being pinned to an arbitrary absolute value. If
+    EVERY candidate lacks an embedding, every candidate's raw relevance
+    is tied at -1.0, so `_min_max_normalize` correctly treats relevance
+    as a wash (1.0 for everyone) rather than a tie-breaking penalty.
+
+    Returns (record, score) pairs sorted by score descending. Raises
+    ValueError on an empty candidate list -- there's nothing to
+    normalize against.
+    """
+    if not records:
+        raise ValueError("score_candidates() needs at least one candidate record")
+
+    raw_recency = [_recency_score(r, now, decay_per_hour) for r in records]
+    raw_importance = [r.importance for r in records]  # raw 0-10 scale; normalized below, not divided by 10
+    raw_relevance = [
+        _cosine_similarity(r.embedding, query_embedding) if r.embedding else -1.0
+        for r in records
+    ]
+
+    norm_recency = _min_max_normalize(raw_recency)
+    norm_importance = _min_max_normalize(raw_importance)
+    norm_relevance = _min_max_normalize(raw_relevance)
+
+    scored = [
+        (records[i], norm_recency[i] + norm_importance[i] + norm_relevance[i])
+        for i in range(len(records))
+    ]
+    scored.sort(key=lambda pair: pair[1], reverse=True)
+    return scored
+
+
 def score_extended(
     record: MemoryRecord,
     query_embedding: tuple[float, ...],
