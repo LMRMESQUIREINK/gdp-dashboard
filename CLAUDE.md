@@ -2672,6 +2672,51 @@ yourself every time.
   failing against the true numbers, fixed by switching to "any recorded
   trial blocked," with a confirmed-structural flag that always counts
   regardless of trial data.
+- **Deep analysis + new build from a pasted article: "Memory Engineering
+  for AI Agents"** (DhanushKumar, Medium) — a 30-plus-category prose
+  taxonomy of agent memory types with no code attached, closer in kind to
+  the earlier "AI System Design" and "Agentic Harness Frameworks" rounds
+  than the GitHub-repo rounds. Full write-up in
+  `/notes/memory-engineering-analysis.md`. Eight specific claims web-
+  verified: Anthropic's real Contextual Retrieval blog post (confirmed,
+  with the article's vague "substantially fewer" found to understate the
+  real, precise reported numbers — 5.7%→3.7%→2.9%→1.9% failure rate
+  across the contextual-embeddings/BM25/reranking stages), Anthropic's
+  real memory tool (confirmed exactly, including its client-side
+  architecture), Generative Agents' real recency+importance+relevance
+  scoring formula (Park et al. 2023, confirmed accurate attribution),
+  Reflexion, Voyager, and Zep/Graphiti (all confirmed accurate against
+  their real papers). **A real, dated gap found**: the article describes
+  MemGPT's real OS-inspired design accurately but never mentions it was
+  renamed **Letta** in September 2024 (`cpacker/MemGPT` →
+  `letta-ai/letta`) — a genuine omission for an article citing
+  2025–2026 material over a year after a maintainer-announced rename.
+  **The strongest finding**: the article's own unnamed "2025–2026
+  survey" is identifiable as "Memory in the Age of AI Agents: A Survey,
+  Forms, Functions and Dynamics" (arXiv:2512.13564) — the article
+  paraphrases its three-axis taxonomy closely but never names it, and
+  separately devotes a whole section to a RAG-vs-memory distinction that
+  is explicitly that same survey's own fourth stated contribution,
+  making the survey's point without crediting it as the source, visible
+  only by finding and reading the unnamed paper. **Built**:
+  `/builds/agent-memory-layer/` — not the article's own taxonomy (prose
+  classification, nothing to execute), but the one concrete, now-
+  verified mechanism inside it: the real Generative Agents scoring
+  formula (kept strictly separate from the article's own unattributed
+  "extended" formula, so neither could be mistaken for the other), a
+  validated lifecycle state-machine resolving a real ambiguity in the
+  article's own prose chain (read literally, RAW→ACTIVE→CONFIRMED→
+  SUPERSEDED→STALE→ARCHIVED→FORGOTTEN would forbid superseding a
+  still-RAW memory, contradicting the article's own worked example — now
+  a documented DAG decision instead of a silently-picked reading), and
+  the article's own Flask→FastAPI preference-supersession example made
+  real and testable, with a subject-mismatch guard the article never
+  states. 30/30 tests pass, including an independent hand recomputation
+  of the real scoring formula. **One real bug found and fixed while
+  testing**: the cosine-to-[0,1] normalization ran unconditionally, so a
+  record with no embedding at all had its "zero relevance" sentinel
+  silently inflated from 0 to 0.5 — caught by a dedicated no-embedding
+  test, fixed by only normalizing when a real cosine value existed.
 
 ---
 
