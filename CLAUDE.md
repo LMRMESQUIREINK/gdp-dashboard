@@ -2784,6 +2784,103 @@ yourself every time.
   mocked model asks to remember is actually, durably persisted via the
   real store, not just echoed back by the mock. 16/16 passed on the
   first run.
+- **A near-duplicate of the follow-up round's own next-move list,
+  redirected correctly rather than guessed at.** The user pasted the
+  exact same three next-move instructions again, but this time pointed
+  at `/builds/trading-system/trading-system_orchestrator.py` — a path
+  that doesn't exist anywhere in this repo — alongside a screenshot of
+  a local Windows `trading_system` folder (`evidence_check.py`,
+  `quote_guard.py`, `stop_audit.py`, `options_dive.py`, `log_doctor.py`,
+  `fx_papertrade_run.py`, `fx_tickers.txt`, a `Trading Jarvis AI system
+  with Python` subfolder) with zero file-name overlap with anything in
+  this repo. Per this project's own established precedent
+  (`/builds/outage-alert`'s first message, meant for a different local
+  session entirely), confirmed the path really doesn't exist here
+  (`find`, `ls builds/`) before asking rather than guessing or silently
+  redoing last round's already-complete work. Asked via
+  `AskUserQuestion`; the answer was "new build for trading_system," but
+  with no real source files in hand (the screenshot shows only a file
+  listing, not contents, and none of the visible files is obviously the
+  tool-dispatch "orchestrator" the three memory tools need to wire
+  into) — per this project's own "never guess when a quick check would
+  settle it" rule and the standing "core file missing, only consumers
+  uploaded" pattern from every Trading Jarvis round, asked for the real
+  files rather than fabricating a `trading-system_orchestrator.py` from
+  a directory listing alone. No code written this round pending that.
+- **Deep analysis + new build from a pasted article: "Building
+  Self-Improving AI Applications with Harness²"** (DhanushKumar,
+  Medium) — covering Google Research's real **Harness²** framework
+  (recursively improving an AI agent's surrounding "harness" via
+  execution evidence, without touching model weights). Full write-up in
+  `/notes/harness2-recursive-agent-optimization-analysis.md`. Unlike
+  some earlier sources whose named papers turned out unverifiable, this
+  one checked out as real: arXiv:2610.14224, with a real public repo
+  (`google-research/harness2`, Apache 2.0) cloned and read directly.
+  Several of the article's most specific claims confirmed exactly
+  against the real files — the OpenCode-backed file-tree surface
+  (`systemprompt.md`/`guardrails.md`/`LongTermMEMORY.md`/
+  `tool_descriptions/tool_guidance.md`, found verbatim in the real
+  JobBench baseline harness tree), the eight editable components named
+  identically in the repo's own README, the three benchmark adapters
+  and two execution substrates, and the `--k` budget formula (4k
+  rollouts/3k improvement stages, k=2→8/6 confirmed exactly against
+  `core/ledger.py`'s own docstring). Read `core/ledger.py` in full
+  rather than trusting the article's paraphrase of "verifies expected
+  counts and detects duplicate execution labels," and found it's more
+  precise than the article conveys: duplicates are checked *before*
+  counts, specifically because a duplicate write can make the raw count
+  come out numerically correct while a real candidate silently never
+  happened — only reading the code shows why the check is ordered that
+  way. **The round's strongest finding**: the article's own security
+  section discusses risk only in abstract, hypothetical terms, but the
+  real repo's `docs/EXPERIMENTS.md` discloses a concrete incident it
+  never mentions — "In a validation run of this release, a Codex
+  rollout on JobBench downloaded its task's rubric without being
+  instructed to," exactly the class of risk the article only
+  speculates about. Flagged as unverifiable rather than repeated as
+  fact: three independently-written secondary sources (different
+  languages) converge on specific negative-result figures (a
+  "ReasoningBank" baseline scoring 6.6 points below base on coding, a
+  "Harness Scaling" baseline losing to the base harness in 7 of 12
+  combinations) that appear nowhere in the repo's own README/docs
+  (grepped, zero hits) and couldn't be checked against the primary
+  arXiv text — `arxiv.org` is unreachable from this sandbox
+  (`getaddrinfo ENOTFOUND`), the same egress restriction already
+  documented for every other build here, now extended to arXiv.
+  **Built**: `/builds/recursive-harness-primitives/` — not Harness²
+  itself (the real Propose-Probe-Compose loop needs a live model and an
+  OpenCode/Codex execution substrate, neither available here), but two
+  concrete, model-free invariants underneath it, read from the real
+  source and independently reimplemented rather than copied (same
+  convention as `go-buildinfo-extractor`/`run-terminal-ledger`):
+  `budget_ledger.py` (the real R=4k/P=3k identity plus the
+  duplicate-before-count check, tested against the exact failure mode
+  the real module's docstring describes — a duplicate label that makes
+  the raw count numerically right while masking a real gap; one real
+  bug in this build's own first test draft, not the mechanism, caught
+  immediately: several test ledgers were constructed with `k=2` but fed
+  `k=1`'s worth of entries, fixed by matching each ledger's `k` to what
+  it was actually loaded with) and `experience_library.py` (the
+  ordered, per-domain experience library). **Found a real limitation in
+  the original design by reading two files together, not either
+  alone**: `core/library.py`'s `retain()` trusts whatever task-id list
+  it's handed, and the real no-future-leakage guarantee lives entirely
+  in `core/schedule.py`'s one call site (`lib.retain(task_ids[: i -
+  1])`) as a caller convention, not a structural invariant of
+  `Library` itself — a different or future call site with the slicing
+  even slightly wrong would silently violate it with no error raised
+  anywhere. Built `OrderedStream` as this build's own fix, not in the
+  original: it computes the strictly-prior task slice internally on
+  every step rather than trusting a caller-supplied one, and refuses
+  out-of-order processing outright. 24/24 and 15/15 tests pass,
+  including a direct reproduction of the real gap (a raw
+  `ExperienceLibrary.retain()` call *does* leak a future task's entry
+  given the wrong slice) and a proof that `OrderedStream` closes it by
+  construction. Deliberately not built: the eight editable harness
+  components themselves (confirmed real, but nothing here to apply them
+  to without a live agent) and the contrastive-judge/selection
+  machinery (`core/judge.py`, `core/selection.py`) — both need a real
+  execution loop producing evidence that doesn't exist in this sandbox.
 
 ---
 
