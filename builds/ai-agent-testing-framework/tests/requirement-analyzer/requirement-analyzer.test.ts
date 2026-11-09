@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { AgentConfigLoader } from "../../src/config/AgentConfigLoader.js";
 import { AgentRuntime } from "../../src/runtime/AgentRuntime.js";
+import { parseAgentOutput } from "../../src/output/parseAgentOutput.js";
+import { checkGrounding } from "../../src/grounding/checkGrounding.js";
 import type { LLMClient, AgentConfig } from "../../src/types/AgentTypes.js";
 
 /**
@@ -37,10 +39,22 @@ describe("requirement-analyzer agent (TC001-style, mocked LLMClient)", () => {
     const loader = new AgentConfigLoader();
     const config: AgentConfig = loader.load("./config/agents/requirement_analyzer.md");
 
+    // The REAL JSON schema from requirement_analyzer.md's own Output
+    // Requirements section, given in full for the first time in Part 2
+    // (Part 1 only showed a fragment of this agent's instructions, so
+    // this project's earlier placeholder used a different, prose-based
+    // contract -- see /notes/ai-agent-testing-framework-part2-analysis.md).
     const mockClient = new MockLLMClient(
-      "**Actors:** End user\n**Trigger:** User requests a password reset\n" +
-        "**Expected Outcome:** User receives a reset link at their registered email\n" +
-        "**Constraints:** Email must already be registered\n**Ambiguities:** None"
+      JSON.stringify({
+        actor: "User",
+        feature: "Password reset using email",
+        preconditions: [],
+        positiveScenarios: [
+          "User requests a password reset using email and successfully resets the password.",
+        ],
+        negativeScenarios: [],
+        ambiguities: [],
+      })
     );
     const runtime = new AgentRuntime(mockClient);
 
@@ -52,7 +66,15 @@ describe("requirement-analyzer agent (TC001-style, mocked LLMClient)", () => {
     expect(result.agentId).toBe("requirement-analyzer");
     expect(result.agentVersion).toBe("1.0.0");
     expect(result.output).toBeTruthy();
-    expect(result.output).toContain("Expected Outcome");
+
+    // The real end-to-end pipeline this round's two new modules make
+    // possible: the raw string output enforced against the agent's own
+    // Output Requirements contract, then checked for grounding.
+    const parsed = parseAgentOutput(result.output);
+    expect(parsed.actor).toBe("User");
+    expect(
+      checkGrounding("The user should be able to reset their password using their registered email address.", parsed)
+    ).toEqual([]);
   });
 
   it("passes the agent's REAL instructions and the caller's input through to the LLM client unmodified", async () => {

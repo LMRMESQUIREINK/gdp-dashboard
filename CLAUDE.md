@@ -3008,6 +3008,64 @@ yourself every time.
   standing restriction as every build here). Not built: the article's
   own explicitly-stated next challenge (the test-oracle problem) and
   TC001, both deferred by the source itself to a future part.
+- **Part 2 of the same series, extending `/builds/ai-agent-testing-
+  framework/` rather than forking it**: "Testing AI Agents: A Practical
+  Quality Engineering Journey," Part 2 (rajesh yemul) — the direct
+  continuation of the project built last round. Full write-up in
+  `/notes/ai-agent-testing-framework-part2-analysis.md`. **The real
+  finding**: Part 1 only showed a fragment of `requirement_analyzer.md`
+  (just the `# Role` section), so last round's own placeholder for the
+  rest was substantially wrong once checked against the real file Part
+  2 now gives in full — different Responsibilities taxonomy (Actor/
+  Feature/Preconditions/Positive-Negative-scenarios vs. the
+  placeholder's invented Trigger/Expected-Outcome), seven specific
+  numbered grounding Rules vs. three generic ones, and a strict-JSON-
+  only Output Requirements contract vs. an invented prose format —
+  diffed directly, not assumed, and swapped in as a stated correction,
+  same as every "real file arrived later" precedent across this
+  project's Trading Jarvis rounds. Confirmed no new external claim
+  appears in Part 2 beyond what Part 1 already verified. **Built**: two
+  new modules operationalizing rules the agent's own instructions state
+  but neither article's shown code ever checks — `parseAgentOutput.ts`
+  (enforces the real Output Requirements contract: valid JSON only, no
+  Markdown fences, no surrounding prose, the exact six-field schema) and
+  `checkGrounding.ts`, a real grounding/hallucination checker built
+  directly from Part 2's own two worked "valid JSON, still wrong"
+  examples (fabricating "OTP"/"5 minutes" in one, "OAuth 2.0"/"AES-256"
+  in the other, for a requirement that mentions neither) — checked
+  `/builds/` first (`humanizer` checks prose style, not grounding;
+  `paired-bootstrap-ratchet` checks statistical significance of
+  accuracy claims, not per-response grounding; neither overlaps).
+  **Deliberately not a full word-presence checker, verified rather than
+  assumed**: Part 2 also gives a real paraphrase-equivalence example
+  (two differently-worded, behaviorally-equivalent scenario
+  descriptions), and a standalone script run *before* writing any
+  module code confirmed a naive "every output word must appear in the
+  input" check really does flag `["user", "initiates", "recovery",
+  "completes"]` against that exact pair — a genuine false positive, not
+  a hypothetical risk. `checkGrounding()` instead targets only the two
+  concrete patterns the article's own two examples actually are:
+  numeric/duration claims and a small, named, curated technical/
+  security-term list — stated plainly as *not* full semantic
+  correctness checking (the article's own "test oracle problem,"
+  explicitly deferred to a future part of its own series), a narrow,
+  evidenced step rather than an oversold oracle. Also updated the
+  existing mocked-LLMClient pipeline test, which had been mocking the
+  now-superseded placeholder's prose output format, to use the real
+  JSON schema and run the full real pipeline (config load → runtime →
+  output parsing → grounding check) end to end. **A second real bug
+  found while verifying this round, in the build's own test setup, not
+  the source**: `npm test` right after `npm run build` first reported
+  50 passing tests, exactly double the real count — `tsc`'s own `dist/`
+  output includes a compiled copy of every `tests/**/*.ts` file, and
+  Vitest's default include pattern was silently matching those too,
+  double-running every test. Caught by actually counting (5 files ×
+  their real assertion counts = 25, not 35 or 50, both of which were
+  seen at different points depending on how stale `dist/` happened to
+  be) rather than trusting the first number printed. Fixed with an
+  explicit `exclude: ["**/node_modules/**", "**/dist/**"]` in
+  `vitest.config.ts`. 25/25 Vitest assertions pass (up from 10), `tsc
+  --strict --noEmit` clean, `npm audit` 0 vulnerabilities.
 
 ---
 

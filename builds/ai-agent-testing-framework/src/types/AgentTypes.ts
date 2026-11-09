@@ -35,3 +35,20 @@ export interface AgentResult {
 export interface LLMClient {
   generate(instructions: string, input: string, model: string): Promise<string>;
 }
+
+/**
+ * The real JSON schema requirement_analyzer.md's own "Output
+ * Requirements" section specifies (Part 2 of the source series gave
+ * the agent's full definition for the first time -- see
+ * /notes/ai-agent-testing-framework-part2-analysis.md). Part 1's
+ * placeholder agent used a different, prose-based Output Contract;
+ * this is the REAL one, now that it's known.
+ */
+export interface RequirementAnalysis {
+  actor: string;
+  feature: string;
+  preconditions: string[];
+  positiveScenarios: string[];
+  negativeScenarios: string[];
+  ambiguities: string[];
+}

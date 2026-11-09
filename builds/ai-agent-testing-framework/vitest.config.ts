@@ -9,5 +9,13 @@ export default defineConfig({
   test: {
     testTimeout: 50000,
     fileParallelism: false, // runs one test file at a time
+    // Found and fixed while verifying this build: tsc's own dist/
+    // output (a compiled copy of every tests/**/*.ts file) was being
+    // picked up by Vitest's default include pattern alongside the real
+    // source, silently double-running every test. Vitest's default
+    // excludes cover node_modules/ but not a project's own build
+    // output dir -- this is a real, worthwhile exclusion, not specific
+    // to the bug that prompted finding it.
+    exclude: ["**/node_modules/**", "**/dist/**"],
   },
 });
