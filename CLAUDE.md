@@ -3066,6 +3066,57 @@ yourself every time.
   explicit `exclude: ["**/node_modules/**", "**/dist/**"]` in
   `vitest.config.ts`. 25/25 Vitest assertions pass (up from 10), `tsc
   --strict --noEmit` clean, `npm audit` 0 vulnerabilities.
+- **Part 3 of the same series, extending `/builds/ai-agent-testing-
+  framework/` again**: "What Does 'Correct' Mean for an AI Agent?"
+  (rajesh yemul) — the series' own named "test oracle problem," deferred
+  since Part 1, finally defined precisely enough to implement: a
+  Required/Allowed/Forbidden framework, four correctness dimensions, and
+  TC001's own exact 8-item Required checklist for the canonical
+  password-reset requirement. Full write-up in
+  `/notes/ai-agent-testing-framework-part3-analysis.md`. Built
+  **`src/oracle/qualityBoundary.ts`** (the generic mechanism — a
+  `required` list and a `forbidden` list, each named and independently
+  reportable, never collapsed to one boolean, since Part 3's own central
+  Section 6-7 lesson requires seeing exactly which check failed; "Allowed"
+  has no list anywhere in the API, by design — the implicit complement of
+  the other two) and **`src/oracle/requirementAnalyzerOracle.ts`** (the
+  concrete TC001 oracle, instantiating the article's 8-item checklist
+  verbatim, reusing Part 2's `checkGrounding()` directly as its one
+  Forbidden check rather than reimplementing fabrication detection).
+  **The single most important design decision**: deliberately never
+  requires `negativeScenarios.length > 0` — Part 3's own central lesson
+  ("could be tested != is supported") operationalized directly, proven as
+  a named Situation A (empty, evidence-free negative scenarios must pass)
+  vs. Situation B (a *fabricated* negative scenario must fail, but as a
+  Forbidden violation, not a missing Required item) pair. **A real,
+  honestly-stated gap found while implementing checklist items 6-7**
+  ("Actor represents the user," "Feature represents password reset"):
+  Part 3 names these as its "semantic correctness" dimension but never
+  supplies an algorithm beyond one obviously-wrong worked example — same
+  shape of gap as Part 1's YAML-vs-prose mismatch in the sibling "Quality
+  Engineering" series. Built instead as honest lexical-grounding checks
+  (non-empty, shares a significant word with the requirement, allowing
+  simple singular/plural variation), stated plainly as not a claim of
+  real semantic understanding. **A real bug found and fixed while
+  building this, caught by the test suite itself**: the first version of
+  the lexical-grounding check used exact token-set intersection, which
+  failed the article's own most basic case — `actor: "User"` against a
+  requirement that only ever says "users" (plural) shares no exact
+  token — fixed with the simplest stemming that resolves it (strip a
+  trailing "s" from either side before comparing). A second, smaller bug
+  in the same run: three Required checks assumed `ctx.result` was always
+  a real object and threw a raw `TypeError` on a missing result instead
+  of returning `false`, since `evaluateBoundary()` runs every check
+  regardless of whether an earlier one already failed, by design — fixed
+  with explicit null guards. 46/46 Vitest assertions pass (up from 25),
+  `tsc --strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+  vulnerabilities. Deliberately not built: true semantic correctness for
+  checks 6-7 (the real, unresolved gap above), TC001 fired against a live
+  agent (same standing no-API-key restriction as every build here — this
+  oracle is the acceptance criteria TC001 would check against, not a
+  live-fired test), and instruction-following as its own dimension (named
+  by Part 3 but given no worked example distinct from
+  groundedness/structural correctness to build against).
 
 ---
 

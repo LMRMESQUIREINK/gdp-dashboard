@@ -1,19 +1,21 @@
 # ai-agent-testing-framework
 
 A real, working reproduction of the TypeScript + Vitest project from
-rajesh yemul's two-part (so far) Medium series: "Building an AI Agent
-Testing Framework from Scratch with TypeScript and Vitest" (Part 1) and
-"Testing AI Agents: A Practical Quality Engineering Journey" (Part 2) —
-the author's own small, from-scratch agent-execution harness
-(Markdown+YAML agent definitions → `AgentConfigLoader` → `AgentRuntime` →
-`LLMClient` → an LLM → `AgentResult` → Vitest). Unlike most sources in
-this project, this article series *is* real, runnable code shown in
-full, not a conceptual framework to extract a mechanism from — so this
-build is a faithful, continuously-updated reproduction, actually
-installed and run in this sandbox, with real bugs found and fixed along
-the way in both rounds. Analyzed in
-`/notes/ai-agent-testing-framework-analysis.md` (Part 1) and
-`/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2).
+rajesh yemul's three-part (so far) Medium series: "Building an AI Agent
+Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
+"Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
+and "What Does 'Correct' Mean for an AI Agent?" (Part 3) — the author's
+own small, from-scratch agent-execution harness (Markdown+YAML agent
+definitions → `AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM
+→ `AgentResult` → Vitest). Unlike most sources in this project, this
+article series *is* real, runnable code shown in full (Parts 1-2) plus a
+precisely-stated framework (Part 3), not a vague conceptual piece to
+extract a mechanism from — so this build is a faithful,
+continuously-updated reproduction, actually installed and run in this
+sandbox, with real bugs found and fixed along the way in every round.
+Analyzed in `/notes/ai-agent-testing-framework-analysis.md` (Part 1),
+`/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2), and
+`/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3).
 
 ## A note on provenance: this author's two series connect
 
@@ -133,6 +135,90 @@ adding an explicit `exclude: ["**/node_modules/**", "**/dist/**"]` to
 `vitest.config.ts` — Vitest's own default excludes cover
 `node_modules/` but not a project's own build output directory.
 
+## Part 3 update: a real Required/Allowed/Forbidden quality-boundary oracle
+
+Part 3 ("What Does 'Correct' Mean for an AI Agent?") has no new runnable
+code of its own — it's the series' own named "test oracle problem"
+(deferred since Part 1) finally defined precisely enough to implement: a
+**Required / Allowed / Forbidden** framework, four correctness dimensions
+(structural, semantic, groundedness, instruction-following), and TC001's
+own exact 8-item Required checklist for the canonical password-reset
+requirement.
+
+- **`src/oracle/qualityBoundary.ts`** — the generic mechanism. A
+  `QualityBoundary<T>` is just a `required` list and a `forbidden` list,
+  each a set of named, independently reportable checks.
+  `evaluateBoundary()` never collapses this to one boolean — the
+  article's own central Section 6-7 lesson ("the problem may not be the
+  agent, the problem may be our test") requires being able to see
+  **exactly** which check failed. "Allowed" has no list anywhere in the
+  API, by design — it's the implicit complement of Required + Forbidden,
+  matching the article's point that fragile exact-string assertions are
+  the wrong tool for anything that may legitimately vary.
+- **`src/oracle/requirementAnalyzerOracle.ts`** — the concrete TC001
+  acceptance oracle, instantiating the article's own 8-item checklist
+  verbatim (reproduced in the module's own docstring), reusing Part 2's
+  `checkGrounding()` directly as its one Forbidden check rather than
+  reimplementing fabrication detection.
+
+**The single most important design decision in this file**: it
+deliberately never requires `negativeScenarios.length > 0`. This is Part
+3's own central lesson, operationalized rather than just read about — a
+requirement with no negative-path evidence (the real canonical
+password-reset example never describes a wrong-input case) must pass
+with an empty `negativeScenarios` array; requiring it to be non-empty
+would be **the test inventing an expectation the source material never
+supports**, exactly the mistake Part 3 names and warns against. Proven
+directly as two named test cases ("Situation A" / "Situation B" in
+`requirementAnalyzerOracle.test.ts`): Situation A (empty, unsupported
+negative scenarios) passes; a constructed Situation B (a *fabricated*
+negative scenario inventing a specific unstated rule) correctly fails —
+but as a **Forbidden** violation, not a missing Required item, which is
+the real distinction Part 3 is making.
+
+**A real, honestly-stated gap found while trying to implement this**:
+checklist items 6-7 ("Actor represents the user," "Feature represents
+password reset") are Part 3's own named "semantic correctness" dimension
+— but neither Part 3 nor Parts 1-2 ever specify an algorithm for
+determining this beyond one obviously-wrong worked example. Same shape
+of gap as Part 1's YAML-vs-prose mismatch in the sibling "Quality
+Engineering" series: a real capability is named as necessary, with no
+mechanism supplied to automate it. Stated plainly in the module's own
+docstring: checks 6-7 here are **lexical-grounding** checks (non-empty,
+shares a significant word with the requirement, allowing simple
+singular/plural variation), not a claim of real semantic understanding.
+
+**A real bug found and fixed while building this, caught by the test
+suite itself, not by inspection**: the first version of the
+lexical-grounding check used exact token-set intersection, which failed
+the article's own most basic case — `actor: "User"` against a
+requirement that only ever says "**users**" (plural) shares no exact
+token. Fixed with the simplest stemming that resolves it (strip a
+trailing "s" from either side before comparing). A second, smaller bug
+in the same run: three Required checks assumed `ctx.result` was always a
+real object and threw a raw `TypeError` on a missing result instead of
+returning `false` — fixed with explicit null guards, since
+`evaluateBoundary()` runs every check regardless of whether an earlier
+one already failed (by design, so nothing can hide behind an earlier
+failure).
+
+46/46 Vitest assertions pass (up from 25), covering: the real canonical
+requirement passing all 8 Required items; the Situation A/B pair above;
+the real Part 2 paraphrase-equivalence example staying correctly
+Allowed; each of the 8 Required items failing independently, one at a
+time; and both of Part 2's real fabrication examples (OTP/5-minutes,
+OAuth 2.0/AES-256) correctly tripping the Forbidden check via the reused
+`checkGrounding()` module.
+
+**Still deliberately not built**: true semantic correctness for checks
+6-7 (a real, unresolved gap in the source, not papered over); TC001
+executed against a live agent (same standing no-live-API-access
+restriction as every build here — this oracle is the acceptance
+criteria TC001 would check against, not a live-fired test); and
+instruction-following as its own dimension (named by Part 3 but given no
+worked example distinct from groundedness/structural correctness to
+build against).
+
 ## What's faithfully reproduced, unmodified
 
 Every file the article shows in full is reproduced as shown:
@@ -150,12 +236,12 @@ unchanged from the article's own shown code.
 ```bash
 npm install          # real dependencies, 0 vulnerabilities (npm audit)
 npx tsc --noEmit      # strict mode, clean, including test files
-npm test              # 25/25 passing
+npm test              # 46/46 passing
 npm run build         # real dist/ output
 npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
 ```
 
-**25/25 Vitest assertions pass** across five real test files:
+**46/46 Vitest assertions pass** across seven real test files:
 
 - `tests/config/AgentConfigLoader.test.ts` — loads the **real**
   `requirement_analyzer.md` from disk and asserts every front-matter
@@ -186,6 +272,18 @@ npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
   to match the real loaded config exactly, an empty-response edge case
   is handled without throwing, and a two-call sequence proves the
   runtime never caches or fabricates a result.
+- `tests/oracle/qualityBoundary.test.ts` — the generic Required/Forbidden
+  mechanism: passes when every Required check passes and no Forbidden
+  check fires, names **every** failing check rather than stopping at the
+  first, and confirms Allowed is a real absence (no list, no check
+  anywhere) rather than an unused stub.
+- `tests/oracle/requirementAnalyzerOracle.test.ts` — the concrete TC001
+  oracle (Part 3): the real canonical requirement passing all 8 Required
+  items; the Situation A/B pair at the heart of Part 3's central lesson;
+  the real Part 2 paraphrase example staying correctly Allowed; each of
+  the 8 Required items failing independently, one at a time; and both of
+  Part 2's real fabrication examples tripping the one reused Forbidden
+  check.
 
 No live Gemini API access from this sandbox — same standing egress
 restriction as every other build in this project (no `GEMINI_API_KEY`
@@ -194,17 +292,21 @@ proof of that, not a workaround).
 
 ## What's deliberately not built here
 
-- **The actual test-oracle problem** — "how do we define the boundary
-  between a correct AI response and an incorrect one" — the article's
-  own explicitly-stated next challenge, deferred by Part 2 to a future
-  part of its own series. `checkGrounding()` above is a narrow,
-  evidenced step toward this (catching the two concrete fabrication
-  patterns Part 2 demonstrates), explicitly **not** a full semantic
-  correctness oracle. (This project's own `/builds/gate-floor-checker/`
-  and `/builds/paired-bootstrap-ratchet/` are adjacent prior art on
-  "what counts as passing" in a different domain, cross-referenced
-  rather than reused here, since neither solves semantic correctness
-  scoring either.)
+- **True semantic correctness** for the oracle's "actor"/"feature"
+  checks — Part 3 names this dimension but never supplies an algorithm
+  for it beyond one obviously-wrong worked example; built instead as an
+  honestly-scoped lexical-grounding check, stated as a real limitation
+  rather than an overclaimed solution. (This project's own
+  `/builds/gate-floor-checker/` and `/builds/paired-bootstrap-ratchet/`
+  are adjacent prior art on "what counts as passing" in a different
+  domain, cross-referenced rather than reused here, since neither solves
+  semantic correctness scoring either.)
 - **A live LLM call of any kind** — no API key exists in this sandbox.
-- **TC001**, the article's own promised first real functional test —
-  the article itself defers writing it to a future part.
+- **TC001 executed against a live agent** — `src/oracle/
+  requirementAnalyzerOracle.ts` (Part 3) is the acceptance criteria
+  TC001 would check a real response against, built and tested for real;
+  actually firing it against a live Gemini call is still blocked by the
+  same standing no-API-key restriction as everything else here.
+- **Instruction-following as its own correctness dimension** — named by
+  Part 3 as one of four dimensions, but given no worked example distinct
+  from groundedness/structural correctness to build against.
