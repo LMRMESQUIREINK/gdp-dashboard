@@ -3165,6 +3165,46 @@ yourself every time.
   vulnerabilities. Deliberately not built: negative testing (empty/
   off-domain/nonsense input) — Part 4's own closing section previews
   this as the next part's subject, deferred by the article itself.
+- **Part 5 of the same series, extending `/builds/ai-agent-testing-
+  framework/` a fourth time**: "Negative Testing: What Happens When the
+  Input Is Bad?" (rajesh yemul) — TC002 (empty input, missing evidence),
+  TC003 (meaningful but off-domain input, scope adherence), TC004
+  (nonsense input, semantic validity), each with the article's own real,
+  actually-quoted agent output. Full write-up in
+  `/notes/ai-agent-testing-framework-part5-analysis.md`. The article's
+  own named principle — "the agent must not convert insufficient
+  evidence into invented facts" — and its own real assertion code
+  (`JSON.stringify(parsed).toLowerCase()` matched against a safe-signal
+  regex, plus `not.toContain()` on named invented concepts) was
+  recognized directly as the same Required+Forbidden shape Part 3's
+  `qualityBoundary.ts` already generalizes, rather than hand-rolled as a
+  parallel mechanism. Built **`src/oracle/safeFailureOracle.ts`** on top
+  of the existing `evaluateBoundary()` — one Required check (the
+  safe-signal regex) plus a Forbidden check per named invented concept —
+  with one real addition beyond the article's own literal code:
+  `serialize()` falls back to the raw output string when the response
+  isn't valid JSON at all, instead of letting a bare `JSON.parse()`
+  throw before any safe-failure assertion runs, closing the same class
+  of problem Part 4's JSON.parse-assertion finding identified,
+  architecturally this time rather than just flagged. Built
+  **`tests/requirement-analyzer/negative-testing.test.ts`**: each of
+  TC002-TC004 tested both as a literal reproduction of the article's own
+  exact assertion pattern and through the generalized oracle (confirming
+  agreement), plus a **discrimination check** per TC — a planted,
+  hallucinated response the agent did not actually produce (a
+  password-reset feature invented from empty input; "banana management"
+  invented from an elephant/banana statement; a login feature invented
+  from pure gibberish) — proving the oracle genuinely fails these rather
+  than rubber-stamping everything, the same discrimination discipline
+  this project applies throughout (`humanizer`, `ten-k-website-grader`,
+  `voice-extractor`). 10 new Vitest assertions (69/69 total, up from
+  59), `tsc --strict --noEmit` clean, `npm run build` clean, `npm audit`
+  0 vulnerabilities. **No bug found this round** — everything passed on
+  the first real run, stated plainly rather than manufactured.
+  Deliberately not built: ambiguity testing (a requirement containing
+  subjective terms like "quickly"/"using email") — Part 5's own closing
+  section previews this as the next part's subject, deferred by the
+  article itself.
 
 ---
 

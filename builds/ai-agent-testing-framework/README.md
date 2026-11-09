@@ -1,23 +1,25 @@
 # ai-agent-testing-framework
 
 A real, working reproduction of the TypeScript + Vitest project from
-rajesh yemul's four-part (so far) Medium series: "Building an AI Agent
+rajesh yemul's five-part (so far) Medium series: "Building an AI Agent
 Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
 "Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
-"What Does 'Correct' Mean for an AI Agent?" (Part 3), and "Writing Our
-First Functional Test for an AI Agent" (Part 4) — the author's own
-small, from-scratch agent-execution harness (Markdown+YAML agent
-definitions → `AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM
-→ `AgentResult` → Vitest). Unlike most sources in this project, this
-article series *is* real, runnable code shown in full (Parts 1-2, 4)
+"What Does 'Correct' Mean for an AI Agent?" (Part 3), "Writing Our First
+Functional Test for an AI Agent" (Part 4), and "Negative Testing: What
+Happens When the Input Is Bad?" (Part 5) — the author's own small,
+from-scratch agent-execution harness (Markdown+YAML agent definitions →
+`AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM →
+`AgentResult` → Vitest). Unlike most sources in this project, this
+article series *is* real, runnable code shown in full (Parts 1-2, 4-5)
 plus a precisely-stated framework (Part 3), not a vague conceptual piece
 to extract a mechanism from — so this build is a faithful,
 continuously-updated reproduction, actually installed and run in this
-sandbox, with real bugs found and fixed along the way in every round.
+sandbox, with real bugs found and fixed along the way in most rounds.
 Analyzed in `/notes/ai-agent-testing-framework-analysis.md` (Part 1),
 `/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2),
-`/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3), and
-`/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4).
+`/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3),
+`/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4), and
+`/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5).
 
 ## A note on provenance: this author's two series connect
 
@@ -275,6 +277,58 @@ assumed one subsumes the other.
 --noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
 Full write-up in `/notes/ai-agent-testing-framework-part4-analysis.md`.
 
+## Part 5 update: negative testing (TC002-TC004), generalized onto the existing Required/Forbidden mechanism
+
+Part 5 ("Negative Testing: What Happens When the Input Is Bad?") gives
+three new tests challenging different boundaries: TC002 (empty input —
+missing evidence), TC003 (meaningful but off-domain input — scope
+adherence), TC004 (nonsense input — semantic validity). Its own named
+principle: "the agent must not convert insufficient evidence into
+invented facts." Its own real code for asserting this is:
+
+```ts
+const serializedOutput = JSON.stringify(parsed).toLowerCase();
+expect(serializedOutput).toMatch(
+  /unknown|missing|not specified|not provided|insufficient|empty|ambiguous/
+);
+expect(serializedOutput).not.toContain("banana management");
+expect(serializedOutput).not.toContain("password reset");
+```
+
+**Recognized directly as the same Required+Forbidden shape Part 3's
+`qualityBoundary.ts` already generalizes**, rather than hand-rolled as a
+parallel mechanism:
+
+- **`src/oracle/safeFailureOracle.ts`** — built on the existing
+  `evaluateBoundary()`: one Required check (the safe-failure signal
+  regex against the serialized, lowercased output) plus a Forbidden
+  check per named invented-concept string. One real addition beyond the
+  article's own literal code: `serialize()` falls back to the raw output
+  string when the response isn't valid JSON at all, rather than letting
+  a bare `JSON.parse()` throw before any safe-failure assertion gets a
+  chance to run — closing the same class of problem Part 4's
+  JSON.parse-assertion finding identified, architecturally this time
+  instead of just flagged.
+- **`tests/requirement-analyzer/negative-testing.test.ts`** — TC002-TC004
+  each tested two ways against the real pipeline: a literal reproduction
+  of the article's own exact assertion pattern using its own real,
+  quoted agent output, and the same case through `evaluateSafeFailure()`
+  confirming the generalized oracle agrees. Each TC also gets a
+  **discrimination check** — a planted, hallucinated response the agent
+  did NOT actually produce (inventing a password-reset feature from
+  empty input; inventing "banana management" from an elephant/banana
+  statement; inventing a login feature from pure gibberish) — proving
+  the oracle genuinely fails these rather than passing everything handed
+  to it, the same discrimination discipline this project applies
+  everywhere else (`humanizer`, `ten-k-website-grader`,
+  `voice-extractor`).
+
+10 new Vitest assertions (69/69 total, up from 59), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+**No bug found this round** — everything passed on the first real run,
+stated plainly rather than manufactured. Full write-up in
+`/notes/ai-agent-testing-framework-part5-analysis.md`.
+
 ## What's faithfully reproduced, unmodified
 
 Every file the article shows in full is reproduced as shown:
@@ -292,12 +346,12 @@ unchanged from the article's own shown code.
 ```bash
 npm install          # real dependencies, 0 vulnerabilities (npm audit)
 npx tsc --noEmit      # strict mode, clean, including test files
-npm test              # 59/59 passing
+npm test              # 69/69 passing
 npm run build         # real dist/ output
 npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
 ```
 
-**59/59 Vitest assertions pass** across eight real test files:
+**69/69 Vitest assertions pass** across nine real test files:
 
 - `tests/config/AgentConfigLoader.test.ts` — loads the **real**
   `requirement_analyzer.md` from disk and asserts every front-matter
@@ -348,6 +402,14 @@ npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
   cross-check confirming the Part 3 oracle and Part 4's own literal test
   independently agree; and the JSON.parse-assertion tautology finding,
   reproduced directly rather than taken on the article's word.
+- `tests/requirement-analyzer/negative-testing.test.ts` — TC002-TC004
+  (Part 5): empty input, wrong-domain input, nonsense input, each tested
+  against the article's own real quoted agent output both as a literal
+  reproduction of its exact assertion pattern and through the new
+  `safeFailureOracle`; plus a discrimination check per TC proving a
+  planted hallucinated response correctly fails, and an edge case
+  proving the oracle degrades cleanly on non-JSON output instead of
+  throwing.
 
 No live Gemini API access from this sandbox — same standing egress
 restriction as every other build in this project (no `GEMINI_API_KEY`
@@ -374,6 +436,7 @@ proof of that, not a workaround).
 - **Instruction-following as its own correctness dimension** — named by
   Part 3 as one of four dimensions, but given no worked example distinct
   from groundedness/structural correctness to build against.
-- **Negative testing** (empty input, off-domain input, nonsense input) —
-  Part 4's own closing section previews this as the next part's subject;
-  the article itself defers it to a future part, not built here.
+- **Ambiguity testing** — Part 5's own closing section previews this as
+  the next part's subject (a requirement containing subjective,
+  interpretable terms like "quickly" and "using email"); the article
+  itself defers it to a future part, not built here.
