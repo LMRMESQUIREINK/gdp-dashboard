@@ -3390,6 +3390,66 @@ yourself every time.
   tool-calling/action testing — Part 9's own closing section previews
   this directly as the next part's subject, deferred by the article
   itself.
+- **Deep analysis + new build from a pasted article: "Claude Code
+  Agents: How to Build Your Own AI Team"** (cskumara2000, Medium) — a
+  different kind of source for this project: a how-to about Claude
+  Code's own subagent feature (`.claude/agents/*.md`), checkable
+  against this session's own real, authoritative tool
+  (`claude-code-guide`, built specifically for exactly this class of
+  question) rather than a web search or a cloned repo. Full write-up in
+  `/notes/claude-code-agents-ai-team-analysis.md`. Verified against the
+  real current docs: the `.claude/agents/` path and most of the
+  `security-reviewer.md` frontmatter example check out, including
+  `effort` (real, `low`/`medium`/`high`/`xhigh`/`max` — a specific
+  suspicion going into the check that it might be confused with the
+  SDK's `effort` parameter turned out wrong, confirmed rather than
+  assumed). **One claim turned out genuinely wrong, not just
+  imprecise**: the article's "Step 3 — use the `/agent` command" names
+  a command that doesn't exist (`/agents`, plural, is real) and
+  describes an interactive wizard flow that existed only through Claude
+  Code v2.1.197 — current builds just point back at asking Claude
+  directly or editing files by hand. Two real corrections on context/
+  permissions: a subagent does NOT inherit conversation history/
+  invoked skills/files already read (only its own system prompt plus a
+  delegation message), and permission mode is INHERITED from the main
+  session unless explicitly overridden, not independently configured
+  as the article's framing implies. **A real, well-evidenced gap found
+  in this project itself**: zero `.claude/agents/` files existed
+  despite 12 real skills and the `review-loop` skill's own stated
+  fallback ("an external tool... otherwise a rigorous self-review
+  checklist") having no isolated-context, fresh-eyes reviewer option
+  at all. **Built**: `.claude/agents/code-reviewer.md` and
+  `.claude/agents/security-reviewer.md` — two real subagents filling
+  that gap, `security-reviewer` adapting the article's own literal
+  worked example rather than inventing a different one, since this
+  project genuinely has security-relevant surface (untrusted binary
+  parsing in `go-buildinfo-extractor`/`rust_cargo_auditable`, the MCP
+  server in `prop-firm-mcp-server`, governance logic in
+  `policy-control-plane`/`agent-checkpoint-layer`). Also built
+  `/builds/agent-md-validator/` — a small, dependency-free Python
+  linter for `.claude/agents/*.md` frontmatter, built directly from
+  this round's own verification rather than guessed: a `KNOWN_FIELDS`
+  set from the real documented field list (flagging anything else as a
+  likely silent-typo risk — Claude Code itself silently ignores an
+  unrecognized field rather than erroring, the single most concrete,
+  actionable fact this round's check produced), valid `effort`/
+  `permissionMode`/`isolation` values, and a permissive warning (not an
+  error) for the three tools confirmed always stripped from subagents
+  regardless of what's listed. Its frontmatter parser is structurally
+  copied from `skill_md_validator.py`'s generic parser (a few rounds
+  earlier in this project), not imported across build directories, per
+  this project's established copy-unmodified convention. 16/16 tests
+  pass, including a discrimination test (one planted fixture with four
+  distinct deliberate problems produces exactly those four findings)
+  and a real subprocess CLI run confirming this project's own two new
+  agent files pass cleanly with zero findings. Deliberately not built:
+  an interactive agent-creation wizard matching the article's outdated
+  "Step 3," since the real current `/agents` command doesn't work that
+  way anymore; a Planner/Coder subagent pair matching the article's "3
+  Classic Agents" pattern, since this project's existing `new-feature`/
+  `code-structure` skills already cover that ground within one
+  continuous session and splitting them into subagents would duplicate
+  rather than fill a gap, unlike the Reviewer.
 
 ---
 
