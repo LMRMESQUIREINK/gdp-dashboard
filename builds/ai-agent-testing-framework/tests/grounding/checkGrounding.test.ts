@@ -101,6 +101,90 @@ describe("checkGrounding", () => {
     expect(checkGrounding(requirementWithRealConstraint, analysis)).toEqual([]);
   });
 
+  describe("Part 6 fix: hedged possibilities are Allowed, not Forbidden", () => {
+    it("does NOT flag the article's own real TC005 output -- 'OTP' mentioned as a hedged, labeled possibility inside 'is not specified... (e.g., ... OTP)'", () => {
+      const analysis: RequirementAnalysis = {
+        actor: "User",
+        feature: "Reset password using email",
+        preconditions: [],
+        positiveScenarios: [
+          "User requests a password reset via email and successfully resets their password.",
+        ],
+        negativeScenarios: [],
+        ambiguities: [
+          "The requirement uses the term 'quickly', which is subjective and lacks a measurable performance target or time frame.",
+          "The exact method for resetting the password via email (e.g., one-time link, temporary password, OTP) is not specified.",
+          "Password strength or formatting rules for the new password are not specified.",
+          "Error handling for invalid, unregistered, or unformatted email inputs is not specified.",
+        ],
+      };
+      const requirement =
+        "The system should allow users to reset their password quickly using email.";
+
+      // Before the Part 6 fix, this reproducibly returned one finding:
+      // { field: "ambiguities", index: 1, term: "OTP", kind: "technical-term" }
+      // -- confirmed by running the unfixed module against this exact
+      // real output before touching the code, per /notes/
+      // ai-agent-testing-framework-part6-analysis.md.
+      expect(checkGrounding(requirement, analysis)).toEqual([]);
+    });
+
+    it("still correctly flags the SAME term when it is asserted as an unhedged claim rather than a labeled possibility -- the article's own Response A vs. Response B distinction", () => {
+      const requirement =
+        "The system should allow users to reset their password quickly using email.";
+
+      // Response A, the article's own example of an unsupported claim.
+      const claimedAsFact: RequirementAnalysis = {
+        actor: "User",
+        feature: "Reset password using email",
+        preconditions: [],
+        positiveScenarios: ["The system sends an OTP to the user's email."],
+        negativeScenarios: [],
+        ambiguities: [],
+      };
+      const findings = checkGrounding(requirement, claimedAsFact);
+      expect(findings.some((f) => f.kind === "technical-term" && f.term === "OTP")).toBe(true);
+    });
+
+    it("the hedge exemption does not weaken Part 2's original fabrication regression tests -- neither has hedging language, so both must still flag", () => {
+      const otpFiveMinutes: RequirementAnalysis = {
+        actor: "User",
+        feature: "Password reset",
+        preconditions: ["User has a valid email address"],
+        positiveScenarios: ["User receives an OTP and resets the password within 5 minutes"],
+        negativeScenarios: [],
+        ambiguities: [],
+      };
+      const oauthAes: RequirementAnalysis = {
+        actor: "User",
+        feature: "Password reset using email",
+        preconditions: ["The application must use OAuth 2.0"],
+        positiveScenarios: ["The system should store the password using AES-256 encryption."],
+        negativeScenarios: [],
+        ambiguities: [],
+      };
+
+      expect(checkGrounding(REQUIREMENT, otpFiveMinutes).length).toBeGreaterThan(0);
+      expect(checkGrounding(REQUIREMENT, oauthAes).length).toBeGreaterThan(0);
+    });
+
+    it("a hedged numeric claim is also exempted, not just hedged technical terms -- the fix applies uniformly to both claim kinds", () => {
+      const requirement =
+        "The system should allow users to reset their password quickly using email.";
+      const analysis: RequirementAnalysis = {
+        actor: "User",
+        feature: "Reset password using email",
+        preconditions: [],
+        positiveScenarios: [],
+        negativeScenarios: [],
+        ambiguities: [
+          "The term 'quickly' is not specified -- it could reasonably be interpreted as anywhere from 5 seconds to 2 minutes.",
+        ],
+      };
+      expect(checkGrounding(requirement, analysis)).toEqual([]);
+    });
+  });
+
   it("reports WHICH field and index a fabrication came from, not just that one exists somewhere", () => {
     const analysis: RequirementAnalysis = {
       actor: "User",

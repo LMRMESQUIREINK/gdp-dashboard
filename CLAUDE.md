@@ -3205,6 +3205,50 @@ yourself every time.
   subjective terms like "quickly"/"using email") — Part 5's own closing
   section previews this as the next part's subject, deferred by the
   article itself.
+- **Part 6 of the same series, extending `/builds/ai-agent-testing-
+  framework/` a fifth time**: "Testing Ambiguity in AI Agents" (rajesh
+  yemul) — TC005, subjective ambiguity (`"...reset their password
+  quickly using email."`). Full write-up in
+  `/notes/ai-agent-testing-framework-part6-analysis.md`. The article's
+  own central event: a naive forbidden-term assertion
+  (`not.toContain("otp")`) failing against the agent's own correct
+  output, because "OTP" was mentioned as a hedged, labeled possibility
+  ("...is not specified... e.g., OTP"), not asserted as a claim. **This
+  project checked that directly rather than treating it as hypothetical,
+  and found this build's own `checkGrounding()` module (shipped in Part
+  2, already reused as Part 3's Forbidden check and Part 5's
+  `safeFailureOracle`) has exactly this bug** — reproduced before
+  touching any code: running the real TC005 output through the
+  unmodified, already-shipped module returned a false-positive finding
+  on "OTP." **Fixed with hedge detection, not a weaker check**:
+  `HEDGE_PATTERN` in `checkGrounding.ts` exempts a claim/term only when
+  the same field/array-item text also contains hedging language ("not
+  specified," "e.g.," "possibly," "hypothetical," etc.) — widening what's
+  Allowed without narrowing what's Forbidden, verified directly: both of
+  Part 2's original fabrication examples (neither hedges its invented
+  term) still correctly flag after the fix, and a new test proves the
+  article's own "Response A" (an unhedged OTP claim) still fails at the
+  full-oracle level too. **A second finding, documented rather than
+  "fixed"**: Part 6 itself observes the real schema's `ambiguities`
+  array conflates true ambiguity ("quickly" is subjective) with plain
+  missing information (password strength rules, error handling) — not
+  acted on by inventing a `missingInformation` field, since
+  `requirement_analyzer.md` is the source series' own real file, not
+  this project's to redesign speculatively; instead confirmed with a
+  test against the real output. Built the fix in
+  **`src/grounding/checkGrounding.ts`**, regression tests in
+  **`tests/grounding/checkGrounding.test.ts`**, and full-pipeline proof
+  in **`tests/requirement-analyzer/ambiguity-testing.test.ts`** (the
+  real TC005 output passing both `checkGrounding()` and the full Part 3
+  `requirementAnalyzerOracle` cleanly, the Response A/B distinction
+  proven at the oracle level, and the Contract-defect finding confirmed
+  with code). 10 new Vitest assertions (79/79 total, up from 69), `tsc
+  --strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+  vulnerabilities. **A real, pre-existing bug found and fixed this
+  round** — unlike Part 5, which found none. Deliberately not built:
+  true ambiguity/multiple concrete interpretations (TC006) — Part 6's
+  own closing section previews this as the next part's subject,
+  deferred by the article itself.
 
 ---
 

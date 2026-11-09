@@ -1,25 +1,28 @@
 # ai-agent-testing-framework
 
 A real, working reproduction of the TypeScript + Vitest project from
-rajesh yemul's five-part (so far) Medium series: "Building an AI Agent
+rajesh yemul's six-part (so far) Medium series: "Building an AI Agent
 Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
 "Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
 "What Does 'Correct' Mean for an AI Agent?" (Part 3), "Writing Our First
-Functional Test for an AI Agent" (Part 4), and "Negative Testing: What
-Happens When the Input Is Bad?" (Part 5) — the author's own small,
-from-scratch agent-execution harness (Markdown+YAML agent definitions →
-`AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM →
-`AgentResult` → Vitest). Unlike most sources in this project, this
-article series *is* real, runnable code shown in full (Parts 1-2, 4-5)
-plus a precisely-stated framework (Part 3), not a vague conceptual piece
-to extract a mechanism from — so this build is a faithful,
-continuously-updated reproduction, actually installed and run in this
-sandbox, with real bugs found and fixed along the way in most rounds.
-Analyzed in `/notes/ai-agent-testing-framework-analysis.md` (Part 1),
+Functional Test for an AI Agent" (Part 4), "Negative Testing: What
+Happens When the Input Is Bad?" (Part 5), and "Testing Ambiguity in AI
+Agents" (Part 6) — the author's own small, from-scratch agent-execution
+harness (Markdown+YAML agent definitions → `AgentConfigLoader` →
+`AgentRuntime` → `LLMClient` → an LLM → `AgentResult` → Vitest). Unlike
+most sources in this project, this article series *is* real, runnable
+code shown in full (Parts 1-2, 4-6) plus a precisely-stated framework
+(Part 3), not a vague conceptual piece to extract a mechanism from — so
+this build is a faithful, continuously-updated reproduction, actually
+installed and run in this sandbox, with real bugs found and fixed along
+the way in most rounds — including, in Part 6, a real regression bug in
+this build's own already-shipped code. Analyzed in
+`/notes/ai-agent-testing-framework-analysis.md` (Part 1),
 `/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2),
 `/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3),
-`/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4), and
-`/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5).
+`/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4),
+`/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5), and
+`/notes/ai-agent-testing-framework-part6-analysis.md` (Part 6).
 
 ## A note on provenance: this author's two series connect
 
@@ -329,6 +332,45 @@ parallel mechanism:
 stated plainly rather than manufactured. Full write-up in
 `/notes/ai-agent-testing-framework-part5-analysis.md`.
 
+## Part 6 update: a real regression bug found in this build's own already-shipped checkGrounding(), found and fixed
+
+Part 6 ("Testing Ambiguity in AI Agents") narrates TC005 (subjective
+ambiguity: `"...reset their password quickly using email."`) and — its
+central event — a naive forbidden-term assertion
+(`not.toContain("otp")`) that failed against the agent's own correct
+output, because "OTP" was mentioned as a hedged, labeled *possibility*
+("...is not specified... e.g., OTP"), not asserted as a fact.
+
+**This project checked that directly instead of treating it as
+hypothetical**, and found this build's own `checkGrounding()` module
+(shipped in Part 2, already reused as Part 3's Forbidden check and
+Part 5's `safeFailureOracle`) has **exactly this bug**: running the real
+TC005 output through the unmodified module returned a false-positive
+finding on "OTP," reproduced before touching any code.
+
+**Fixed** with hedge detection, not a weaker check: `HEDGE_PATTERN` in
+`checkGrounding.ts` exempts a claim/term from being flagged only when
+the *same* field/array-item text also contains hedging language
+(`"not specified"`, `"e.g."`, `"possibly"`, `"hypothetical"`, etc.).
+This widens what's Allowed without narrowing what's Forbidden — verified
+directly: both of Part 2's original fabrication examples (neither
+hedges its invented term) still correctly flag after the fix, and a new
+test proves the article's own "Response A" (an unhedged OTP claim) still
+fails at the full-oracle level too.
+
+**A second finding, documented rather than "fixed"**: Part 6 itself
+observes that the real schema's `ambiguities` array conflates true
+ambiguity ("quickly" is subjective) with plain missing information
+(password strength rules, error handling). This project does not add a
+`missingInformation` field — `requirement_analyzer.md` is the real,
+authoritative file the source series supplies, and inventing a field for
+it would be fabricating spec nobody gave. The finding is instead
+confirmed with a test against the real output, not silently acted on.
+
+10 new Vitest assertions (79/79 total, up from 69), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+Full write-up in `/notes/ai-agent-testing-framework-part6-analysis.md`.
+
 ## What's faithfully reproduced, unmodified
 
 Every file the article shows in full is reproduced as shown:
@@ -346,12 +388,12 @@ unchanged from the article's own shown code.
 ```bash
 npm install          # real dependencies, 0 vulnerabilities (npm audit)
 npx tsc --noEmit      # strict mode, clean, including test files
-npm test              # 69/69 passing
+npm test              # 79/79 passing
 npm run build         # real dist/ output
 npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
 ```
 
-**69/69 Vitest assertions pass** across nine real test files:
+**79/79 Vitest assertions pass** across ten real test files:
 
 - `tests/config/AgentConfigLoader.test.ts` — loads the **real**
   `requirement_analyzer.md` from disk and asserts every front-matter
@@ -410,6 +452,19 @@ npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
   planted hallucinated response correctly fails, and an edge case
   proving the oracle degrades cleanly on non-JSON output instead of
   throwing.
+- `tests/grounding/checkGrounding.test.ts`'s "Part 6 fix" block — the
+  real TC005 output now passes cleanly; the article's own unhedged
+  "Response A" still correctly fails; both of Part 2's original
+  fabrication fixtures still correctly fail; a hedged numeric claim is
+  exempted too, proving the fix isn't technical-term-only.
+- `tests/requirement-analyzer/ambiguity-testing.test.ts` — TC005 (Part
+  6) at the full pipeline level: the real output passes `checkGrounding()`
+  and the full `requirementAnalyzerOracle` cleanly; a literal
+  reproduction of the article's own flagged-as-too-weak assertion,
+  shown genuinely failing against this real output; the Response A/B
+  distinction proven at the oracle level; and the Contract-defect
+  finding (the real `ambiguities` array mixing subjective ambiguity and
+  missing information) confirmed with code against the real output.
 
 No live Gemini API access from this sandbox — same standing egress
 restriction as every other build in this project (no `GEMINI_API_KEY`
@@ -436,7 +491,13 @@ proof of that, not a workaround).
 - **Instruction-following as its own correctness dimension** — named by
   Part 3 as one of four dimensions, but given no worked example distinct
   from groundedness/structural correctness to build against.
-- **Ambiguity testing** — Part 5's own closing section previews this as
-  the next part's subject (a requirement containing subjective,
-  interpretable terms like "quickly" and "using email"); the article
-  itself defers it to a future part, not built here.
+- **True ambiguity / multiple concrete interpretations (TC006)** — e.g.
+  "within one day" meaning either 24 hours from the order timestamp or
+  midnight the following calendar day; Part 6's own closing section
+  previews this as the next part's subject, the article itself defers
+  it to a future part, not built here.
+- **A `missingInformation` schema field** — the real Contract defect
+  Part 6 names (the `ambiguities` array conflating true ambiguity with
+  plain missing information), deliberately documented with a test
+  rather than acted on, since the real agent schema is the source
+  series' own file, not this project's to redesign speculatively.

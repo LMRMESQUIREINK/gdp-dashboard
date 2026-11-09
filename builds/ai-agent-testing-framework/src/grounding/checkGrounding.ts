@@ -35,6 +35,27 @@ import type { RequirementAnalysis } from "../types/AgentTypes.js";
  * oracle problem," explicitly deferred to a future part of its own
  * series) -- it is a narrow, honest, directly-evidenced check for the
  * two concrete fabrication patterns this source actually demonstrates.
+ *
+ * A SECOND REAL BUG, found in Part 6 ("Testing Ambiguity in AI Agents"),
+ * by running THIS exact module against Part 6's own real TC005 output,
+ * not a hypothetical: the agent's real ambiguities field says "The exact
+ * method for resetting the password via email (e.g., one-time link,
+ * temporary password, OTP) is not specified." -- a hedged, labeled
+ * POSSIBILITY, explicitly not a claim. Before this fix, checkGrounding()
+ * flagged "OTP" here as a fabrication anyway, because it only checked
+ * whether a term was literally present in the requirement text, never
+ * whether the agent's own sentence was asserting it as fact or naming it
+ * as an unresolved possibility. Reproduced directly against this exact
+ * module before fixing (not assumed) -- see
+ * /notes/ai-agent-testing-framework-part6-analysis.md. The article's own
+ * distinction: "The system sends an OTP" (an unsupported claim, still
+ * correctly Forbidden) vs. "...is not specified... e.g., OTP" (a hedged
+ * possibility, correctly Allowed). `HEDGE_PATTERN` below is the fix: a
+ * claim or term is only flagged when the SAME field/array-item text has
+ * no hedging language. This widens what's Allowed; it does not narrow
+ * what's Forbidden -- every one of Part 2's own original fabrication
+ * examples (no hedge words present in either) still flags correctly,
+ * confirmed by the unmodified regression tests in checkGrounding.test.ts.
  */
 
 export interface GroundingFinding {
@@ -74,6 +95,16 @@ const TECHNICAL_TERMS = [
 const NUMERIC_CLAIM_PATTERN =
   /\b\d+(?:\.\d+)?\s*(?:second|minute|hour|day|week|month|year|%|percent|attempt|time)s?\b/gi;
 
+// The Part 6 fix: a term/claim mentioned alongside hedging language in
+// the SAME field/array-item text is a labeled possibility (Allowed),
+// not a claim presented as fact (Forbidden) -- see the module docstring.
+const HEDGE_PATTERN =
+  /\bnot specified\b|\bunspecified\b|\bnot defined\b|\bnot provided\b|\bpossibl\w*\b|\bhypothetical\w*\b|\be\.g\.\b|\bfor example\b|\bunclear\b/i;
+
+function isHedged(value: string): boolean {
+  return HEDGE_PATTERN.test(value);
+}
+
 function findNumericClaims(text: string): string[] {
   return [...text.matchAll(NUMERIC_CLAIM_PATTERN)].map((m) => m[0].toLowerCase().replace(/\s+/g, " ").trim());
 }
@@ -100,13 +131,14 @@ function checkField(
   requirementTextLower: string,
   out: GroundingFinding[]
 ): void {
+  const hedged = isHedged(value);
   for (const claim of findNumericClaims(value)) {
-    if (!isGrounded(claim, requirementTextLower)) {
+    if (!isGrounded(claim, requirementTextLower) && !hedged) {
       out.push({ field, index, term: claim, kind: "numeric" });
     }
   }
   for (const term of findTechnicalTerms(value)) {
-    if (!isGrounded(term, requirementTextLower)) {
+    if (!isGrounded(term, requirementTextLower) && !hedged) {
       out.push({ field, index, term, kind: "technical-term" });
     }
   }
