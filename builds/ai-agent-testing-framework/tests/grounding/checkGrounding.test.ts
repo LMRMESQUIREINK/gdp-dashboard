@@ -221,6 +221,28 @@ describe("checkGrounding", () => {
     });
   });
 
+  describe("Part 8 fix: morphological variants need listing explicitly, not assumed from the noun form", () => {
+    it("catches the verb form 'authenticate' as a fabrication, not just the noun 'authentication' -- a real gap found while testing TC010's own named claim", () => {
+      const requirement = "The system should allow users to upload a profile picture.";
+      const analysis: RequirementAnalysis = {
+        actor: "User",
+        feature: "Upload a profile picture",
+        preconditions: [],
+        // TC010's own named example, verbatim.
+        positiveScenarios: ["Users must authenticate before uploading a picture."],
+        negativeScenarios: [],
+        ambiguities: [],
+      };
+      // Before adding "authenticate" to TECHNICAL_TERMS, this returned
+      // []  -- "authentication" was listed, but TECHNICAL_TERMS does no
+      // stemming, so the verb form slipped through entirely. Same class
+      // of bug as the "user"/"users" singular/plural gap found and fixed
+      // in requirementAnalyzerOracle.ts during Part 3.
+      const findings = checkGrounding(requirement, analysis);
+      expect(findings.some((f) => f.term === "authenticate")).toBe(true);
+    });
+  });
+
   it("reports WHICH field and index a fabrication came from, not just that one exists somewhere", () => {
     const analysis: RequirementAnalysis = {
       actor: "User",

@@ -3292,6 +3292,50 @@ yourself every time.
   hallucination testing as its own category — Part 7's own closing
   section previews this as the next part's subject, deferred by the
   article itself.
+- **Part 8 of the same series, extending `/builds/ai-agent-testing-
+  framework/` a seventh time**: "Testing Grounding: Can an AI Agent Stay
+  Within the Evidence?" (rajesh yemul) — TC007 (sparse evidence), TC008
+  (explicit evidence), TC009 (conflicting evidence), TC010 (unsupported
+  inference), all against a new requirement (`"...upload a profile
+  picture."`). Full write-up in
+  `/notes/ai-agent-testing-framework-part8-analysis.md`. The article
+  repeats Parts 6-7's exact lesson for TC007, then fixes it with six
+  separate hand-written, per-claim regexes, naming its own limitation
+  plainly (a differently-phrased claim could slip past a narrow
+  pattern). **This project's `checkGrounding()` already generalizes
+  exactly this principle**, so this round extended its existing term
+  list (image formats, storage/cloud terms, UI/processing terms) and
+  numeric-unit list (byte sizes) with Part 8's real vocabulary instead
+  of writing six new one-off assertions — TC010's six named claim
+  categories proven caught by one mechanism in a single parameterized
+  test loop. **Two real bugs found while testing against this round's
+  real/named material**: (1) a morphological-variant gap, same bug
+  class as Part 3's "user"/"users" finding — TC010's own named example
+  is "Users must authenticate..." but the term list only had
+  "authentication" (the noun), so this exact claim slipped through on
+  the first real run; fixed by adding the verb form explicitly. (2) **a
+  real, verified defect in the article's own TC009 regex**: its given
+  silent-resolution pattern doesn't match either of its own two named
+  "tempting but wrong" example responses ("The system must store the
+  profile picture in Amazon S3," "The image is stored locally and then
+  uploaded to S3") — confirmed directly with a standalone script before
+  writing any code. Built **`src/oracle/contradictionOracle.ts`** (new,
+  TC009, on the same `qualityBoundary.ts` mechanism as Part 5's
+  `safeFailureOracle.ts`), keeping the article's original patterns and
+  adding four more, verified to actually catch both named examples.
+  Built **`tests/requirement-analyzer/grounding-testing.test.ts`**
+  (TC007-TC010 against the real pipeline, with discrimination checks
+  throughout) and a regression test in `checkGrounding.test.ts` for the
+  authenticate fix. 17 new assertions plus 1 regression test (105/105
+  total, up from 87), `tsc --strict --noEmit` clean, `npm run build`
+  clean, `npm audit` 0 vulnerabilities. **A third round in a row with at
+  least one real bug found and fixed.** Deliberately not built: full
+  semantic-claim detection beyond term/numeric patterns (named as a
+  limitation by the article itself), and tool-calling/agentic
+  architecture testing — Part 8's own closing section previews a much
+  larger future shift (agents that call tools and decide what to do
+  next, rather than reasoning in one shot) without giving any concrete
+  mechanism yet.
 
 ---
 

@@ -66,9 +66,20 @@ export interface GroundingFinding {
 }
 
 // A deliberately small, named, auditable list -- not an attempt at
-// exhaustive coverage of every security/auth term an LLM might invent.
-// Add to it as real fabrication patterns are found, the same way this
-// project's /builds/humanizer/ grows its own term list from real finds.
+// exhaustive coverage of every term an LLM might invent. Add to it as
+// real fabrication patterns are found, the same way this project's
+// /builds/humanizer/ grows its own term list from real finds.
+//
+// Part 8 ("Testing Grounding") added a whole new vocabulary of real,
+// named unsupported-claim examples -- image formats, storage mechanisms,
+// and UI/processing details -- none of which are security/auth terms
+// like the original Part 2 list. Added below rather than left
+// uncovered, from Part 8's own TC007/TC008/TC010 real examples: image
+// formats (the real TC007 output's own hedged "e.g., JPEG, PNG"
+// mention), storage mechanisms (TC008's real "Amazon S3" evidence, and
+// the unsupported AWS/storage expansions TC008 explicitly warns
+// against), and the UI/processing claims TC010 names directly
+// ("clicks the upload button," "generates a thumbnail").
 const TECHNICAL_TERMS = [
   "OTP",
   "2FA",
@@ -90,10 +101,38 @@ const TECHNICAL_TERMS = [
   "SHA-256",
   "PIN",
   "CAPTCHA",
+  // Part 8 additions:
+  "JPEG",
+  "PNG",
+  "GIF",
+  "WEBP",
+  "S3",
+  "Amazon S3",
+  "database",
+  "bucket",
+  "bucket name",
+  "AWS region",
+  "encryption",
+  "retention",
+  "CDN",
+  "thumbnail",
+  "upload button",
+  "browse button",
+  "authentication",
+  // "authenticate" (the verb form) listed separately, not implied by
+  // "authentication" -- a real gap found while testing this round:
+  // TC010's own named claim is "Users MUST AUTHENTICATE before
+  // uploading," which this list's literal-substring matching missed
+  // entirely until the verb form was added explicitly. Same class of
+  // bug as the earlier "user"/"users" singular/plural gap found in
+  // requirementAnalyzerOracle.ts (Part 3) -- this list has no stemming,
+  // so morphological variants need listing, not assuming.
+  "authenticate",
+  "login",
 ];
 
 const NUMERIC_CLAIM_PATTERN =
-  /\b\d+(?:\.\d+)?\s*(?:second|minute|hour|day|week|month|year|%|percent|attempt|time)s?\b/gi;
+  /\b\d+(?:\.\d+)?\s*(?:second|minute|hour|day|week|month|year|%|percent|attempt|time|byte|KB|MB|GB|TB|pixel|px)s?\b/gi;
 
 // The Part 6 fix: a term/claim mentioned alongside hedging language in
 // the SAME field/array-item text is a labeled possibility (Allowed),

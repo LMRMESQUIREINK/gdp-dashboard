@@ -1,31 +1,33 @@
 # ai-agent-testing-framework
 
 A real, working reproduction of the TypeScript + Vitest project from
-rajesh yemul's seven-part (so far) Medium series: "Building an AI Agent
+rajesh yemul's eight-part (so far) Medium series: "Building an AI Agent
 Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
 "Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
 "What Does 'Correct' Mean for an AI Agent?" (Part 3), "Writing Our First
 Functional Test for an AI Agent" (Part 4), "Negative Testing: What
 Happens When the Input Is Bad?" (Part 5), "Testing Ambiguity in AI
-Agents" (Part 6), and "True Ambiguity: Can an AI Agent Recognize
-Multiple Valid Interpretations?" (Part 7) — the author's own small,
+Agents" (Part 6), "True Ambiguity: Can an AI Agent Recognize Multiple
+Valid Interpretations?" (Part 7), and "Testing Grounding: Can an AI
+Agent Stay Within the Evidence?" (Part 8) — the author's own small,
 from-scratch agent-execution harness (Markdown+YAML agent definitions →
 `AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM →
 `AgentResult` → Vitest). Unlike most sources in this project, this
-article series *is* real, runnable code shown in full (Parts 1-2, 4-7)
+article series *is* real, runnable code shown in full (Parts 1-2, 4-8)
 plus a precisely-stated framework (Part 3), not a vague conceptual piece
 to extract a mechanism from — so this build is a faithful,
 continuously-updated reproduction, actually installed and run in this
 sandbox, with real bugs found and fixed along the way in most rounds —
-including, in Parts 6 and 7, two rounds in a row of real regression bugs
-in this build's own already-shipped code. Analyzed in
+including, in Parts 6-8, three rounds in a row of real bugs found by
+testing against new material. Analyzed in
 `/notes/ai-agent-testing-framework-analysis.md` (Part 1),
 `/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2),
 `/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3),
 `/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4),
 `/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5),
-`/notes/ai-agent-testing-framework-part6-analysis.md` (Part 6), and
-`/notes/ai-agent-testing-framework-part7-analysis.md` (Part 7).
+`/notes/ai-agent-testing-framework-part6-analysis.md` (Part 6),
+`/notes/ai-agent-testing-framework-part7-analysis.md` (Part 7), and
+`/notes/ai-agent-testing-framework-part8-analysis.md` (Part 8).
 
 ## A note on provenance: this author's two series connect
 
@@ -417,6 +419,56 @@ behavior shift.
 --noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
 Full write-up in `/notes/ai-agent-testing-framework-part7-analysis.md`.
 
+## Part 8 update: four evidence situations (TC007-TC010), one generalized mechanism instead of six hand-written regexes, two more real bugs found
+
+Part 8 ("Testing Grounding") tests a new requirement
+(`"...upload a profile picture."`) across four evidence situations:
+**TC007** sparse evidence (preserve the unknowns), **TC008** explicit
+evidence (`"...stored in Amazon S3."` — use it, don't discard it, don't
+expand beyond it), **TC009** conflicting evidence (local device AND
+S3 — surface the conflict, don't silently pick a side), **TC010**
+unsupported inference (six named reasonable-sounding claims — auth
+required, JPEG/PNG support, a 5MB limit, S3 storage, an upload button,
+automatic thumbnails — none of which are supported).
+
+The article repeats Parts 6-7's exact lesson for TC007 (a naive
+word-presence assertion fails against a hedged mention), then fixes it
+with **six separate hand-written, per-claim regexes** — one per unsupported
+claim pattern, each narrowly scoped, with the article naming its own
+limitation plainly (a differently-phrased claim could slip past a
+narrow pattern). **This project's `checkGrounding()` already generalizes
+exactly this principle** (hedge-aware term/numeric detection, not
+per-claim regexes), so this round extended its existing term list and
+numeric-unit list with Part 8's real vocabulary instead of writing six
+new one-off assertions — TC010's six named categories are proven caught
+by one mechanism in a single parameterized test loop.
+
+**Two real bugs found while testing against this round's real/named
+material:**
+
+1. A real morphological-variant gap, same bug class as Part 3's
+   "user"/"users" finding: TC010's own named example is "Users must
+   **authenticate**..." — the term list had "authentication" (noun) but
+   not "authenticate" (verb), so this exact claim, lifted verbatim from
+   the article, slipped through on the first real run. Fixed by adding
+   the verb form explicitly — `TECHNICAL_TERMS` does no stemming by
+   design, so variants need listing, not assuming.
+2. A real, verified defect in **the article's own TC009 regex**: its
+   given silent-resolution pattern doesn't match either of its own two
+   named "tempting but wrong" example responses — confirmed directly
+   with a standalone script before writing any code, not assumed.
+   `src/oracle/contradictionOracle.ts` (new, built on the same
+   `qualityBoundary.ts` mechanism as `safeFailureOracle.ts`) keeps the
+   article's original patterns and adds four more, verified to actually
+   catch both of the article's own named examples.
+
+17 new assertions in a new `grounding-testing.test.ts` plus 1 regression
+test in `checkGrounding.test.ts` (105/105 total, up from 87), `tsc
+--strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+vulnerabilities. **A third round in a row with at least one real bug
+found and fixed.** Full write-up in
+`/notes/ai-agent-testing-framework-part8-analysis.md`.
+
 ## What's faithfully reproduced, unmodified
 
 Every file the article shows in full is reproduced as shown:
@@ -434,12 +486,12 @@ unchanged from the article's own shown code.
 ```bash
 npm install          # real dependencies, 0 vulnerabilities (npm audit)
 npx tsc --noEmit      # strict mode, clean, including test files
-npm test              # 87/87 passing
+npm test              # 105/105 passing
 npm run build         # real dist/ output
 npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
 ```
 
-**87/87 Vitest assertions pass** across eleven real test files:
+**105/105 Vitest assertions pass** across twelve real test files:
 
 - `tests/config/AgentConfigLoader.test.ts` — loads the **real**
   `requirement_analyzer.md` from disk and asserts every front-matter
@@ -523,6 +575,17 @@ npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
   Behavior A confirmed caught by existing code; Behavior B honestly
   demonstrated as an open, tracked gap; and the Contract-defect finding
   reconfirmed on independent real data.
+- `tests/requirement-analyzer/grounding-testing.test.ts` — TC007-TC010
+  (Part 8): sparse evidence passes cleanly with a discrimination check
+  for an unhedged format claim; explicit S3 evidence is both preserved
+  and not over-expanded, with a discrimination check for the "overly
+  cautious agent" failure mode (discarding given evidence); conflicting
+  evidence is surfaced correctly, with both of the article's own named
+  bad examples caught by `contradictionOracle`; all six of TC010's
+  named unsupported-claim categories are caught by the one generalized
+  mechanism, proven in a single parameterized loop.
+- `tests/grounding/checkGrounding.test.ts`'s "Part 8 fix" block — the
+  "authenticate" verb-form regression test.
 
 No live Gemini API access from this sandbox — same standing egress
 restriction as every other build in this project (no `GEMINI_API_KEY`
@@ -559,8 +622,15 @@ proof of that, not a workaround).
   non-numeric interpretation asserted as fact without evidence (Part 7)
   — deliberately left open and tracked with a named test rather than
   force-closed with a fragile keyword heuristic.
-- **Groundedness/hallucination testing as its own category** — Part 7's
-  own closing section previews this as the next part's subject (the
-  series' stated transition from "does the agent recognize bad/ambiguous
-  input" to "is the agent's own output content actually supported by
-  evidence"), explicitly deferred by the article itself.
+- **Full semantic-claim detection beyond term/numeric patterns** — Part
+  8 itself names this limitation plainly (a differently-phrased claim,
+  e.g. "JPEG images are accepted" vs. "supports JPEG," could slip past
+  pattern-based detection); this project's generalized term+hedge
+  mechanism is more robust than the article's own per-claim regexes
+  (both phrasings are caught equally, since neither depends on the verb
+  used) but is still pattern-based, not true semantic evaluation.
+- **Tool-calling / agentic architecture testing** — Part 8's own closing
+  section previews a much larger shift (agents that call tools, query
+  external systems, and decide what to do next, rather than reasoning
+  in one shot) as a future subject; nothing here anticipates it, since
+  Part 8 only previews the shift without giving any concrete mechanism.
