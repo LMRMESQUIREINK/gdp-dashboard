@@ -2945,6 +2945,69 @@ yourself every time.
   2's starting observation is a fresh read or a restatement of cycle
   1's post-execution check, resolved here toward the cleaner, testable
   semantic. 17/17 tests pass on the real run.
+- **Deep analysis + new build from a pasted article: "Building an AI
+  Agent Testing Framework from Scratch with TypeScript and Vitest"**
+  (rajesh yemul, Medium, Part 1 of a new series) — this project's first
+  TypeScript/Vitest build; every other build here is Python,
+  HTML/JS, or Next.js. Full write-up in
+  `/notes/ai-agent-testing-framework-analysis.md`. A real, checkable
+  connection found between this author's two series analyzed this
+  session: this article's own worked example defines an agent with
+  `agentId: requirement-analyzer`, and the earlier-analyzed "Quality
+  Engineering" series' Season 3 pipeline names "Requirement Analyzer"
+  as its first producer — neither article cites the other, visible
+  only reading both together. Unlike most sources here, this one is
+  real, complete, runnable code shown in full, not a conceptual
+  framework or vendor product — so this round actually installed and
+  ran it (`npm install`, 0 vulnerabilities per `npm audit`; `tsc
+  --strict --noEmit` clean). Two technical claims web-verified against
+  primary sources: Gemini's real OpenAI-compatible endpoint
+  (`generativelanguage.googleapis.com/v1beta/openai/`, matching
+  Google's own docs exactly) and Vitest's real `fileParallelism`
+  config option (confirmed against the official docs — forces
+  `maxWorkers` to 1, exactly matching the article's own comment).
+  **Two real bugs found, both reproduced directly rather than spotted
+  by eye**: (1) the article's own shown `vitest.config.ts` has a
+  genuine unbalanced object literal (counted via `grep -o '{' | wc -l`
+  vs `}` — 3 vs 4) — confirmed as a real bug, not a transcription
+  artifact, by running the snippet as plain ESM and getting
+  `SyntaxError: missing ) after argument list` pointing at the exact
+  extra brace (a first attempt with `tsc --noEmit`/`node --check`
+  directly on the `.ts` file silently passed, a dead end worth noting
+  before the real repro worked); (2) a real gap between the article's
+  stated motivation and its own shown code — the article credits
+  `LLMClient` as an abstraction enabling "deterministic tests for the
+  testing framework itself," but `AgentRuntime`'s real constructor
+  types its parameter as the **concrete** `LLMClient` class, not an
+  interface, so a plain mock object fails `tsc --strict` with `Property
+  'client' is missing in type '...' but required in type 'LLMClient'`
+  — TypeScript matches class types structurally *including private
+  fields*, and the real class has a private `client: OpenAI` field no
+  mock can supply, directly blocking the exact capability the article
+  credits the abstraction with enabling. **Built**:
+  `/builds/ai-agent-testing-framework/` — a faithful, actually-run
+  reproduction (not a generalized-mechanism extraction, since the
+  source itself is concrete runnable code) with both bugs fixed:
+  `vitest.config.ts`'s brace balanced, and a real `LLMClient` interface
+  extracted into `AgentTypes.ts` with the concrete class
+  `implements`-ing it, closing the mockability gap. 10/10 Vitest
+  assertions pass across three real files, including the test the
+  interface fix makes possible for the first time — the real
+  `AgentConfigLoader` loading a real `requirement_analyzer.md` (one
+  piece filled in rather than left a stub, since the article shows
+  only a fragment and defers the full agent definition to Part 2;
+  stated plainly as this build's own content, not a guess at
+  not-yet-published text), wired through the real `AgentRuntime`,
+  against a deterministic mock `LLMClient` with its exact call
+  arguments asserted to match the real loaded config — the same
+  "mocked client" convention this project's Python builds have used
+  throughout, applied here for the first time to TypeScript/Vitest.
+  `npm run build` produces a real `dist/`; `npm run agent` fails fast
+  and cleanly without a live `GEMINI_API_KEY`, proven as a real
+  subprocess run (no live Gemini access from this sandbox, same
+  standing restriction as every build here). Not built: the article's
+  own explicitly-stated next challenge (the test-oracle problem) and
+  TC001, both deferred by the source itself to a future part.
 
 ---
 
