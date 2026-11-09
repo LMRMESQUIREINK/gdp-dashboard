@@ -3249,6 +3249,49 @@ yourself every time.
   true ambiguity/multiple concrete interpretations (TC006) — Part 6's
   own closing section previews this as the next part's subject,
   deferred by the article itself.
+- **Part 7 of the same series, extending `/builds/ai-agent-testing-
+  framework/` a sixth time**: "True Ambiguity: Can an AI Agent Recognize
+  Multiple Valid Interpretations?" (rajesh yemul) — TC006, a requirement
+  supporting multiple concrete, competing interpretations (`"...cancel
+  an order within one day..."`: 24 hours from the timestamp, or a
+  calendar-day boundary?), distinct from Part 6's merely undefined term.
+  Full write-up in `/notes/ai-agent-testing-framework-part7-analysis.md`.
+  The article's own central move is self-critical: it names its own
+  TC006 as correct but incomplete — only verifying the agent
+  acknowledges the ambiguity, not that it never asserts one
+  interpretation as fact. **This project turned that question on its
+  own code, not just the article's narrative, and found a real
+  second-order bug in LAST ROUND'S OWN hedge fix**: the first test
+  written against TC006's real output failed unexpectedly, tracing to
+  two real defects in Part 6's `HEDGE_PATTERN` — the e.g. alternative
+  never matched anything (a literal period can't form a word-boundary
+  transition right after it, dead code since the moment it was written,
+  invisible because Part 6's own fixture happened to also contain "is
+  not specified" in the same sentence, masking it), and "ambiguous"
+  itself was never in the hedge list at all. Both fixed in
+  `src/grounding/checkGrounding.ts`, confirmed not to loosen true-
+  positive detection by re-running every existing fabrication fixture
+  from Parts 2 and 6. **Then, deliberately, tested this project's own
+  oracle the way the article tests its own**: the article's named
+  "Behavior A" (an unhedged numeric interpretation asserted as fact)
+  confirmed already caught by the existing numeric-claim mechanism;
+  "Behavior B" (an unhedged NON-numeric interpretation asserted as
+  fact) confirmed to slip through undetected — an honestly-tracked,
+  named limitation, not silently papered over, since closing it
+  generally needs the same semantic-correctness mechanism Part 3 already
+  named as unsolved; a test asserts the current (gap) behavior
+  explicitly so a future fix shows up as an intentional change, not a
+  silent shift. The Contract-defect finding (ambiguities mixing true
+  ambiguity with missing information) reconfirmed on this independent
+  real example too, still documented rather than acted on. 10 new
+  Vitest assertions (87/87 total, up from 79), `tsc --strict --noEmit`
+  clean, `npm run build` clean, `npm audit` 0 vulnerabilities. **A real
+  bug found and fixed for the second round in a row** — this time in
+  code this project itself wrote and shipped only one round earlier.
+  Deliberately not built: closing the Behavior B gap, and groundedness/
+  hallucination testing as its own category — Part 7's own closing
+  section previews this as the next part's subject, deferred by the
+  article itself.
 
 ---
 

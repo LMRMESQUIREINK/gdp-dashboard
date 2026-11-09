@@ -185,6 +185,42 @@ describe("checkGrounding", () => {
     });
   });
 
+  describe("Part 7 fix: a real bug in the Part 6 HEDGE_PATTERN itself, found by testing against TC006's real output", () => {
+    it("'e.g.' alone (with no other hedge phrase in the same sentence) now correctly exempts the mention -- the original \\be.g.\\b pattern never matched anything, since a literal '.' can't form a word-boundary transition right after it", () => {
+      const requirement =
+        "The system should allow customers to cancel an order within one day of placing it.";
+      const analysis: RequirementAnalysis = {
+        actor: "Customer",
+        feature: "Order cancellation within one day",
+        preconditions: [],
+        positiveScenarios: [],
+        negativeScenarios: [],
+        ambiguities: [
+          "The term 'one day' is ambiguous (e.g., whether it means exactly 24 hours from the timestamp of placement, or until midnight/end of the following calendar day).",
+        ],
+      };
+      // Before this fix, this returned one finding on "24 hours" --
+      // reproduced directly against the real article output before
+      // fixing, not assumed. The only hedge markers in this exact
+      // sentence are "ambiguous" and "e.g." -- neither of which the
+      // original pattern actually matched.
+      expect(checkGrounding(requirement, analysis)).toEqual([]);
+    });
+
+    it("'ambiguous'/'ambiguity' alone is also a real hedge signal on its own, not just a side effect of some other phrase", () => {
+      const requirement = "The system should process requests within a reasonable time.";
+      const analysis: RequirementAnalysis = {
+        actor: "User",
+        feature: "Request processing",
+        preconditions: [],
+        positiveScenarios: [],
+        negativeScenarios: [],
+        ambiguities: ["It is ambiguous whether this takes 5 seconds or 5 minutes."],
+      };
+      expect(checkGrounding(requirement, analysis)).toEqual([]);
+    });
+  });
+
   it("reports WHICH field and index a fabrication came from, not just that one exists somewhere", () => {
     const analysis: RequirementAnalysis = {
       actor: "User",

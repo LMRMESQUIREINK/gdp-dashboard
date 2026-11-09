@@ -98,8 +98,23 @@ const NUMERIC_CLAIM_PATTERN =
 // The Part 6 fix: a term/claim mentioned alongside hedging language in
 // the SAME field/array-item text is a labeled possibility (Allowed),
 // not a claim presented as fact (Forbidden) -- see the module docstring.
+//
+// A REAL BUG in this exact pattern, found in Part 7 by testing it
+// against TC006's real output (not assumed from reading the regex): (1)
+// `\be\.g\.\b` never matches anywhere, because a literal `.` is not a
+// word character, so the trailing `\b` can never find a word/non-word
+// transition right after it -- `\b` requires one side of the boundary to
+// be a word character, and nothing immediately after "e.g." in real text
+// ever is. Part 6's own test fixture happened to also contain "is not
+// specified" in the same sentence, which matched a DIFFERENT alternative
+// and masked this one being dead code. (2) "ambiguous" itself was never
+// in this list at all, even though an agent explicitly saying "the term
+// is ambiguous" is the clearest possible hedge signal there is. Fixed:
+// dropped the unmatchable trailing `\b` from the e.g./for example
+// alternatives, and added `\bambigu\w*\b` (matches "ambiguous",
+// "ambiguity", "ambiguities").
 const HEDGE_PATTERN =
-  /\bnot specified\b|\bunspecified\b|\bnot defined\b|\bnot provided\b|\bpossibl\w*\b|\bhypothetical\w*\b|\be\.g\.\b|\bfor example\b|\bunclear\b/i;
+  /\bnot specified\b|\bunspecified\b|\bnot defined\b|\bnot provided\b|\bpossibl\w*\b|\bhypothetical\w*\b|\be\.g\.|\bfor example\b|\bunclear\b|\bambigu\w*\b/i;
 
 function isHedged(value: string): boolean {
   return HEDGE_PATTERN.test(value);

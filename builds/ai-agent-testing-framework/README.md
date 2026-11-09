@@ -1,28 +1,31 @@
 # ai-agent-testing-framework
 
 A real, working reproduction of the TypeScript + Vitest project from
-rajesh yemul's six-part (so far) Medium series: "Building an AI Agent
+rajesh yemul's seven-part (so far) Medium series: "Building an AI Agent
 Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
 "Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
 "What Does 'Correct' Mean for an AI Agent?" (Part 3), "Writing Our First
 Functional Test for an AI Agent" (Part 4), "Negative Testing: What
-Happens When the Input Is Bad?" (Part 5), and "Testing Ambiguity in AI
-Agents" (Part 6) — the author's own small, from-scratch agent-execution
-harness (Markdown+YAML agent definitions → `AgentConfigLoader` →
-`AgentRuntime` → `LLMClient` → an LLM → `AgentResult` → Vitest). Unlike
-most sources in this project, this article series *is* real, runnable
-code shown in full (Parts 1-2, 4-6) plus a precisely-stated framework
-(Part 3), not a vague conceptual piece to extract a mechanism from — so
-this build is a faithful, continuously-updated reproduction, actually
-installed and run in this sandbox, with real bugs found and fixed along
-the way in most rounds — including, in Part 6, a real regression bug in
-this build's own already-shipped code. Analyzed in
+Happens When the Input Is Bad?" (Part 5), "Testing Ambiguity in AI
+Agents" (Part 6), and "True Ambiguity: Can an AI Agent Recognize
+Multiple Valid Interpretations?" (Part 7) — the author's own small,
+from-scratch agent-execution harness (Markdown+YAML agent definitions →
+`AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM →
+`AgentResult` → Vitest). Unlike most sources in this project, this
+article series *is* real, runnable code shown in full (Parts 1-2, 4-7)
+plus a precisely-stated framework (Part 3), not a vague conceptual piece
+to extract a mechanism from — so this build is a faithful,
+continuously-updated reproduction, actually installed and run in this
+sandbox, with real bugs found and fixed along the way in most rounds —
+including, in Parts 6 and 7, two rounds in a row of real regression bugs
+in this build's own already-shipped code. Analyzed in
 `/notes/ai-agent-testing-framework-analysis.md` (Part 1),
 `/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2),
 `/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3),
 `/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4),
-`/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5), and
-`/notes/ai-agent-testing-framework-part6-analysis.md` (Part 6).
+`/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5),
+`/notes/ai-agent-testing-framework-part6-analysis.md` (Part 6), and
+`/notes/ai-agent-testing-framework-part7-analysis.md` (Part 7).
 
 ## A note on provenance: this author's two series connect
 
@@ -371,6 +374,49 @@ confirmed with a test against the real output, not silently acted on.
 --noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
 Full write-up in `/notes/ai-agent-testing-framework-part6-analysis.md`.
 
+## Part 7 update: a real second-order bug in last round's own hedge fix, plus an honestly-tracked gap in this project's own oracle
+
+Part 7 ("True Ambiguity") tests TC006 — a requirement supporting
+multiple *concrete, competing* interpretations (`"...cancel an order
+within one day..."`: 24 hours from the timestamp, or a calendar-day
+boundary?) rather than Part 6's merely *undefined* term. Its central
+move is self-critical: the article names its own TC006 as **correct but
+incomplete** — it only verifies the agent acknowledges the ambiguity,
+not that it never asserts one interpretation as fact.
+
+This project turned that question on its own code, not just the
+article's narrative, and found **a real bug in last round's own hedge
+fix**: the first test written against TC006's real output failed
+unexpectedly. Investigating found `HEDGE_PATTERN` (added in Part 6) had
+two real defects: `\be\.g\.\b` never matched *anything* (a literal `.`
+can't form a word-boundary transition right after it — dead code since
+the moment it was written, invisible because Part 6's own fixture
+happened to also contain `"is not specified"` in the same sentence,
+masking it), and `"ambiguous"` — arguably the clearest hedge word there
+is — was never in the list at all. Both fixed in
+`src/grounding/checkGrounding.ts`; confirmed the fix doesn't loosen
+true-positive detection by re-running every existing fabrication
+fixture from Parts 2 and 6.
+
+**Then, deliberately, this project tested its own oracle the way the
+article tests its**: constructing the article's own named "Behavior A"
+(an unhedged numeric interpretation asserted as fact — `"...within 24
+hours..."`) and "Behavior B" (an unhedged *non-numeric* interpretation
+asserted as fact — `"...until midnight on the following calendar
+day."`). Behavior A is confirmed already caught by the existing
+numeric-claim mechanism. **Behavior B is confirmed to slip through
+undetected** — an honestly-tracked, named limitation, not silently
+papered over: a general fix needs detecting "does this field assert a
+specific interpretation as fact with no evidence," which is the same
+semantic-correctness problem Part 3 already named as unsolved. A test
+asserts the *current* (gap) behavior explicitly, so a future real fix
+shows up as an intentional change to a named test, not a silent
+behavior shift.
+
+10 new Vitest assertions (87/87 total, up from 79), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+Full write-up in `/notes/ai-agent-testing-framework-part7-analysis.md`.
+
 ## What's faithfully reproduced, unmodified
 
 Every file the article shows in full is reproduced as shown:
@@ -388,12 +434,12 @@ unchanged from the article's own shown code.
 ```bash
 npm install          # real dependencies, 0 vulnerabilities (npm audit)
 npx tsc --noEmit      # strict mode, clean, including test files
-npm test              # 79/79 passing
+npm test              # 87/87 passing
 npm run build         # real dist/ output
 npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
 ```
 
-**79/79 Vitest assertions pass** across ten real test files:
+**87/87 Vitest assertions pass** across eleven real test files:
 
 - `tests/config/AgentConfigLoader.test.ts` — loads the **real**
   `requirement_analyzer.md` from disk and asserts every front-matter
@@ -465,6 +511,18 @@ npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
   distinction proven at the oracle level; and the Contract-defect
   finding (the real `ambiguities` array mixing subjective ambiguity and
   missing information) confirmed with code against the real output.
+- `tests/grounding/checkGrounding.test.ts`'s "Part 7 fix" block — the
+  `e.g.`-alone and `ambiguous`-alone cases now correctly exempt a
+  mention, isolated from any other hedge phrase (the real second bug
+  found in Part 6's own `HEDGE_PATTERN`).
+- `tests/requirement-analyzer/true-ambiguity-testing.test.ts` — TC006
+  (Part 7) at the full pipeline level: the real output passes
+  `checkGrounding()` and the full `requirementAnalyzerOracle` cleanly;
+  a literal reproduction of the article's own flagged-as-dangerous
+  assertion, shown genuinely failing against this real output;
+  Behavior A confirmed caught by existing code; Behavior B honestly
+  demonstrated as an open, tracked gap; and the Contract-defect finding
+  reconfirmed on independent real data.
 
 No live Gemini API access from this sandbox — same standing egress
 restriction as every other build in this project (no `GEMINI_API_KEY`
@@ -491,13 +549,18 @@ proof of that, not a workaround).
 - **Instruction-following as its own correctness dimension** — named by
   Part 3 as one of four dimensions, but given no worked example distinct
   from groundedness/structural correctness to build against.
-- **True ambiguity / multiple concrete interpretations (TC006)** — e.g.
-  "within one day" meaning either 24 hours from the order timestamp or
-  midnight the following calendar day; Part 6's own closing section
-  previews this as the next part's subject, the article itself defers
-  it to a future part, not built here.
 - **A `missingInformation` schema field** — the real Contract defect
-  Part 6 names (the `ambiguities` array conflating true ambiguity with
-  plain missing information), deliberately documented with a test
-  rather than acted on, since the real agent schema is the source
-  series' own file, not this project's to redesign speculatively.
+  Parts 6 and 7 both name (the `ambiguities` array conflating true
+  ambiguity with plain missing information, confirmed on two
+  independent real examples), deliberately documented with tests rather
+  than acted on, since the real agent schema is the source series' own
+  file, not this project's to redesign speculatively.
+- **Closing the Behavior B gap** — general detection of a specific
+  non-numeric interpretation asserted as fact without evidence (Part 7)
+  — deliberately left open and tracked with a named test rather than
+  force-closed with a fragile keyword heuristic.
+- **Groundedness/hallucination testing as its own category** — Part 7's
+  own closing section previews this as the next part's subject (the
+  series' stated transition from "does the agent recognize bad/ambiguous
+  input" to "is the agent's own output content actually supported by
+  evidence"), explicitly deferred by the article itself.
