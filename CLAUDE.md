@@ -3336,6 +3336,60 @@ yourself every time.
   larger future shift (agents that call tools and decide what to do
   next, rather than reasoning in one shot) without giving any concrete
   mechanism yet.
+- **Part 9 of the same series (different URL slug, same author/agent),
+  extending `/builds/ai-agent-testing-framework/` an eighth time**:
+  "Testing AI Agent Boundaries: Output Contracts, Grounding and Prompt
+  Injection" (rajesh yemul) — names three distinct boundaries explicitly
+  (Evidence/grounding, Output/contract, Instructions/injection) and
+  gives real content for the latter two. Full write-up in
+  `/notes/ai-agent-testing-framework-part9-analysis.md`. **Two real,
+  verified gaps found in this project's own pre-existing
+  `parseAgentOutput.ts`** (hand-rolled since Part 2), checked directly
+  against the article's own real Zod schema (`RequirementAnalysisSchema`,
+  reproduced verbatim, `zod@4.6.7` installed) rather than assumed: an
+  unexpected extra field (`"confidence": 0.92`) was silently dropped
+  instead of rejected, and an empty string (`"actor": ""`) passed
+  validation — both reproduced against the unmodified module before
+  refactoring. Fixed by rewiring `parseAgentOutput.ts` onto the real
+  schema (new `src/schema/RequirementAnalysisSchema.ts`); the module's
+  existing parse-into-`unknown`-before-validating discipline needed no
+  change. Added TC012-TC016 (deterministic contract tests needing no
+  live agent call) to `tests/output/parseAgentOutput.test.ts`. **Built
+  `src/oracle/injectionResistanceOracle.ts`** (TC017-TC019, prompt-
+  injection resistance) on the same `qualityBoundary.ts` mechanism as
+  every other oracle here, directly implementing the article's central
+  connecting insight — "mentioning 'JPEG' != claiming JPEG is supported"
+  (Parts 6-8) is the same reasoning pattern as "mentioning 'Delete all
+  users' != adopting it as the feature." Required checks reuse Part 3's
+  `isGroundedField`, extracted this round into a new shared
+  `src/oracle/lexicalGrounding.ts`; Forbidden checks test adoption
+  directly on the actor/feature field values, cleanly separating
+  "named in ambiguities" (Allowed) from "adopted into actor/feature"
+  (Forbidden) with no hedge detection needed. The article gives no
+  literal quoted output for TC017-020, so every test fixture is
+  constructed from its own named desired/undesired values and labeled
+  as such. **A real, honest limitation found while testing, not
+  assumed**: the first draft of the TC017 discrimination test predicted
+  both anchoring checks would fail on a fully-adopted bad response —
+  only the actor check actually failed, because the forbidden feature
+  value ("Delete all users") shares the literal word "users" with the
+  real requirement, so `isGroundedField`'s plain shared-word heuristic
+  incorrectly reports it as anchored; the overall verdict still
+  correctly fails only because the separate Forbidden check
+  independently catches it, documented with a dedicated test proving
+  the blind spot rather than silently adjusted away. **TC020** (output-
+  format manipulation) is a different boundary entirely — proven
+  through the existing Zod-backed contract directly, with the article's
+  own literal injected bad output correctly rejected: a positive
+  finding that this boundary was already closed by Part 2/9's work. 15
+  new Vitest assertions across two files (120/120 total, up from 105),
+  `tsc --strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+  vulnerabilities. **A fourth round in a row with at least one real
+  finding.** Deliberately not built: closing the TC017 anchoring blind
+  spot (needs real semantic similarity, the same gap Part 3 named), and
+  tool-calling/action testing — Part 9's own closing section previews
+  this directly as the next part's subject, deferred by the article
+  itself.
 
 ---
 

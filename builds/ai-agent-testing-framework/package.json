@@ -12,7 +12,8 @@
   "dependencies": {
     "dotenv": "^18.0.10",
     "gray-matter": "^4.0.3",
-    "openai": "^7.54.0"
+    "openai": "^7.54.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

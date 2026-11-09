@@ -155,7 +155,7 @@ const NUMERIC_CLAIM_PATTERN =
 const HEDGE_PATTERN =
   /\bnot specified\b|\bunspecified\b|\bnot defined\b|\bnot provided\b|\bpossibl\w*\b|\bhypothetical\w*\b|\be\.g\.|\bfor example\b|\bunclear\b|\bambigu\w*\b/i;
 
-function isHedged(value: string): boolean {
+export function isHedged(value: string): boolean {
   return HEDGE_PATTERN.test(value);
 }
 

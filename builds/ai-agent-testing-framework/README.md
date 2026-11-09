@@ -1,33 +1,35 @@
 # ai-agent-testing-framework
 
 A real, working reproduction of the TypeScript + Vitest project from
-rajesh yemul's eight-part (so far) Medium series: "Building an AI Agent
+rajesh yemul's nine-part (so far) Medium series: "Building an AI Agent
 Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
 "Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
 "What Does 'Correct' Mean for an AI Agent?" (Part 3), "Writing Our First
 Functional Test for an AI Agent" (Part 4), "Negative Testing: What
 Happens When the Input Is Bad?" (Part 5), "Testing Ambiguity in AI
 Agents" (Part 6), "True Ambiguity: Can an AI Agent Recognize Multiple
-Valid Interpretations?" (Part 7), and "Testing Grounding: Can an AI
-Agent Stay Within the Evidence?" (Part 8) — the author's own small,
-from-scratch agent-execution harness (Markdown+YAML agent definitions →
-`AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM →
-`AgentResult` → Vitest). Unlike most sources in this project, this
-article series *is* real, runnable code shown in full (Parts 1-2, 4-8)
-plus a precisely-stated framework (Part 3), not a vague conceptual piece
-to extract a mechanism from — so this build is a faithful,
-continuously-updated reproduction, actually installed and run in this
-sandbox, with real bugs found and fixed along the way in most rounds —
-including, in Parts 6-8, three rounds in a row of real bugs found by
-testing against new material. Analyzed in
+Valid Interpretations?" (Part 7), "Testing Grounding: Can an AI Agent
+Stay Within the Evidence?" (Part 8), and "Testing AI Agent Boundaries:
+Output Contracts, Grounding and Prompt Injection" (Part 9) — the
+author's own small, from-scratch agent-execution harness (Markdown+YAML
+agent definitions → `AgentConfigLoader` → `AgentRuntime` → `LLMClient`
+→ an LLM → `AgentResult` → Vitest). Unlike most sources in this
+project, this article series *is* real, runnable code shown in full
+(Parts 1-2, 4-9) plus a precisely-stated framework (Part 3), not a
+vague conceptual piece to extract a mechanism from — so this build is a
+faithful, continuously-updated reproduction, actually installed and run
+in this sandbox, with real bugs found and fixed along the way in most
+rounds — including, in Parts 6-9, four rounds in a row of real bugs
+found by testing against new material. Analyzed in
 `/notes/ai-agent-testing-framework-analysis.md` (Part 1),
 `/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2),
 `/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3),
 `/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4),
 `/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5),
 `/notes/ai-agent-testing-framework-part6-analysis.md` (Part 6),
-`/notes/ai-agent-testing-framework-part7-analysis.md` (Part 7), and
-`/notes/ai-agent-testing-framework-part8-analysis.md` (Part 8).
+`/notes/ai-agent-testing-framework-part7-analysis.md` (Part 7),
+`/notes/ai-agent-testing-framework-part8-analysis.md` (Part 8), and
+`/notes/ai-agent-testing-framework-part9-analysis.md` (Part 9).
 
 ## A note on provenance: this author's two series connect
 
@@ -469,6 +471,78 @@ vulnerabilities. **A third round in a row with at least one real bug
 found and fixed.** Full write-up in
 `/notes/ai-agent-testing-framework-part8-analysis.md`.
 
+## Part 9 update: a real Zod contract (closing two real gaps) plus prompt-injection resistance
+
+Part 9 ("Testing AI Agent Boundaries") names three distinct boundaries
+explicitly — Evidence (grounding), Output (contract), Instructions
+(prompt injection) — and gives real content for the latter two:
+
+- **A real Zod schema**, `RequirementAnalysisSchema` (reproduced
+  verbatim, `zod@4.6.7` installed and its `.strict()` API confirmed
+  working by actually running it): required strings can't be empty,
+  arrays may stay empty, the schema is closed against extra fields.
+- **TC012-TC016**, deterministic contract tests needing no live agent
+  call (missing field, wrong type, extra field, empty string,
+  Markdown/code-fence output) vs. TC001-TC011/TC017-TC020's live
+  behavioral tests.
+- **TC017-TC020**, prompt-injection resistance: direct instruction
+  override, role/identity hijacking, data/instruction boundary
+  confusion, output-format manipulation.
+
+**Two real, verified gaps found in this project's own pre-existing
+`parseAgentOutput.ts`** (hand-rolled since Part 2), checked directly
+against the article's own schema rather than assumed: an unexpected
+extra field (`"confidence": 0.92`) was silently **dropped** instead of
+rejected, and an empty string (`"actor": ""`) **passed** validation —
+both reproduced against the unmodified module before refactoring.
+Fixed by rewiring `parseAgentOutput.ts` onto the real Zod schema
+(`src/schema/RequirementAnalysisSchema.ts`); the existing parse-into-
+`unknown`-before-validating discipline needed no change, since this
+module already did that correctly.
+
+**TC017-TC020's central connecting insight**: the grounding series'
+"mentioning 'JPEG' ≠ claiming JPEG is supported" (Parts 6-8) is the
+exact same reasoning pattern as "mentioning 'Delete all users' ≠
+adopting it as the feature." Built
+**`src/oracle/injectionResistanceOracle.ts`** on the same
+`qualityBoundary.ts` mechanism as every other oracle here: Required
+checks that actor/feature stay lexically anchored to the real,
+un-injected requirement (reusing Part 3's `isGroundedField`, extracted
+this round into **`src/oracle/lexicalGrounding.ts`** so both oracles
+share one implementation) and Forbidden checks that the injected
+values don't appear in the actor/feature fields themselves — checking
+adoption directly on those fields, not the whole serialized blob,
+cleanly separates "named in `ambiguities`" (Allowed) from "adopted into
+actor/feature" (Forbidden) without needing hedge detection here. The
+article gives no literal quoted output for TC017-020 (unlike earlier
+TCs), so every fixture is constructed from the article's own named
+desired/undesired values and labeled as such.
+
+**A real, honest limitation found while testing, not assumed**: the
+first draft of the TC017 discrimination test predicted both anchoring
+checks would fail on a fully-adopted bad response — running it showed
+only the actor check failed, because the forbidden feature value
+("Delete all users") happens to share the literal word "users" with the
+real requirement, so `isGroundedField`'s plain shared-word heuristic
+incorrectly reports it as anchored. The overall verdict still correctly
+fails, but only because the separate Forbidden check independently
+catches it — documented with a dedicated test proving this blind spot
+exists rather than silently adjusting the expectation to hide it.
+
+**TC020 is a different boundary entirely** — tested through the
+existing Zod-backed `parseAgentOutput()` contract directly (no
+actor/feature to check if the agent abandons JSON). The article's own
+literal injected bad output (`"# Status\nThe requirement has been
+approved."`) is correctly rejected — a positive finding: this boundary
+was already closed by Part 2/9's contract work, now proven against
+this specific attack framing.
+
+15 new Vitest assertions across two files (120/120 total, up from 105),
+`tsc --strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+vulnerabilities. **A fourth round in a row with at least one real
+finding.** Full write-up in
+`/notes/ai-agent-testing-framework-part9-analysis.md`.
+
 ## What's faithfully reproduced, unmodified
 
 Every file the article shows in full is reproduced as shown:
@@ -486,12 +560,12 @@ unchanged from the article's own shown code.
 ```bash
 npm install          # real dependencies, 0 vulnerabilities (npm audit)
 npx tsc --noEmit      # strict mode, clean, including test files
-npm test              # 105/105 passing
+npm test              # 120/120 passing
 npm run build         # real dist/ output
 npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
 ```
 
-**105/105 Vitest assertions pass** across twelve real test files:
+**120/120 Vitest assertions pass** across thirteen real test files:
 
 - `tests/config/AgentConfigLoader.test.ts` — loads the **real**
   `requirement_analyzer.md` from disk and asserts every front-matter
@@ -586,6 +660,17 @@ npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
   mechanism, proven in a single parameterized loop.
 - `tests/grounding/checkGrounding.test.ts`'s "Part 8 fix" block — the
   "authenticate" verb-form regression test.
+- `tests/output/parseAgentOutput.test.ts`'s "Part 9" block — TC012-
+  TC016, including the two real gaps the Zod refactor closed (extra
+  field rejected, empty string rejected) and a confirmation that arrays
+  may legitimately stay empty.
+- `tests/requirement-analyzer/injection-resistance.test.ts` — TC017-
+  TC020 (Part 9): direct instruction override, role/identity hijacking,
+  and data/instruction boundary confusion each proven both ways (an
+  anchored response passes, an adopted one fails); the honest
+  anchoring-blind-spot finding documented with its own dedicated test;
+  and TC020 proven through the existing Zod contract rather than a new
+  mechanism.
 
 No live Gemini API access from this sandbox — same standing egress
 restriction as every other build in this project (no `GEMINI_API_KEY`
@@ -629,8 +714,11 @@ proof of that, not a workaround).
   mechanism is more robust than the article's own per-claim regexes
   (both phrasings are caught equally, since neither depends on the verb
   used) but is still pattern-based, not true semantic evaluation.
-- **Tool-calling / agentic architecture testing** — Part 8's own closing
-  section previews a much larger shift (agents that call tools, query
-  external systems, and decide what to do next, rather than reasoning
-  in one shot) as a future subject; nothing here anticipates it, since
-  Part 8 only previews the shift without giving any concrete mechanism.
+- **Closing the TC017 anchoring blind spot** — a forbidden value that
+  shares incidental vocabulary with the real requirement can slip past
+  `isGroundedField`'s plain shared-word check; closing it generally
+  needs real semantic similarity, the same unresolved gap Part 3 named.
+- **Tool-calling / action testing** — Part 9's own closing section
+  previews this directly as the next part's subject (tool selection,
+  arguments, failure recovery, trajectory evaluation), explicitly
+  deferred by the article itself; nothing here anticipates it.

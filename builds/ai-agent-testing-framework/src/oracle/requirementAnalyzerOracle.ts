@@ -2,6 +2,7 @@ import type { AgentResult, RequirementAnalysis } from "../types/AgentTypes.js";
 import { parseAgentOutput } from "../output/parseAgentOutput.js";
 import { checkGrounding } from "../grounding/checkGrounding.js";
 import { evaluateBoundary, type QualityBoundary, type Verdict } from "./qualityBoundary.js";
+import { isGroundedField } from "./lexicalGrounding.js";
 
 /**
  * The concrete TC001 acceptance oracle for the Requirement Analyzer
@@ -63,43 +64,10 @@ export interface OracleContext {
   expectedAgentId: string;
 }
 
-const STOPWORDS = new Set([
-  "the", "a", "an", "and", "or", "to", "of", "in", "on", "using", "through",
-  "their", "is", "are", "it", "for", "with", "should", "allow", "via",
-]);
-
-function significantWords(text: string): string[] {
-  return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => !STOPWORDS.has(w));
-}
-
-// A bare word-set intersection has a real false-negative bug, found by
-// running this very check against the article's own canonical example:
-// actor "User" against a requirement that only ever says "users" (plural)
-// shares NO exact token, so a strict Set.has() wrongly fails the single
-// clearest possible case. Fixed with the simplest stemming that resolves
-// it -- strip a trailing "s" from either side before comparing -- rather
-// than reaching for a real stemmer for a check this deliberately narrow.
-function wordsMatch(a: string, b: string): boolean {
-  if (a === b) return true;
-  const stripS = (w: string) => (w.endsWith("s") && w.length > 1 ? w.slice(0, -1) : w);
-  return stripS(a) === stripS(b);
-}
-
-/**
- * "Grounded, not semantically verified" -- see the module docstring's
- * honest gap statement above. True when `fieldValue` is non-empty AND
- * shares at least one significant word (allowing simple singular/plural
- * variation) with the requirement text.
- */
-function isGroundedField(fieldValue: string, requirementText: string): boolean {
-  if (!fieldValue.trim()) return false;
-  const fieldWords = significantWords(fieldValue);
-  const requirementWords = significantWords(requirementText);
-  for (const fw of fieldWords) {
-    if (requirementWords.some((rw) => wordsMatch(fw, rw))) return true;
-  }
-  return false;
-}
+// isGroundedField extracted to lexicalGrounding.ts in Part 9 so
+// injectionResistanceOracle.ts can reuse the same "anchoring" check --
+// behavior unchanged, including the singular/plural stemming fix found
+// and fixed in Part 3.
 
 function tryParse(result: AgentResult | null | undefined): RequirementAnalysis | null {
   if (!result || !result.output) return null;
