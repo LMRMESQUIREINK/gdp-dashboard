@@ -2881,6 +2881,70 @@ yourself every time.
   to without a live agent) and the contrastive-judge/selection
   machinery (`core/judge.py`, `core/selection.py`) — both need a real
   execution loop producing evidence that doesn't exist in this sandbox.
+- **Deep analysis + new build from a pasted article: "Building Your
+  First Orchestration Agent"** (rajesh yemul, Medium, Part 18 of a
+  "Quality Engineering" tutorial series) — a purely pedagogical piece
+  (the author's own invented "QE Orchestrator" pipeline), no external
+  repo/paper/product named anywhere, confirmed by grepping the saved
+  copy for a link before concluding that rather than assuming it from
+  genre. Full write-up in
+  `/notes/orchestration-agent-loop-analysis.md`. Unlike the GitHub-repo
+  rounds, the verification surface here was entirely internal: the
+  retry-count/coverage arithmetic in the article's own worked example
+  (82%→88%→100%, retry_count reaching exactly 1) checked out exactly.
+  Credited: the article's explicit Evaluate/Choose separation
+  ("if those two stages collapse into one, the agent immediately
+  becomes another black box") is a genuinely sound discipline, and its
+  named "Mistake #3" (ignoring workflow state → an infinite retry
+  loop) is a concrete, correctly-reasoned failure mode this project's
+  own `agent-checkpoint-layer` and `defender-loop-verifier` builds
+  independently guard against in their own domains. **The round's
+  finding**: read the article's own two halves against each other — the
+  prose "Choose" stage credits a judgment over Requirement Package
+  *content* ("because the business requirement already exists..."),
+  but the YAML "Agent Configuration" it presents as making that
+  reasoning *"executable orchestration logic"* has only flat numeric
+  conditions (`coverage < 90`) with no field anywhere that could
+  express "is this specific requirement documented" — the
+  "Request Business Clarification" branch the prose names exists only
+  in narrative, never in the artifact claimed to encode it. **Built**:
+  `/builds/orchestration-decision-engine/` — not the article's own
+  fictional QE pipeline, but the generalizable Observe→Evaluate→
+  Choose→Execute→Verify mechanism underneath it: a pluggable
+  multi-producer router with `Rule.condition` as a real callable over
+  the full facts dict (closing the found gap — a rule *can* depend on
+  content, not just a flat threshold) and retry-bounded recovery with
+  escalation. Checked `/builds/` first — `policy-control-plane`,
+  `agent-checkpoint-layer`, `gate-floor-checker`,
+  `defender-loop-verifier`, and `ai-system-design-toolkit`'s
+  `provider_breaker.py` are all adjacent but none implement this
+  specific loop. All four of the article's own named "Common Mistakes"
+  refused structurally, not by convention: the orchestrator can never
+  execute producer work itself (`Router.execute()` is the one path
+  anything runs through, and raises loudly on an unregistered action),
+  a workflow is never marked done without a real `verify_fn` call
+  returning `True`, the named infinite loop is reproduced and
+  refused (a producer that never improves anything runs exactly
+  `max_retries + 1` cycles, then escalates — checked by real call
+  count, not a status string), and nothing in `DecisionEngine`/
+  `Router`/`RecoveryEngine` computes an engineering artifact itself.
+  **A real design bug found and fixed in this build's own first
+  draft, not the source**: reproducing the worked example as a test
+  caught that the first version of `run_cycle()` returned a bare
+  "no matching rule" result whenever nothing needed fixing — exactly
+  the state the article's own final cycle reaches (coverage=100, no
+  rule fires) — and never checked verification at all. Fixed by
+  treating "no rule matched" as "nothing to execute, verify current
+  facts directly," and by always re-observing fresh state immediately
+  after any rule *does* fire, so `Verify` never checks stale,
+  pre-execution facts. One ambiguity in the source resolved rather
+  than forced to match exactly: the fix reproduces the article's exact
+  two named cycles and exact coverage sequence, but calls the real
+  producer once, not twice as the article's own cycle-2 prose states
+  — the article's own narrative doesn't fully specify whether cycle
+  2's starting observation is a fresh read or a restatement of cycle
+  1's post-execution check, resolved here toward the cleaner, testable
+  semantic. 17/17 tests pass on the real run.
 
 ---
 
