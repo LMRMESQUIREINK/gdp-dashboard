@@ -1,21 +1,23 @@
 # ai-agent-testing-framework
 
 A real, working reproduction of the TypeScript + Vitest project from
-rajesh yemul's three-part (so far) Medium series: "Building an AI Agent
+rajesh yemul's four-part (so far) Medium series: "Building an AI Agent
 Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
 "Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
-and "What Does 'Correct' Mean for an AI Agent?" (Part 3) — the author's
-own small, from-scratch agent-execution harness (Markdown+YAML agent
+"What Does 'Correct' Mean for an AI Agent?" (Part 3), and "Writing Our
+First Functional Test for an AI Agent" (Part 4) — the author's own
+small, from-scratch agent-execution harness (Markdown+YAML agent
 definitions → `AgentConfigLoader` → `AgentRuntime` → `LLMClient` → an LLM
 → `AgentResult` → Vitest). Unlike most sources in this project, this
-article series *is* real, runnable code shown in full (Parts 1-2) plus a
-precisely-stated framework (Part 3), not a vague conceptual piece to
-extract a mechanism from — so this build is a faithful,
+article series *is* real, runnable code shown in full (Parts 1-2, 4)
+plus a precisely-stated framework (Part 3), not a vague conceptual piece
+to extract a mechanism from — so this build is a faithful,
 continuously-updated reproduction, actually installed and run in this
 sandbox, with real bugs found and fixed along the way in every round.
 Analyzed in `/notes/ai-agent-testing-framework-analysis.md` (Part 1),
-`/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2), and
-`/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3).
+`/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2),
+`/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3), and
+`/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4).
 
 ## A note on provenance: this author's two series connect
 
@@ -219,6 +221,60 @@ instruction-following as its own dimension (named by Part 3 but given no
 worked example distinct from groundedness/structural correctness to
 build against).
 
+## Part 4 update: TC001 written literally, and two findings confirmed/sharpened by actually running it
+
+Part 4 ("Writing Our First Functional Test for an AI Agent") writes TC001
+for real, as actual Vitest code against the real runtime path — unlike
+Part 3's framework-only treatment, this is real runnable code shown in
+full, the same treatment Parts 1-2 got.
+
+- **`tests/requirement-analyzer/TC001.test.ts`** — a faithful, literal
+  reproduction of the article's own TC001, laid out by its exact 7-layer
+  structure (Execution, Identity, Output, Structure, Contract, Semantics,
+  Behavioral expectation), run against the real pipeline
+  (`AgentConfigLoader` → `AgentRuntime` → mocked `LLMClient`, same
+  standing no-live-API-access convention as every build here).
+
+**Independent confirmation, not a new finding**: Part 4 arrives at the
+exact same conclusion Part 3's oracle (`requirementAnalyzerOracle.ts`,
+built last round) already implemented — never require
+`negativeScenarios.length > 0` — but arrives at it through its own
+concrete walkthrough (write the assertion, watch it fail on real output,
+investigate, remove it) rather than from the abstract framework. A
+dedicated test (`cross-checks against the Part 3 oracle`) proves both
+reach the same verdict on the same real pipeline output: the oracle was
+built and committed before this round ever read Part 4's text, so their
+agreement is real evidence that the Part 3 design decision was correct,
+not a restated premise.
+
+**A real, verified precision gap in the article's own stated reasoning**,
+checked with code rather than taken at face value: the article flags
+`const parsed = JSON.parse(x); expect(() => parsed).not.toThrow();` as
+wrong because "the parsing has already happened... if `JSON.parse()`
+fails, the test has already thrown." True, but this understates the
+actual problem — `() => parsed` is a closure returning an
+already-captured value, so it **can never throw regardless of what that
+value is**, even on the success path where parsing returns something
+structurally nonsensical. Reproduced directly in the test suite: the
+"incorrect" assertion passes unconditionally for `parsed = { this: "is
+not a RequirementAnalysis at all" }`, proving it verifies nothing at
+all, not just that it runs too late. Confirmed separately that this
+build's own `parseAgentOutput()` (built in Part 2) already follows the
+correct discipline — no change was needed there.
+
+**A real, stated design divergence, not a bug**: the article's Layer 6
+semantic checks hardcode one literal substring per field
+(`.toContain("user")`, `.toContain("password")`) tied to this one
+requirement's exact wording, while Part 3's `isGroundedField()` checks
+for any shared significant word against the full requirement text
+(generalizing to a differently-worded requirement without rewriting the
+check). Neither is wrong for its own scope — stated plainly rather than
+assumed one subsumes the other.
+
+13 new Vitest assertions (59/59 total, up from 46), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+Full write-up in `/notes/ai-agent-testing-framework-part4-analysis.md`.
+
 ## What's faithfully reproduced, unmodified
 
 Every file the article shows in full is reproduced as shown:
@@ -236,12 +292,12 @@ unchanged from the article's own shown code.
 ```bash
 npm install          # real dependencies, 0 vulnerabilities (npm audit)
 npx tsc --noEmit      # strict mode, clean, including test files
-npm test              # 46/46 passing
+npm test              # 59/59 passing
 npm run build         # real dist/ output
 npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
 ```
 
-**46/46 Vitest assertions pass** across seven real test files:
+**59/59 Vitest assertions pass** across eight real test files:
 
 - `tests/config/AgentConfigLoader.test.ts` — loads the **real**
   `requirement_analyzer.md` from disk and asserts every front-matter
@@ -284,6 +340,14 @@ npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
   the 8 Required items failing independently, one at a time; and both of
   Part 2's real fabrication examples tripping the one reused Forbidden
   check.
+- `tests/requirement-analyzer/TC001.test.ts` — the literal TC001 (Part 4),
+  laid out by the article's own 7-layer structure against the real
+  pipeline; the investigation proving the removed negativeScenarios
+  assertion really would have failed on this exact real output, and that
+  the requirement gives no negative-path evidence to justify it; the
+  cross-check confirming the Part 3 oracle and Part 4's own literal test
+  independently agree; and the JSON.parse-assertion tautology finding,
+  reproduced directly rather than taken on the article's word.
 
 No live Gemini API access from this sandbox — same standing egress
 restriction as every other build in this project (no `GEMINI_API_KEY`
@@ -310,3 +374,6 @@ proof of that, not a workaround).
 - **Instruction-following as its own correctness dimension** — named by
   Part 3 as one of four dimensions, but given no worked example distinct
   from groundedness/structural correctness to build against.
+- **Negative testing** (empty input, off-domain input, nonsense input) —
+  Part 4's own closing section previews this as the next part's subject;
+  the article itself defers it to a future part, not built here.

@@ -3117,6 +3117,54 @@ yourself every time.
   live-fired test), and instruction-following as its own dimension (named
   by Part 3 but given no worked example distinct from
   groundedness/structural correctness to build against).
+- **Part 4 of the same series, extending `/builds/ai-agent-testing-
+  framework/` a third time**: "Writing Our First Functional Test for an
+  AI Agent" (rajesh yemul) — TC001 written literally, for the first time,
+  as real Vitest code against the real runtime path, unlike Part 3's
+  framework-only treatment. Full write-up in
+  `/notes/ai-agent-testing-framework-part4-analysis.md`. Built
+  **`tests/requirement-analyzer/TC001.test.ts`** — a faithful, literal
+  reproduction of the article's own TC001, laid out by its exact 7-layer
+  structure (Execution, Identity, Output, Structure, Contract, Semantics,
+  Behavioral expectation — Part 3's merged "valid JSON + fields exist"
+  check is reproduced here as the article's own two genuinely separate
+  assertion blocks, matching fidelity over the earlier simplification),
+  run against the real pipeline with a mocked `LLMClient` (same standing
+  no-live-API-access convention as every build here). **Independent
+  confirmation, not a new finding**: Part 4 arrives at the same
+  conclusion Part 3's oracle already implemented — never require
+  `negativeScenarios.length > 0` — through its own concrete walkthrough
+  (write the assertion, watch it fail on real output, run a 4-step
+  investigation, remove it) rather than the abstract framework; a
+  dedicated cross-check test proves the Part 3 oracle (built and
+  committed before this round ever read Part 4's text) and Part 4's own
+  literal TC001 reach the same verdict on the same real pipeline output
+  — real evidence the design decision was correct, not a restated
+  premise. **A real, verified precision gap in the article's own stated
+  reasoning**, checked with code rather than taken at face value: the
+  article flags `const parsed = JSON.parse(x); expect(() =>
+  parsed).not.toThrow();` as wrong because parsing "has already
+  happened" by the time the assertion runs — true, but this understates
+  the problem: `() => parsed` is a closure returning an already-captured
+  value, so it can **never** throw regardless of what that value is,
+  even on the success path where parsing returns something structurally
+  nonsensical. Reproduced directly: the flagged assertion passes
+  unconditionally for a value that is plainly not a valid
+  `RequirementAnalysis`, proving it verifies nothing at all, not just
+  that it runs too late. Confirmed this build's own `parseAgentOutput()`
+  (built in Part 2) already follows the correct discipline — no change
+  needed there. **A real, stated design divergence, not a bug**: the
+  article's Layer 6 semantic checks hardcode one literal substring per
+  field (`.toContain("user")`, `.toContain("password")`) tied to this
+  one requirement's exact wording, while Part 3's `isGroundedField()`
+  checks for any shared significant word against the full requirement
+  text, generalizing to a differently-worded requirement without
+  rewriting the check — stated plainly rather than assumed one subsumes
+  the other. 13 new Vitest assertions (59/59 total, up from 46), `tsc
+  --strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+  vulnerabilities. Deliberately not built: negative testing (empty/
+  off-domain/nonsense input) — Part 4's own closing section previews
+  this as the next part's subject, deferred by the article itself.
 
 ---
 
