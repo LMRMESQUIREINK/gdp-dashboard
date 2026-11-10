@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Research Workflow — Flowchart</title>
+<style>
+:root {
+    color-scheme: light;
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    background: #f4f4f2;
+    color: #111;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f4f4f2;
+}
+
+.toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 18px 20px;
+    border-bottom: 1px solid #d7d7d2;
+    background: #fff;
+}
+
+button {
+    appearance: none;
+    border: 1px solid #242424;
+    background: #fff;
+    color: #111;
+    padding: 10px 16px;
+    border-radius: 4px;
+    font: 600 15px/1.2 Georgia, serif;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #f6f6f3;
+}
+
+button:focus-visible {
+    outline: 2px solid #111;
+    outline-offset: 3px;
+}
+
+.preview-shell {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+}
+
+.preview {
+    width: min(1200px, 100%);
+    background: #fff;
+    border: 1px solid #dfdfda;
+    box-shadow: 0 10px 36px rgba(0,0,0,.06);
+    overflow: auto;
+}
+
+.preview svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+}
+
+.node-shape {
+    fill: #ffffff;
+    stroke: #242424;
+    stroke-width: 1.7;
+    vector-effect: non-scaling-stroke;
+}
+
+.connector {
+    fill: none;
+    stroke: #242424;
+    stroke-width: 1.7;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+    marker-end: url(#arrowhead);
+    vector-effect: non-scaling-stroke;
+}
+
+.node-label {
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    font-size: 24px;
+    font-weight: 400;
+    fill: #111111;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+.decision-label {
+    font-size: 20px;
+    font-weight: 400;
+    fill: #111111;
+    text-anchor: middle;
+}
+
+.branch-label {
+    font-family: Garamond, "EB Garamond", Georgia, serif;
+    font-size: 18px;
+    font-style: italic;
+    fill: #242424;
+    text-anchor: middle;
+}
+
+.note {
+    margin: 0;
+    padding: 0 20px 18px;
+    text-align: center;
+    font: 14px/1.5 Georgia, serif;
+    color: #555;
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar" aria-label="Export controls">
+    <button id="download-svg" type="button">Download Editable SVG</button>
+    <button id="download-png" type="button">Download PNG</button>
+</div>
+
+<main class="preview-shell">
+    <div class="preview" id="preview">
+
+        <svg id="research-workflow"
+             xmlns="http://www.w3.org/2000/svg"
+             width="1200"
+             height="900"
+             viewBox="0 0 1200 900"
+             role="img"
+             aria-labelledby="diagram-title diagram-desc">
+
+            <title id="diagram-title">Research Workflow</title>
+            <desc id="diagram-desc">A literature-review research workflow: brainstorm, search papers, screen results, synthesize findings, and draft a review, with a feedback loop back to searching when results aren't relevant.</desc>
+
+            <defs>
+                <marker id="arrowhead"
+                        viewBox="0 0 10 10"
+                        refX="9"
+                        refY="5"
+                        markerWidth="7"
+                        markerHeight="7"
+                        orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#242424" />
+                </marker>
+            </defs>
+
+            <g id="connector-rq-to-brainstorm">
+                <path class="connector" d="M 600 120 L 600 160" />
+            </g>
+            <g id="connector-brainstorm-to-search">
+                <path class="connector" d="M 600 240 L 600 280" />
+            </g>
+            <g id="connector-search-to-decision">
+                <path class="connector" d="M 600 360 L 600 400" />
+            </g>
+            <g id="connector-decision-to-synthesize">
+                <path class="connector" d="M 600 530 L 600 580" />
+                <rect x="572" y="543" width="56" height="24" fill="#f4f4f2" />
+                <text class="branch-label" x="600" y="559">Yes</text>
+            </g>
+            <g id="connector-decision-to-refine">
+                <path class="connector" d="M 762 465 L 790 465 L 790 450 L 820 450" />
+                <rect x="762" y="438" width="46" height="24" fill="#f4f4f2" />
+                <text class="branch-label" x="785" y="454">No</text>
+            </g>
+            <g id="connector-feedback-loop">
+                <path class="connector" d="M 1120 450 L 1150 450 L 1150 320 L 772 320" />
+                <rect x="1113" y="373" width="60" height="24" fill="#f4f4f2" />
+                <text class="branch-label" x="1143" y="389">retry</text>
+            </g>
+            <g id="connector-synthesize-to-draft">
+                <path class="connector" d="M 600 660 L 600 700" />
+            </g>
+            <g id="connector-draft-to-complete">
+                <path class="connector" d="M 600 780 L 600 820" />
+            </g>
+
+            <g id="node-research-question">
+                <rect id="shape-research-question" class="node-shape" x="430" y="40" width="340" height="80" rx="40" ry="40" />
+                <text id="label-research-question" class="node-label" x="600" y="81">Research Question</text>
+            </g>
+
+            <g id="node-ai-brainstorming">
+                <rect id="shape-ai-brainstorming" class="node-shape" x="430" y="160" width="340" height="80" rx="5" ry="5" />
+                <text id="label-ai-brainstorming" class="node-label" x="600" y="201">AI Brainstorming</text>
+            </g>
+
+            <g id="node-search-papers">
+                <rect id="shape-search-papers" class="node-shape" x="430" y="280" width="340" height="80" rx="5" ry="5" />
+                <text id="label-search-papers" class="node-label" x="600" y="321">Search Papers</text>
+            </g>
+
+            <g id="node-screen-results">
+                <polygon id="shape-screen-results" class="node-shape" points="600,400 760,465 600,530 440,465" />
+                <text id="label-screen-results" class="decision-label" x="600" y="466">Relevant Results?</text>
+            </g>
+
+            <g id="node-refine-query">
+                <rect id="shape-refine-query" class="node-shape" x="820" y="410" width="300" height="80" rx="5" ry="5" />
+                <text id="label-refine-query" class="node-label" x="970" y="451">Refine Search Query</text>
+            </g>
+
+            <g id="node-synthesize">
+                <rect id="shape-synthesize" class="node-shape" x="430" y="580" width="340" height="80" rx="5" ry="5" />
+                <text id="label-synthesize" class="node-label" x="600" y="621">Synthesize Findings</text>
+            </g>
+
+            <g id="node-draft-review">
+                <rect id="shape-draft-review" class="node-shape" x="430" y="700" width="340" height="80" rx="5" ry="5" />
+                <text id="label-draft-review" class="node-label" x="600" y="741">Draft Literature Review</text>
+            </g>
+
+            <g id="node-review-complete">
+                <rect id="shape-review-complete" class="node-shape" x="430" y="820" width="340" height="70" rx="35" ry="35" />
+                <text id="label-review-complete" class="node-label" x="600" y="856">Review Complete</text>
+            </g>
+
+        </svg>
+
+    </div>
+</main>
+
+<p class="note">
+    The SVG is composed of editable vector shapes, text, groups, and
+    connectors.
+</p>
+
+<script>
+(function () {
+    "use strict";
+
+    function getSvgClone() {
+        const original = document.getElementById("research-workflow");
+        const clone = original.cloneNode(true);
+        clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        return clone;
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    function exportSVG() {
+        const clone = getSvgClone();
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(clone);
+        const blob = new Blob([source], { type: "image/svg+xml" });
+        downloadBlob(blob, "research-workflow.svg");
+    }
+
+    function exportPNG() {
+        const clone = getSvgClone();
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(clone);
+        const svgBlob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+
+        const scale = 4;
+        const width = 1200;
+        const height = 900;
+
+        const img = new Image();
+        img.onload = function () {
+            const canvasEl = document.createElement("canvas");
+            canvasEl.width = width * scale;
+            canvasEl.height = height * scale;
+            const ctx = canvasEl.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+            ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
+            URL.revokeObjectURL(url);
+
+            canvasEl.toBlob((blob) => downloadBlob(blob, "research-workflow.png"), "image/png");
+        };
+        img.src = url;
+    }
+
+    document.getElementById("download-svg").addEventListener("click", exportSVG);
+    document.getElementById("download-png").addEventListener("click", exportPNG);
+})();
+</script>
+</body>
+</html>
