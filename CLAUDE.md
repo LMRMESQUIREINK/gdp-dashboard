@@ -3450,6 +3450,64 @@ yourself every time.
   `code-structure` skills already cover that ground within one
   continuous session and splitting them into subagents would duplicate
   rather than fill a gap, unlike the Reviewer.
+- **Deep analysis + new build from a bare repo link: `oil-oil/oil-ui`** —
+  a real, MIT-licensed, actively-developed (same-day commit) Claude Code
+  design skill, confirmed genuinely new to this project before touching
+  anything. Full write-up in `/notes/oil-ui-analysis.md`. Measured first:
+  zero npm dependencies anywhere (every `.mjs` script is plain Node
+  stdlib, confirmed by the total absence of `package.json`), a real
+  cross-platform CI matrix (Linux/Windows, Chrome/Edge, light/dark theme,
+  a GBK locale), and `test_shoot.py` alone running longer (2,302 lines)
+  than the `shoot.mjs` script it tests (2,067). Verified: `npx skills add`
+  is a real, published npm package (`npm view skills version` → `1.7.6`);
+  `check_update.py`'s stated privacy claim ("only reads the public version
+  list, never uploads project content") holds exactly against the actual
+  `fetch()` code (a bare GET, no body); its pinned-exact-commit-hash CLI
+  dependency is a real, credited supply-chain defense; `ui.oiloil.org` is
+  blocked by this session's own egress proxy, the same restriction class
+  already documented for EODHD/FMP/Hugging Face/arXiv, now extended to
+  this vendor. **A new, different kind of sandbox restriction surfaced
+  this round**: this session's auto-mode classifier denies running an
+  untrusted cloned repo's own code at all ("Code from External") — not a
+  network block, an execution block, even offline against a local fixture
+  — so the one concrete algorithmic claim worth checking
+  (`measure_reference.py`'s pure-stdlib PNG decoder, the real path this
+  sandbox would hit since `python3 -c "import PIL"` fails here) was
+  verified by building an independent fixture encoder, cross-checking it
+  against a second, independently-written oracle decoder, then reading
+  oil-ui's own unfiltering formulas line-by-line against that oracle
+  instead of executing their script — confirmed to match the PNG spec
+  exactly. Credited directly: colour sampling takes the per-channel
+  **median**, not the mean, across opaque pixels, a real design choice
+  this round demonstrated rather than took on faith (a region 80% one
+  colour / 20% outlier reports the true colour under the median while the
+  same pixels' real arithmetic mean is measurably different). Also read
+  and credited, not independently re-verified or rebuilt: `build_explorer.py`,
+  a strict-CSP, fully self-contained offline HTML "design comparison"
+  bundler (inlines every asset as `data:`, rejects iframes/unembedded
+  resources/auto-redirects) — a genuinely well-reasoned answer to showing
+  several AI-generated candidates side by side without any one phoning
+  home, in the same spirit as this project's own `policy-control-plane`/
+  `defender-loop-verifier` governance work in a different domain. **Built**:
+  `/builds/reference-color-sampler/` — checked `/builds/` first
+  (`ten-k-website-grader`'s colour pillar only greps CSS text for hex
+  literals, a named limitation in its own README; `design-rules.md`'s
+  derive-from-one-brand-colour rule has no mechanism for extracting a real
+  colour from a reference image at all) — a standalone, independent
+  reimplementation (not a port, not executed from or copied out of
+  oil-ui's own code, per the classifier restriction) of the one
+  generalizable, now-verified mechanism: the pure-stdlib PNG decoder
+  (generalized to all 5 PNG colour types oil-ui supports), median-based
+  opaque-pixel colour sampling with inset, and normalized/CSS-ratio box
+  measurement. 11/11 tests pass on the real run, including the
+  independent-oracle cross-check and the median-vs-mean discrimination
+  test — no bug found in this round's own build, stated plainly rather
+  than manufactured. Deliberately not built: oil-ui's `--extract`/
+  chroma-key asset extraction, its `--manifest` batch workflow, and
+  `build_explorer.py`'s comparison bundler (real scope cuts, not gaps);
+  also not wired into `ten-k-website-grader`/`sales-page-engine` this
+  round — left standalone for a future round where that specific
+  integration need actually comes up.
 
 ---
 
