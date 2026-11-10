@@ -3508,6 +3508,66 @@ yourself every time.
   also not wired into `ten-k-website-grader`/`sales-page-engine` this
   round — left standalone for a future round where that specific
   integration need actually comes up.
+- **Deep analysis + new build from a pasted article: "Data Science Is
+  Changing. These Are the Skills I'd Learn in 2027"** (Codebook Fusion,
+  Medium). Full write-up in `/notes/ds-2027-skills-analysis.md`. Unlike
+  most sources this project analyzes, this one has almost no externally-
+  checkable surface (no code, no repo, no dated/sourced statistic) —
+  stated plainly rather than padded with unnecessary verification of
+  trivially-real, well-known tools (Airflow, Dagster, dbt, Polars,
+  DuckDB). **The real finding came from reading the article's own
+  sections against each other**: its headline "9 Skills I Would Learn in
+  2027" list never names classical machine learning as one of the 9
+  (Skill 1's own framing argues the opposite — "the first question has
+  changed... to 'do I need to train anything at all?'"), yet the
+  12-month roadmap devotes two full months to it and the FAQ explicitly
+  answers "Learn the basics of classical machine learning first" —
+  treating it as essential, first-to-learn material everywhere except
+  the one list that's supposed to rank skills "roughly by return on time
+  invested." Credited: Skill 1 ("write a one page brief before touching
+  data") and Skill 4 ("write the evaluation set before writing the
+  system") independently converge on the same discipline, reinforced
+  directly by "Mistake 1: Starting with the model" — a genuinely
+  coherent throughline, not three disconnected bullets. Flagged: Skill 4
+  names "LLM as a judge" biases and limits without naming a single one
+  (position/self-enhancement/verbosity bias are all specific, well-
+  documented, nameable failure modes), a real depth gap in an otherwise
+  concrete, operational piece. **Built**: `/builds/
+  ds-2027-skills-scorecard/` — checked `/builds/` first
+  (`agent-readiness-scorecard` scores agent-maturity, `ten-k-website-
+  grader` scores a rendered page, neither overlaps) — an honest scorer
+  for the 6 of the article's 9 skills a repo's files can actually speak
+  to (Python/SQL/testing, LLM/agent usage, evaluation harnesses, data
+  engineering, MLOps/deployment, responsible-AI governance), with the
+  other 3 (problem framing, communication, domain knowledge) always
+  reported `not_assessable` rather than faked — same discipline as
+  `agent-readiness-scorecard`'s Level 4/5 signals. **Found and fixed a
+  real bug, not a synthetic one**: running the first draft against this
+  project's own repo (which genuinely contains the tool) reported a
+  false PASS on the data-engineering skill, traced to the tool's own
+  Airflow-detection regex literally spelling "from airflow"/"import
+  airflow" in its own source line plus its own test fixture writing that
+  exact string — precisely the `ruthless-gate` skill's documented "a
+  detector that scans its own file cannot spell its own pattern"
+  pitfall, caught empirically, not read off the rule in the abstract.
+  Fixed generally with an `exclude_self` default (excludes the tool's
+  own directory from any scan, `--include-self` to override) rather than
+  a narrower regex patch. **A second, honest correction made mid-build**:
+  the first test draft assumed the data-engineering skill should read
+  `fail` against this repo, having checked only for literal Airflow/dbt
+  markers; the real run surfaced two genuine pipeline modules this
+  project already has (`trading-jarvis/data_pipeline.py`, `recovery-
+  desk/data_pipeline.py`) via a separate fallback check the draft hadn't
+  accounted for — the test was corrected to the verified truth rather
+  than the tool's output forced to match a wrong assumption, same
+  discipline as `paired-bootstrap-ratchet`'s own mid-build corrections.
+  10/10 tests pass, including a discrimination pair (a planted fixture
+  with real signal for every assessable skill passes all six; a bare
+  script whose README literally names the three not-assessable skills by
+  word still fails all six real checks, proving the tool checks
+  structure, not keyword-matching against the rubric's own names) and
+  the self-matching bug reproduced-then-proven-fixed as a permanent
+  regression test.
 
 ---
 
