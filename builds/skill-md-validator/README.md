@@ -18,9 +18,13 @@ idea, grounded in reading this project's own eleven real skills
    directory name exactly.
 3. `description` exists, isn't too short to plausibly state both what
    the skill does and when to use it, and isn't so long it risks
-   crowding the always-loaded skill index. (These length bounds are
-   this project's own stated heuristic — this build could not find or
-   confirm an Anthropic-documented hard limit, so it doesn't claim one.)
+   crowding the always-loaded skill index. Two separate thresholds now,
+   not one: a hard `1500`-char "too long" error (this project's own
+   original heuristic, since this build could not find or confirm an
+   Anthropic-documented hard limit), and a new, softer `500`-char
+   "over the recommendation" **warning** — a real, dated figure from
+   `coreyhaines31/marketingskills`' own measured character budget, not
+   invented here (see below).
 4. `description` states a usage condition (advisory warning, not a
    hard failure, since this is observed best practice across this
    project's own skills, not a documented requirement).
@@ -36,6 +40,15 @@ idea, grounded in reading this project's own eleven real skills
    documents (analyzed in an earlier round of this project,
    `/notes/deer-flow-analysis.md`), not a hypothetical one invented for
    this build.
+8. **Pack-level, not just per-skill** (new this round, `validate_pack()`):
+   the total character budget of every description in the pack combined
+   (warn at 19,000 / flag at 30,000 — marketingskills' own real,
+   dated measurement of Claude Code's skill-listing character cap), and
+   pairwise description overlap across the whole pack (Jaccard
+   similarity ≥ 0.4 on significant words, a heuristic proxy for "these
+   two skills might compete for the same trigger," never a real
+   live-model trigger-accuracy test — see below for what that would
+   actually take).
 
 ## Usage
 
@@ -82,7 +95,7 @@ skill has an error (warnings don't fail the run).
 python3 test_skill_md_validator.py -v
 ```
 
-**19/19 tests pass**, including:
+**31/31 tests pass**, including:
 
 - Every check exercised against a dedicated, deliberately-broken
   fixture (`tests/fixtures/*`) — a bad name format, a name/directory
@@ -98,21 +111,126 @@ python3 test_skill_md_validator.py -v
 - Both real bugs above, each with its own named regression test that
   reproduces the original false positive as a sanity check before
   proving the fix.
-- **The actual deliverable**: `test_all_real_skills_pass_clean` runs
-  the validator against this repo's real `.claude/skills/` directory
-  and asserts all eleven skills pass with zero findings — spot-checked
-  by hand (not just trusted) by reading the two files that produced
-  warnings before the second bug fix, confirming the warning was a
-  tooling gap and not a real documentation gap in those skills.
+- **The actual deliverable**: `test_all_real_skills_pass_with_no_errors`
+  runs the validator against this repo's real `.claude/skills/`
+  directory (now 12 skills, not 11) and asserts zero **errors** — spot-
+  checked by hand (not just trusted) by reading the two files that
+  produced warnings before the second bug fix above, confirming the
+  warning was a tooling gap and not a real documentation gap in those
+  skills.
+- `test_four_real_skills_now_warn_over_the_real_500char_recommendation`
+  — a real finding from this round, not synthetic: against this
+  project's own real skills, `launch-kit-writer` (721 chars),
+  `sales-page-engine` (613), `voice-extractor` (576), and `launch-pad`
+  (519) all genuinely exceed the new 500-char recommendation. (A first
+  draft of this test only named three, having miscounted `launch-pad`'s
+  519 as under the line when it isn't — the test suite itself caught
+  the miscount on its first real run, and the test was corrected to
+  match the real count rather than the other way around.) All four are
+  warnings, not errors — still comfortably under this project's own
+  pre-existing 1500-char hard ceiling.
+- `TestPackDescriptionBudget` (4 tests) and `TestDescriptionOverlap`
+  (5 tests) — both exercised against synthetic fixtures that cross
+  the warn/cap thresholds and deliberately-overlapping descriptions,
+  *and* against this project's own real 12-skill pack: total
+  description budget is ~5,549 characters (`test_real_run_against_
+  this_repos_own_skills_is_nowhere_near_the_budget`), nowhere close to
+  either the 19,000-char warn line or the 30,000-char hard cap, and zero
+  cross-skill description overlap is found (`test_real_run_against_
+  this_repos_own_skills_finds_no_overlap`) — both honest, non-
+  manufactured "no problem found" results, not failures forced into
+  existence to pad the test count.
+- `test_shared_boilerplate_trigger_phrasing_alone_does_not_count_as_
+  overlap` — proves the overlap check's dedicated stopword list
+  (`OVERLAP_STOPWORDS`, distinct from the generic `_similarity()`
+  helper's unfiltered Jaccard used for thin-body detection) actually
+  does what it's for: two skills that only share this project's own
+  trigger-phrase boilerplate ("use when the user wants to...") don't
+  get falsely flagged as content overlap.
+- `TestValidatePack` (2 tests) — including a real subprocess CLI run
+  confirming the new `{"skills": [...], "pack_level": [...]}` JSON
+  output shape.
+
+## The marketingskills round: where the 500/19,000/30,000 figures come from
+
+Added from a bare repo link, `coreyhaines31/marketingskills` — a real,
+MIT-licensed, actively-maintained 53-skill Claude Skills marketplace by
+Corey Haines (independently confirmed real via web search: SaaS
+marketing consultant, Swipe Files, Conversion Factory), with its own
+real CI (`regression-tests.yml`, `validate-skill.yml`,
+`skill-packaging.yml`, `sync-skills.yml`, `check-versions.yml`) and a
+disclosed-sponsorship `tools/PARTNERS.md` with a stated non-influence
+boundary. Full write-up in `/notes/marketingskills-analysis.md`.
+
+The one figure worth building a real check around:
+`evals/triggers/README.md` documents, with a dated, reproducible
+methodology ("Checked on 2026-11-09 with Claude Code 2.1.319 by reading
+the `skill_listing` the session recorded"), that Claude Code caps the
+total skill-listing text sent to the model at roughly **30,000
+characters** — skills past that cap show as a bare name with no
+description at all, silently losing their only shot at triggering
+correctly. Their own measured table across pack versions: before
+2.14.3, 42,105 chars (26/53 skills name-only even installed alone,
+29/53 once crowded with other skills); by 2.14.3, cut to 19,259 chars
+(0/53 alone, 2/53 crowded); by 2.14.8–2.14.9, 18,676–18,662 chars (0/0
+either way). Their own recommendation from that data: keep each
+skill's description at ≤500 characters.
+
+**A real three-way discrepancy found, not resolved by picking one
+side**: `AGENTS.md`'s own stated claim is "the spec allows 1024 (this
+repo caps it at 500)" for the Agent Skills open spec's documented max —
+unverified from this sandbox, since `agentskills.io` doesn't resolve
+here (`getaddrinfo ENOTFOUND agentskills.io`, the same restriction
+class already documented in this project for EODHD/FMP/Hugging
+Face/arXiv/ui.oiloil.org). So there are three different numbers in
+play: the Agent Skills spec's claimed 1024-char max (unverified),
+marketingskills' own real, dated 500-char self-imposed cap, and this
+validator's own pre-existing 1500-char "too long" error threshold
+(looser than even the unverified spec max). Resolved here by adding the
+500-char figure as a new, separate, softer **warning** threshold
+(`description-over-recommended`) rather than replacing or tightening
+the existing 1500-char error — the two measure different things ("will
+this description get silently truncated in a crowded install" vs.
+"is this description so long it's clearly not a description anymore"),
+and conflating them into one number would have lost that distinction.
+
+`check_pack_description_budget()` operationalizes the same 19,000/
+30,000 figures at the pack level, and `check_description_overlap()`
+operationalizes a different, related risk the marketingskills eval
+harness measures directly but this sandbox can't reproduce (see below):
+two skills whose descriptions read too similarly are exactly the kind
+of pair the real trigger-eval harness's `wrong-skill`/`other-skill`/
+`near-miss` outcomes are measuring. Both pack-level checks are
+deliberately warning-only, never error-level — a design choice, not an
+oversight, since neither is a hard failure the way a broken reference
+or a missing frontmatter field is.
 
 ## What's not built here
 
+- **A live-model trigger-accuracy eval**, the one thing
+  marketingskills actually has that this validator doesn't and
+  structurally can't from this sandbox:
+  `evals/triggers/scripts/trigger-eval.mjs` runs several hundred real
+  prompts through headless `claude -p` with the pack loaded as a
+  plugin and scores which skill actually gets invoked
+  (`pass`/`wrong-skill`/`other-skill`/`no-trigger`/`false-trigger`/
+  `error`) — a real measurement of trigger *accuracy*, not just
+  description *length/overlap*. This sandbox has no live Anthropic API
+  access to run a nested nested `claude -p` nondeterministically
+  against real prompts, the same standing restriction as every other
+  build in this project that needs a live model call.
+  `check_description_overlap()`'s Jaccard-similarity flag is stated
+  plainly, in both this README and the module's own docstring, as a
+  cheap static *proxy* for that risk, not a substitute for it — marketingskills'
+  own harness reports real measurement noise even with a live model
+  (three identical crowded runs scoring 80.2%/84.0%/87.7%), which a
+  static text check has no way to reproduce or approximate.
 - A check for whether a skill's description length sits within any
-  Anthropic-documented hard limit — not built, because this project
-  could not confirm such a limit exists with enough confidence to
-  enforce it as fact; the length checks here are stated plainly as
-  this project's own heuristic bounds, not a cited specification.
+  Anthropic-documented hard limit as a cited specification — still not
+  built, for the same reason as before: this project could not
+  independently confirm the Agent Skills spec's claimed 1024-char
+  figure from this sandbox (see above).
 - Validation of multi-skill plugin manifests, `allowed-tools`
   restrictions, or any YAML beyond simple `key: value` lines — this
-  project's own eleven real skills never use any of that, so there was
+  project's own twelve real skills never use any of that, so there was
   no real material to build or test it against.

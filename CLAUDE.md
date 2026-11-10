@@ -3625,6 +3625,68 @@ yourself every time.
   security: a production restart is gated identically whether or not the
   model ever called `ask_human()` first — approval enforcement never
   depends on the model's cooperation.
+- **Deep analysis + extended build from a bare repo link:
+  `coreyhaines31/marketingskills`** — a real, MIT-licensed, actively-
+  maintained 53-skill Claude Skills marketplace by Corey Haines,
+  independently confirmed real and current via web search (multiple
+  distinct third-party sources, Swipe Files/Conversion Factory
+  attribution) before trusting anything about it. Full write-up in
+  `/notes/marketingskills-analysis.md`. The real, checkable finding:
+  `evals/triggers/README.md` documents, with a dated, reproducible
+  methodology ("Checked on 2026-11-09 with Claude Code 2.1.319 by
+  reading the `skill_listing` the session recorded"), that Claude Code
+  caps the whole skill-listing text sent to the model at roughly
+  30,000 characters — past that, skills show as a bare name with no
+  description, silently losing their shot at triggering correctly —
+  with a real measured table across pack versions (42,105 chars pre-
+  2.14.3, 26/53 skills name-only alone; down to 18,662 chars by 2.14.9,
+  0/53) backing their own recommendation to keep each description at
+  ≤500 characters. **A real three-way discrepancy found**: the pack's
+  own `AGENTS.md` claims the Agent Skills spec's documented max is
+  1024 characters — unverified from this sandbox, since
+  `agentskills.io` doesn't resolve here (`getaddrinfo ENOTFOUND
+  agentskills.io`, the same restriction class as EODHD/FMP/Hugging
+  Face/arXiv/ui.oiloil.org) — against marketingskills' own real,
+  dated 500-char self-imposed cap, against this project's own pre-
+  existing `skill_md_validator.py` 1500-char "too long" error
+  threshold, looser than even the unverified spec max. **Extended
+  `/builds/skill-md-validator/`** rather than creating a new build
+  (checked `/builds/` first, direct fit): a new, separate
+  `description-over-recommended` 500-char **warning**, additive
+  alongside the existing 1500-char error; `check_pack_description_
+  budget()`, the same 19,000/30,000-char figures applied at the whole-
+  pack level via a new `validate_pack()` entry point; and
+  `check_description_overlap()`, a Jaccard-word-overlap heuristic
+  across every description pair in the pack, using a dedicated
+  stopword list (`OVERLAP_STOPWORDS`, distinct from the pre-existing
+  `_similarity()` helper) specifically so two skills sharing only this
+  project's own trigger-phrase boilerplate ("use when the user wants
+  to...") don't get falsely flagged as content overlap — proven
+  directly with its own dedicated test. Run for real against this
+  project's own 12 real skills, not just synthetic fixtures: four
+  skills genuinely exceed the new 500-char recommendation
+  (`launch-kit-writer` 721, `sales-page-engine` 613, `voice-extractor`
+  576, `launch-pad` 519 — all still warnings, well under the 1500-char
+  error ceiling), the pack's total description budget is ~5,549 chars
+  (nowhere near either pack-level threshold), and zero cross-skill
+  overlap is found — both honest, non-manufactured "no problem found"
+  results. **A real test-writing mistake caught by the suite itself,
+  not silently fixed**: a first draft of the over-500-chars test named
+  only three skills, having miscounted `launch-pad`'s 519 as under the
+  line when it isn't — the test suite's own first real run failed on
+  exactly that miscount, and the test was corrected to the true,
+  re-verified count of four rather than the count being bent to match
+  the original wrong assertion. Deliberately not built: a live-model
+  trigger-accuracy eval matching marketingskills' own real
+  `evals/triggers/scripts/trigger-eval.mjs` (hundreds of real prompts
+  through headless `claude -p`, scored `pass`/`wrong-skill`/`other-
+  skill`/`no-trigger`/`false-trigger`/`error`) — this sandbox has no
+  live Anthropic API access to run a nested `claude -p` against real
+  prompts, the same standing restriction as every other build here
+  needing a live model call; `check_description_overlap()`'s heuristic
+  is stated plainly, in both the module's docstring and the build's
+  README, as a cheap model-free proxy for that risk, never a
+  substitute for it. 31/31 tests pass on the real run, up from 19.
 
 ---
 
