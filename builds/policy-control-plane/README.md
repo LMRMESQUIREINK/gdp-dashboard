@@ -114,6 +114,39 @@ final = resume_governed_call(
 # final["status"] == "executed"
 ```
 
+## Extended: ask_human() as a distinct, model-initiated primitive
+
+Added from a second source — "The Harness Is the Product: How Agents Are
+Actually Built in 2026" (Andrii Tkachuk) — see
+`/notes/harness-is-the-product-analysis.md`. The article draws a sharp
+architectural line this build didn't have until this round: "Model-
+initiated clarification and policy-enforced approval look similar on
+screen, but they belong to different layers." `governed_call`'s
+REQUIRES_APPROVAL path is the policy-enforced half — the model never
+calls it, the harness intercepts unconditionally. `policy/clarification.py`
+is the other half: `ask_human()`/`answer()`, a primitive the model itself
+chooses to call when it's missing information it needs — "which of two
+connected task systems to use," whether "the payments service" means
+staging or production — with its own separate SQLite-backed store, not a
+second status bolted onto `approvals`.
+
+`test_clarification.py` (16 checks, all passing) proves the two stay
+genuinely separate rather than just asserting it: answering a pending
+clarification leaves an unrelated pending approval's status completely
+untouched, and deciding an approval leaves an unrelated clarification's
+status untouched too — then runs the article's own worked example
+end to end (resolving "staging" vs. "production" via `ask_human()`
+changes what `governed_call` later sees and decides), and proves the
+one invariant that actually matters for security: a production restart
+is gated by `REQUIRES_APPROVAL` identically whether or not the model
+ever called `ask_human()` first — approval enforcement is a property of
+the payload and the policy, never of whether a clarification round-trip
+happened.
+
+```bash
+python3 test_clarification.py
+```
+
 ## What's cut, and why
 
 This implements the ACP article's policy-evaluation and approval-binding
@@ -129,3 +162,15 @@ usage-event streaming, real tenant traffic) describes infrastructure
 this project doesn't have and isn't the right next build here either —
 its contribution to this round was the independently-verified capacity-
 planning arithmetic in the analysis note, not a second build.
+
+From the Harness-article round: of the 12 harness components that
+article names, most already have a real build elsewhere in this project
+(credited, not re-built, in `/notes/harness-is-the-product-analysis.md`)
+— `ask_human()` above was the one genuine gap. Not built: the operation-
+catalog progressive-disclosure layer (`list_capabilities`/
+`search_operations`/`load_operation`), a sandboxed code-execution
+runtime, model routing, and channel-agnostic surface adapters — each
+real and credited as a plausible future gap, but materially bigger scope
+than this round's one addition, and none of them has the same direct,
+narrow "this project clearly doesn't have this specific thing" signal
+`ask_human()` did.

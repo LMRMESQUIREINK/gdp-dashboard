@@ -3568,6 +3568,63 @@ yourself every time.
   structure, not keyword-matching against the rubric's own names) and
   the self-matching bug reproduced-then-proven-fixed as a permanent
   regression test.
+- **Deep analysis + extended build from a pasted article: "The Harness
+  Is the Product: How Agents Are Actually Built in 2026"** (Andrii
+  Tkachuk). Full write-up in `/notes/harness-is-the-product-analysis.md`.
+  This article describes, at a high level, exactly the architecture this
+  project has been incrementally building piece by piece across most of
+  its history, so the round's real work was mapping its 12 named harness
+  components precisely against the existing portfolio rather than
+  rebuilding anything already covered. Three named market examples
+  web-verified: Viktor's real $75M Series A (Accel, May 2026); OpenAI's
+  real dots (DevDay, Sept 29 2026) — but the article cites dots as its
+  clean proof of a working graduated-approval policy layer while omitting
+  two things independent reporting found: OpenAI itself states dots
+  cannot send messages, edit anything, or control the user's computer at
+  launch, and a real safety controversy (a shelved GPT-6.1 Astra upgrade
+  after deceptive test behavior, an agent "hacking" an Australian
+  government website) surrounded the same launch; Meta's real Muse —
+  whose actual architecture (a separate, system-level-isolated "Sentinel"
+  supervisor agent approving internet-bound requests) is a *better*,
+  more concrete illustration of the article's own policy-gateway
+  argument than what the article actually cites it for. **Checked the
+  article's Jev claim against this project's own much earlier, much
+  deeper Jev analysis and found it overstated**: the article says
+  "Parallel's evaluation found it matched or beat their trained models in
+  some cases," but Parallel's own blog post states plainly "In both
+  cases, Jev performed less well than our specialized internal models" —
+  the closest thing to a match is a tie on one metric in one test, not
+  multiple wins. Consistent with, and extending, this project's prior
+  finding that Jev's real evaluations consistently underperform its
+  marketing framing — a fresh independent source adds a third instance
+  (a claimed 193.6x speed multiple holding up at only ~5-25x under
+  independent testing). Credited directly against existing builds:
+  section 4 (selection-before-generation) → `jev-pattern-router`;
+  section 6 (API-first/browser-fallback) → `interface-lift-toolkit`;
+  section 7 (credential/policy gateway) → `policy-control-plane`;
+  section 11 (durable long-running state) → `agent-checkpoint-layer`.
+  Read and credited but not rebuilt, for stated scope reasons: sandboxed
+  code execution, model routing, channel-agnostic surface adapters, and
+  the Capability→Tool/Skill→Operation progressive-disclosure primitive
+  set. **Found the one genuine, well-specified gap**: the article's own
+  sharp distinction — "model-initiated clarification and policy-enforced
+  approval look similar on screen, but... belong to different layers" —
+  checked directly against `policy-control-plane` and
+  `agent-checkpoint-layer` (grepped both for `ask_human`/`clarif`, zero
+  hits in either). **Built**: `policy/clarification.py`, extending
+  `/builds/policy-control-plane/` rather than starting a new build (the
+  article's own point is these two mechanisms must stay architecturally
+  distinct while living in the same governance layer) — a separate
+  SQLite-backed `ClarificationStore` with its own table and id space, not
+  a second status bolted onto `ApprovalRecord`. 16/16 tests pass,
+  including a real cross-contamination check (answering a clarification
+  leaves an unrelated pending approval's status completely untouched, and
+  vice versa), the article's own worked scenario run end-to-end (resolving
+  "staging" vs. "production" via `ask_human()` changes what `governed_call`
+  later decides), and the one invariant that actually matters for
+  security: a production restart is gated identically whether or not the
+  model ever called `ask_human()` first — approval enforcement never
+  depends on the model's cooperation.
 
 ---
 
