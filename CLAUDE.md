@@ -3687,6 +3687,66 @@ yourself every time.
   is stated plainly, in both the module's docstring and the build's
   README, as a cheap model-free proxy for that risk, never a
   substitute for it. 31/31 tests pass on the real run, up from 19.
+- **Fifth `ruthless-gate` round, and the first re-run of a source this
+  project already covered via the lighter `/analyze-and-ship` loop**:
+  `morluto/rea` — a bare repo link with the gate trigger phrase, no other
+  instruction. Confirmed by title before touching anything that this is
+  the same repo an earlier round already analyzed
+  (`/notes/rea-reverse-engineer-anything-analysis.md`,
+  `/builds/go-buildinfo-extractor/`), then re-cloned fresh anyway, since
+  that earlier round used the lightweight loop and never the stricter
+  four-level gate. Full pointer in `/notes/rea-gate-analysis.md`; verdict
+  page at `/builds/rea-gate/`, same four-file shape and METAL HEAVY
+  palette as every prior gate build. The repo genuinely more than
+  doubled in the 29 days since the project's own last clone (TS files
+  3,235→6,905, +113.5%; test.ts files 1,582→3,735, +136.0%; version
+  6.7.0→6.9.0), with the previously-credited Stryker mutation-testing
+  configs still present and a new `SECURITY.md` stating an explicit
+  threat model with a direct, verbatim prompt-injection-defense
+  instruction to downstream agents. **The round's headline finding**:
+  the README's own "Star history" section now claims "400,000 GitHub
+  stars" — but independent trackers queried the same week (star-
+  history.com, repowise.dev, beeknoee.com) converge on 461,800-462,500
+  as of Nov 15-16, 60,000+ *more* than the README itself states.
+  Direction stated plainly: understatement, not inflation — the
+  opposite of this project's usual "marketing number is padded" finding.
+  The growth rate recomputed independently from two dated snapshots
+  (453,918 on ~Nov 12 → ~462,000 on Nov 16) gives ~14.1k/week, the same
+  order of magnitude as star-history.com's own separately-stated
+  "+19.4k this week," supporting a stale-README-text explanation over a
+  data error on either side. Two independent commentary pieces
+  explicitly questioning star authenticity (a dev.to post, a magazine
+  article with a "Fake Stars?" section) were surfaced by web search but
+  both domains returned `getaddrinfo ENOTFOUND` from this sandbox — the
+  same network-restriction class already documented here for
+  agentskills.io/arXiv/Hugging Face/ui.oiloil.org, now extended to
+  dev.to and thegenaimagazine.com — reported as "a source raises this,"
+  never adopted as fact, with the understatement direction stated as
+  mild evidence against (not a rebuttal of) that suspicion. Also
+  checked: the claimed CPython pyc magic numbers in
+  `src/python/PythonPycParser.ts` (3627 for 3.14, 3666 for 3.15) —
+  3627 is independently corroborated (xdis's own magics table, a
+  secondary blog's version table), but a cited morluto/rea PR and
+  CPython's own 3.14.0rc3 release announcement confirm 3.14 actually
+  churned through at least two earlier magic numbers across its own
+  release-candidate cycle before landing on 3627, a narrower real scope
+  than REA's own error text states at a glance; 3666 for 3.15 could not
+  be independently corroborated at all, reported as unconfirmed rather
+  than assumed correct by extension. A genuine, repo-disclosed licensing
+  grey area found in `THIRD_PARTY_NOTICES.md`: the Windows native-addon
+  build's GPLv3 + GCC Runtime Library Exception 3.1 terms are disclosed
+  as a condition to check, not separately certified for every shipped
+  release. 15 findings (10 credit, 5 stop), 181/181 assertions pass.
+  **A real mobile-overflow bug found and fixed during verification**: a
+  slash-joined four-filename coverage item had no word-break opportunity
+  at 375px, caught by the Chromium phase (136px overflow); fixed by
+  adding `overflow-wrap`/`word-break` to the coverage-list and
+  finding-evidence CSS selectors, the same fix class this project has
+  hit before on long unbroken tokens. Per the gate's own "extract the
+  generalizable mechanism, never build a duplicate" discipline and
+  matching the `wp-prompt-pack-gate`/`agentic-concepts-gate` precedent,
+  no new companion Python/JS tool was built this round — the verdict
+  page itself is the deliverable.
 
 ---
 
