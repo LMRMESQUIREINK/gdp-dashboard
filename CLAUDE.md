@@ -3747,6 +3747,70 @@ yourself every time.
   matching the `wp-prompt-pack-gate`/`agentic-concepts-gate` precedent,
   no new companion Python/JS tool was built this round — the verdict
   page itself is the deliverable.
+- **New build, `/builds/wp-connect/`**: a complete WordPress plugin
+  (v1.1.0, PHP 7.4+, WP 6.2+, GPL-2.0-or-later) built literally from a
+  user-supplied, fully-specified build prompt — not a source to audit,
+  a spec to execute exactly: every ability name/label/description, the
+  Auto-Optimize skill's instructions, the AI Agent system prompt, and
+  the admin dashboard's wording/layout were given verbatim. Connects
+  Claude to a WordPress site over MCP (streamable HTTP, OAuth 2.1 +
+  PKCE, dynamic client registration), three modes (Full Access/
+  Abilities/AI Agent), a real abilities engine (1-100 ratings from
+  actual use, owner- and Claude-written custom abilities with a lint/
+  approve/tamper-check lifecycle), backup-and-undo on every write, one
+  built-in skill (Auto-Optimize), and an AI Agent mode that runs jobs
+  on its own with the owner's Anthropic key, pausing risky steps for
+  approval. No live network access exists here to a real WordPress
+  host or the Anthropic API — the same standing restriction as every
+  other build — so a real WordPress 6.7.1 site was stood up locally
+  instead (the official `WordPress/sqlite-database-integration` plugin,
+  no MySQL needed, cloned from GitHub since direct wordpress.org
+  downloads are blocked here) and the plugin actually installed,
+  activated, and driven end to end against it, including installing
+  from the literal built zip the same way `Plugins -> Add New ->
+  Upload` would. Proven for real: all 6 tables created on activation;
+  all 8 dashboard tabs render with zero PHP warnings across two
+  passes; the full OAuth flow (discovery, dynamic registration, login
+  redirect, consent, code exchange, wrong-PKCE rejection, reused-code
+  rejection, refresh) exercised against the live site; MCP's 401/403/
+  202/`initialize`/`ping`/`tools/list` all confirmed; a real 1.1MB JPEG
+  compressed by `image_compress` and restored byte-for-byte by Undo;
+  `db_cleanup` keeping exactly the 3 newest of 8 real revisions;
+  `link_fix` replacing and stripping real links; a Claude-written
+  custom ability proposed/approved/run for real, then a tampered copy
+  correctly blocked; lessons flowing into live tool descriptions;
+  ratings moving from thumbs feedback; Full Access exposing `run_php`
+  and Abilities mode hiding it; and the AI Agent tick/approval/resolve
+  loop driven against a mocked Anthropic API with a real plugin
+  activation as the approved side effect. **Six real bugs found and
+  fixed while proving this, not assumed working from reading the
+  code**: (1) the OAuth login redirect dropped the original
+  `client_id`/`redirect_uri`/PKCE/`state` query string, breaking the
+  flow for every real user who isn't already logged in; (2) a bare MCP
+  `ping` call crashed with a raw HTTP 500 (`isset()` on array syntax
+  against the `ping` handler's `stdClass` result throws on PHP 8+);
+  (3) a regex delimiter collision (`#` used as both the delimiter and
+  a literal alternative) silently defeated `broken_links`'s `#`/
+  `javascript:`/`sms:` link exclusion entirely; (4) the agent's own
+  approval log hard-coded "✓ (approved)" regardless of whether the
+  approved action actually succeeded, so an owner approving a failing
+  risky action would be told it worked; (5) the most serious: every
+  immediately-run (non-approval) tool call in the agent loop executed
+  the underlying ability **twice** (once to build the log line, once
+  to build the model's tool result), confirmed via the real run-row
+  count before/after the fix — closed by running the ability exactly
+  once and deriving both from that single run, removing the now-dead
+  duplicate-execution helper; (6) the in-memory ability registry could
+  go stale after approving/restoring/deleting a custom ability within
+  one PHP process (not reachable from any wired request today, since
+  every real WordPress request is its own process, but cheap to close
+  defensively). Full writeup in `/builds/wp-connect/README.md`.
+  Delivered as a zip (contents verified byte-identical to the source
+  tree via a fresh extract-and-diff) via `SendUserFile`, per the user's
+  explicit ask for "the finished plugin as a zip I can upload" — not
+  deployed anywhere live, since this build has no hosting target of
+  its own (it's a plugin for the user's *own* WordPress site, not a
+  RUTHLESS-portfolio web build).
 
 ---
 
