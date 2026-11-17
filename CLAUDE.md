@@ -3912,6 +3912,59 @@ yourself every time.
   (already real and built in `/builds/paired-bootstrap-ratchet/` from a
   different Fareed Khan source — a second implementation would add
   nothing).
+- **The full source article behind an already-gated repo arrived, and was
+  reconciled rather than re-gated from scratch.** A prior round ran the
+  `ruthless-gate` procedure on a bare link to `FareedKhan-dev/
+  ontology-driven-observability` (the sixth Fareed Khan source this
+  project analyzed, per that round's own note) with a user-pasted
+  `kg/`-directory file tree that turned out not to
+  match the real repo at all. This round pasted the actual article the
+  notebook was built from, repeating that same 13-module `kg/` tree in
+  far more detail (extensive quoted code, output blocks, and numeric
+  claims) — enough on its own to read as evidence the repo had since been
+  restructured to match. Checked directly rather than assumed either way:
+  re-cloned fresh (`git clone --depth 1`), confirmed the same single
+  commit (`f208f19`, 2026-11-01) as the original gate round, and found
+  the repo byte-for-byte unchanged — still one 12,141-line notebook, still
+  no `kg/` directory anywhere. The `kg/` tree is the article's own
+  expository reorganization of one notebook's cells into an imagined
+  package layout, not a description of files that exist, confirmed on a
+  second independent read. But the mechanisms the article names under
+  those module labels are real, checked against the actual notebook
+  export rather than trusted from prose: `class Enricher`, `class
+  Coverage`, `BoundedSemaphore`-gated concurrency, `visible()`/`AS_OF`
+  SPARQL time-travel, PROV-O provenance triples, McNemar+Holm testing, and
+  RCAEval all genuinely appear — two module names (`ladder.py`'s
+  closed-vocabulary rung, `correlate.py`) don't exist as literal function
+  names, but the same behavior does, as `ladder_123()` and `best_chains()`
+  respectively, found by searching for the behavior once the literal name
+  came up empty rather than calling it fabricated on a naming mismatch
+  alone. The replay benchmark was confirmed genuinely multi-process (real
+  `subprocess.Popen` workers, each running its own internal thread pool),
+  matching the article's "26.1 million events a second" figure, which
+  also appears verbatim in the notebook's own prose. **A real,
+  self-corrected near-miss**: a first-pass `grep -c "a owl:Class"` against
+  `ops.ttl` returned 22 against the article's claimed 43 classes — read
+  as a possible discrepancy until the notebook's own counting code (line
+  4254) showed it unions explicit `owl:Class` declarations with every
+  subject of `rdfs:subClassOf`, which a naive grep misses; recomputing
+  with `rdflib` using that exact method gives 272 triples / 43 classes /
+  77 properties, all three matching the article exactly — the gate
+  skill's own "a detector that disagrees with the data is wrong until the
+  line says otherwise" rule, caught in the act rather than assumed to
+  apply only to someone else's regex. Also confirmed the article's "65
+  million concurrent streams"/"38 million events a second" are Netflix's
+  own stated scale, quoted and labeled as such in the notebook's prose,
+  not this repo's claim about itself; and that the RCAEval ranker's real
+  reported numbers are more specific than a loose paraphrase (top-3
+  accuracy 80% against BARO's 82%/TraceRCA's 79%, first-place accuracy
+  31% against BARO's 69%). Written up as Addendum 1 in
+  `/notes/ontology-driven-observability-gate-analysis.md` rather than a
+  new note or a second verdict page — the repo's only generalizable,
+  checkable gap (the stale reproducibility manifest) was already
+  extracted into `/builds/manifest-drift-guard/` during the original gate
+  round, and rebuilding it from the same unchanged commit would add
+  nothing. No new build this round.
 
 ---
 
