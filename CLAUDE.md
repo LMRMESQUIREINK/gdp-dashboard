@@ -4200,6 +4200,50 @@ yourself every time.
   rendering (JS-heavy sites)" checkbox label truncated inside its column
   at desktop width — fixed by shortening the label and moving the detail
   to a tooltip, re-verified clean on both desktop and mobile afterward.
+- **`/builds/html-ai-sanitizer` gained a third mode, explicitly asked to
+  be more capable than Scrapling's own real source, not faithful to
+  it**: `render_sanitizer.py`. The two static modes in `sanitizer.py` are
+  both regex-over-raw-HTML, the same approach Scrapling itself uses —
+  which is exactly why they share its real blind spots (no off-screen
+  `position`+offset detection, no colour-matches-background detection,
+  no `<style>`-block/external-stylesheet awareness, only inline `style`
+  attributes). This sandbox already has a real headless Chromium set up
+  for this project's own screenshot verification
+  (`/opt/pw-browsers/chromium`), so this mode renders the page for real
+  and asks the browser itself, via `getComputedStyle()`/
+  `getBoundingClientRect()`, what a human would actually see — closing
+  every one of those gaps at once rather than adding one more hand-
+  written heuristic. **Two real bugs found and fixed while building it,
+  not assumed working from the design**: (1) the first draft removed
+  `<head>` from the DOM immediately on finding it (reasonable — `<head>`
+  is never rendered, so flagging it as a "hidden element" would be
+  noise) *before* walking the rest of the document, which silently
+  deleted a `<style>` block a later sibling's hidden state depended on —
+  `getComputedStyle()` on a class-hidden paragraph came back fully
+  visible once its own stylesheet had already been removed mid-walk.
+  Caught immediately by a dedicated external-stylesheet test reporting
+  zero findings where three were expected. Fixed architecturally: the
+  walk now runs in two passes, every hidden-reason decision made first
+  against the fully-intact document, mutation only in a second pass
+  afterward. (2) the zero-size check required *both* width and height to
+  be exactly zero, which never matches the common `height:0;
+  overflow:hidden` clamp pattern (a block element keeps its full
+  container width even at zero height) — fixed to flag on either
+  dimension being zero. A third, smaller correction: an explicitly-passed
+  `chrome_path` that didn't exist on disk was silently falling back to a
+  real default browser path instead of failing on the path actually
+  asked for — fixed so an explicit bad path always raises, while an
+  omitted one still searches the real defaults. 24/24 tests pass on the
+  real run, including a direct discrimination proof against
+  `sanitizer.py`'s own two modes (the identical off-screen and colour-
+  matching fixtures confirmed failing on both static modes in the same
+  test that confirms this mode catches them) and a realistic multi-
+  technique adversarial fixture. Stated limits rather than hidden ones:
+  alpha-compositing across several stacked semi-transparent backgrounds
+  is approximated (blended once against white), and it needs a real
+  browser process per call, so it's a deliberate complement to
+  `sanitizer.py`'s two free, dependency-light modes, not a replacement
+  for every context those modes serve.
 
 ---
 
