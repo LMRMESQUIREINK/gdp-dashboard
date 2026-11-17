@@ -4300,6 +4300,38 @@ yourself every time.
   file. No build — same reasoning as the original round: survey content
   about other people's mature projects, now with two claims confirmed
   instead of flagged, still isn't a gap to build from.
+- **Week 22 of the same newsletter series, filling a real gap in this
+  project's own coverage** (Weeks 19, 20, 21, 23 were already done; 22
+  and 24 were not — confirmed by grepping this file before asking the
+  user which weeks were missing). Five repos this round: Cline,
+  TensorFlow, OpenAI Codex, Mem0, Jellyfin. Full write-up in
+  `/notes/oss-ai-engineering-stack-week22-analysis.md`. Cloned four of
+  the five (`cline/cline`, `mem0ai/mem0`, `jellyfin/jellyfin`,
+  `openai/codex` — TensorFlow skipped as already independently
+  famous with no specific checkable claim beyond common knowledge,
+  same treatment Transformers/vLLM got in the original Week 19/20
+  round) and checked the most decision-relevant claim in each against
+  real source rather than the article's paraphrase: Cline's CLI/
+  VSCode/desktop/SDK/Plan-Act-mode/`.clinerules`/MCP/multi-agent claims
+  all matched the real repo exactly; Mem0's "defaults to OpenAI,
+  alternatives supported" claim matched a literal
+  `default="openai"` Pydantic field in both `LlmConfig` and
+  `EmbedderConfig`; Jellyfin's GPL-2.0 license and separate
+  `jellyfin-web` client repo both confirmed exactly; OpenAI Codex's
+  `npm install -g @openai/codex` command matched the real
+  `codex-cli/package.json` name field exactly, and a real
+  `docs/sandbox.md` ("Sandbox & approvals") confirms the named
+  mechanism exists, though its actual policy detail lives on an
+  external docs page rather than in that file. One real finding: the
+  article names only four of Cline's real interfaces (CLI/VS Code/
+  desktop/SDK), omitting a real JetBrains plugin the README itself
+  lists — an understatement, not an inflation, same direction-stated
+  discipline as every other count-claim finding in this series. No
+  build — same reasoning as every prior round of this series: five
+  independently famous, already-mature projects with no shared spec
+  or generalizable gap to extract; checked `/builds/agent-memory-layer/`
+  and `/builds/interface-lift-toolkit/` as the nearest existing
+  builds before concluding neither needed extending from this round.
 
 ---
 
