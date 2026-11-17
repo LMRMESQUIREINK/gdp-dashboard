@@ -1,9 +1,10 @@
 """The real scraping pipeline the pasted drafts in the original upload never
 actually got wired into any of the (empty) intended files.
 
-fetch -> extract main content (readability-lxml) -> convert to text
-(html2text) -> hand to an LLMClient for structured extraction -> optionally
-follow pagination and repeat, up to max_pages.
+fetch -> strip hidden/prompt-injection content (sanitizer.py) -> extract
+main content (readability-lxml) -> convert to text (html2text) -> hand to
+an LLMClient for structured extraction -> optionally follow pagination and
+repeat, up to max_pages.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from readability import Document
 
 from api_management import LLMClient
 from pagination_detector import detect_next_page_url
+from sanitizer import sanitize_html
 
 STRUCTURAL_NOISE_TAGS = ("nav", "footer", "header", "aside", "script", "style")
 
@@ -116,19 +118,32 @@ def fetch_html_selenium(url: str, *, page_load_timeout: float = 15.0, wait_after
 
 
 def clean_html_to_text(html: str) -> str:
-    """Strips nav/ads/boilerplate, then converts the remaining HTML to
-    plain-ish text via html2text -- the two cleanup deps the scaffold's
-    requirements.txt names (readability-lxml, html2text) but nothing in it
-    ever actually called.
+    """Strips hidden/prompt-injection content, then nav/ads/boilerplate,
+    then converts the remaining HTML to plain-ish text via html2text.
+
+    ScrapeMaster's whole purpose is feeding a third party's HTML straight
+    to an LLM -- which is exactly the pipeline shape `/builds/
+    html-ai-sanitizer/` exists to defend (a page can hide a fake "SYSTEM:
+    ignore previous instructions" behind `display:none`/`aria-hidden`/a
+    `<template>`, invisible to anyone skimming the rendered page but
+    plainly present in the raw HTML this function used to hand straight
+    to readability-lxml with no sanitization at all). `sanitizer.py` is
+    copied in unmodified, same convention as every other cross-build
+    interface in this project (`prop_firm_*.py` into `trading-jarvis`),
+    and run in extended mode (also catches a negative-`text-indent`
+    off-screen trick) before any other cleanup step, so nothing
+    downstream -- including the LLM prompt itself -- ever sees it.
 
     readability-lxml's Document.summary() scores content by link density
     and text volume, which on a short page (verified against this build's
     own test fixture) doesn't reliably separate a <nav>/<footer> from the
     real article -- there's just not enough signal for the heuristic to
-    work with. Semantic noise tags are stripped structurally first, which
-    is unambiguous regardless of page length, then readability runs on
-    what's left to catch density-based noise readability is actually good
-    at (sidebars, related-post widgets, ad blocks)."""
+    work with. Semantic noise tags are stripped structurally after the
+    sanitizer pass, which is unambiguous regardless of page length, then
+    readability runs on what's left to catch density-based noise
+    readability is actually good at (sidebars, related-post widgets, ad
+    blocks)."""
+    html = sanitize_html(html, extended=True)
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup.find_all(STRUCTURAL_NOISE_TAGS):
         tag.decompose()

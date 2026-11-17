@@ -4244,6 +4244,32 @@ yourself every time.
   browser process per call, so it's a deliberate complement to
   `sanitizer.py`'s two free, dependency-light modes, not a replacement
   for every context those modes serve.
+- **`/builds/html-ai-sanitizer` and `/builds/scrapemaster4` wired
+  together, on direct question**: asked plainly whether these two builds
+  were bundled — they weren't, and should have been from the start.
+  ScrapeMaster's entire purpose is handing a third party's raw HTML
+  straight to a real LLM, exactly the pipeline shape the sanitizer
+  exists to defend, and before this round `clean_html_to_text()` had
+  **zero** prompt-injection defense — it stripped nav/footer/script/
+  style noise and ran readability-lxml, but a page hiding a fake "SYSTEM:
+  ignore previous instructions" behind `display:none`/`aria-hidden`/a
+  `<template>` would have sailed straight through to the LLM prompt
+  unmodified. `sanitizer.py` (the dependency-free static module, no new
+  requirement needed) is copied in unmodified — same convention as every
+  other cross-build interface here (`prop_firm_*.py` into
+  `trading-jarvis`) — and run in extended mode as the first step of
+  `clean_html_to_text()`. The heavier, browser-rendered
+  `render_sanitizer.py` mode was deliberately left out of the automatic
+  pipeline (a Chromium launch per page is the wrong tradeoff for cleaning
+  every page of a multi-page scrape or batch run quickly) and stays
+  available as a manual, opt-in upgrade instead. **Proof it actually
+  closes the gap, not just that it reads clean in isolation**: a new
+  malicious-page fixture hides three different fake instructions behind
+  three different techniques, and the real test captures the *actual
+  prompt string* `LLMClient.extract()` builds during a genuine `scrape()`
+  call against it, asserting none of the injected text reaches it — not
+  merely that `clean_html_to_text()`'s own output looks clean. 30/30
+  tests pass (up from 28), both new.
 
 ---
 
