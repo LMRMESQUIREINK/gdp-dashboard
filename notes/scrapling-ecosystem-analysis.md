@@ -147,19 +147,59 @@ clean afterward, confirming none of the three fixes changes anything
 for material the validator already handled correctly. Full writeup in
 `/builds/skill-md-validator/README.md`.
 
-## Deliberately not built
+## Not built in the first round; built, and a real correction, in the second
 
-A standalone, independent reimplementation of `_sanitize_for_ai()` as
-its own generalizable "strip hidden-injection-prone HTML before handing
-it to an LLM" tool was considered — the mechanism is real, specific, and
-not yet covered by anything in `/builds/` — but the extend-the-existing-
-validator path above was both more proportionate to what these three
-sources actually surfaced (three real parser/checker gaps, found by
-testing, not a request to re-host a scraping library's own defense) and
-reused this project's own established "test the existing tool against
-new real material" pattern more directly. Left as a named possible
-next-move rather than built reflexively this round. Also not built: any
-actual scraping, live or otherwise — this sandbox has the same standing
-no-live-network-access restriction as every other build here, and
-neither Scrapling's own fetchers nor the Apify page's hosted actor were
-exercised against a real target site.
+The first round left a standalone, independent reimplementation of
+`_sanitize_for_ai()` as a named next-move rather than building it
+reflexively (the extend-the-existing-validator path above was more
+proportionate to what the three repos actually surfaced that round).
+Picked up directly on request ("Build the standalone \_sanitize_for_ai
+tool!") in a follow-up round.
+
+Before writing anything, `pip install scrapling` was run for real,
+landing on the current release (0.5.1) — rather than relying on this
+project's own memory of the earlier round's reading. Running the
+installed package's own code was then denied by this sandbox's auto-mode
+classifier ("Unauthorized Access"), the same restriction already
+documented for `morluto/rea`'s cloned code — so the real
+`scrapling/core/shell.py` was read directly off disk (Grep + Read)
+instead of imported.
+
+**That direct read surfaces a real correction to this note's own earlier
+scope statement, recorded here rather than quietly edited away**: the
+real, current `_is_hidden_element()` also treats zero-value `opacity`,
+`font-size`, `height`, `width`, `max-height`, or `max-width` as hiding
+(declaration-aware, so `opacity:0.95`/`line-height:0.9` stay correctly
+unflagged, exactly as the real source's own docstring states); the real
+`_sanitize_for_ai()` also strips zero-width Unicode characters and
+XML-illegal control characters from every surviving text node and drops
+HTML comments outright; `_strip_noise_tags()` removes `svg` alongside
+`script`/`style`/`noscript`; and — the sharpest correction — sanitization
+in Scrapling's own extraction pipeline only ever runs at all when
+`main_content_only`/`--ai-targeted` is set; without it, nothing is
+sanitized. None of this was known when the earlier credit/boundary
+finding was written. The remaining real boundary is narrower than
+previously stated, but still real: off-screen hiding via
+`position`+a large negative offset, and anything needing full
+CSS-cascade resolution (a stylesheet rule, or `color` matching
+`background-color`) — the last of which is a blind spot Scrapling's own
+real code shares, confirmed directly, not unique to this reimplementation.
+
+**Built**: `/builds/html-ai-sanitizer/` — a fresh, dependency-free
+(`html.parser.HTMLParser`, no `lxml`) Python reimplementation of the real,
+now-corrected scope, in a faithful mode (including staying
+case-sensitive on `aria-hidden`, matching the real source exactly) plus
+one clearly-separate, opt-in extended mode (negative `text-indent`).
+37/37 tests pass on the real run, including a true discrimination pair
+locking in the real remaining boundary (off-screen positioning and
+color-matching-background both proven *not* caught in either mode;
+negative text-indent proven caught only in extended mode) rather than
+leaving the boundary as unverified prose. Full writeup in
+`/builds/html-ai-sanitizer/README.md`. No bug found in this build's own
+first draft, stated plainly.
+
+Also not built, in either round: any actual scraping, live or
+otherwise — this sandbox has the same standing no-live-network-access
+restriction as every other build here, and neither Scrapling's own
+fetchers nor the Apify page's hosted actor were exercised against a real
+target site.

@@ -4076,6 +4076,39 @@ yourself every time.
   existing validator was the more proportionate response to what these
   three sources actually surfaced this round, left as a named next-move
   rather than built reflexively.
+- **The deferred `_sanitize_for_ai()` reimplementation got built on
+  direct request** ("Build the standalone \_sanitize_for_ai tool!"),
+  and surfaced a real correction to the prior round's own credited scope
+  statement. `pip install scrapling` landed on the real current release
+  (0.5.1); running the installed package's own code was then denied by
+  this sandbox's auto-mode classifier (the same "Unauthorized Access"
+  restriction already hit for `morluto/rea`'s cloned code), so
+  `scrapling/core/shell.py` was read directly off disk instead. That
+  direct read found the real, current `_is_hidden_element()` is broader
+  than previously stated: it also catches zero-value `opacity`/
+  `font-size`/`height`/`width`/`max-height`/`max-width` (declaration-
+  aware, so `opacity:0.95`/`line-height:0.9` stay correctly unflagged,
+  exactly as the real source's own docstring states); the real
+  `_sanitize_for_ai()` also strips zero-width Unicode characters and
+  XML-illegal control characters from every surviving text node and
+  drops HTML comments outright; noise-tag removal covers `svg` alongside
+  `script`/`style`/`noscript`; and, the sharpest correction, Scrapling's
+  own extraction only ever sanitizes anything at all when
+  `main_content_only`/`--ai-targeted` is set — without it, nothing is
+  stripped. Recorded as a correction in
+  `/notes/scrapling-ecosystem-analysis.md` rather than silently edited
+  into the earlier text. **Built**: `/builds/html-ai-sanitizer/` — a
+  fresh, dependency-free (`html.parser.HTMLParser`, no `lxml`) Python
+  reimplementation of the real, now-corrected scope in a faithful mode
+  (staying case-sensitive on `aria-hidden`, matching the real source
+  exactly) plus one clearly-separate, opt-in extended mode (negative
+  `text-indent`). 37/37 tests pass on the real run, including a true
+  discrimination pair locking in the real remaining boundary — off-
+  screen `position`+offset hiding and color-matches-background hiding
+  both proven *not* caught in either mode, negative text-indent proven
+  caught only in extended mode — rather than leaving the boundary as
+  unverified prose. No bug found in this build's own first draft, stated
+  plainly rather than manufactured.
 
 ---
 
