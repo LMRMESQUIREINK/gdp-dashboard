@@ -3848,6 +3848,70 @@ yourself every time.
   `call_api()` is hard-coded to the Anthropic endpoint with no provider
   abstraction, a stated difference between the demoed product and this
   session's own build, not a bug, left as a named next-move.
+- **Deep analysis + new build from a bare repo link:
+  `FareedKhan-dev/dynamic-workflow-agents`** — a seventh Fareed Khan
+  source, confirmed genuinely new by title/content before touching
+  anything. Full write-up in
+  `/notes/dynamic-workflow-agents-analysis.md`. Two self-contained
+  notebook editions (Claude, Qwen) of a lead-agent/parallel-worker
+  runtime, audited against a real 72-planted-bug algorithm library then
+  reused on 600 maths gradings and 10,003 customer messages — the most
+  precisely verifiable source this project has analyzed to date: every
+  headline number in the README (the 1.9%/73.2%/74.5% and 2.3%/30.1%/
+  44.9% recall table, the ±1.4-point and ±14.8-point dynamic-vs-fixed
+  deltas and their exact confidence intervals, the 856/98,028 and
+  849/97,269 corpus file/line counts, the 96.5%/85.2%/97.8% and 96.0%/
+  93.7% homework figures, the 0.023/2-topics and 0.380/30-topics intents
+  numbers) checked out exactly against the real committed
+  `artifacts/exp_*.json` records, with the corpus counts additionally
+  cross-checked against the real files on disk — three-way agreement.
+  **Found a real gap in the source's own self-critique**: its pre-
+  registered claims table (`exp_claims.json`) marks hypothesis H8 ("a
+  crashed run resumes without paying twice") NOT SUPPORTED in **both**
+  editions — "paid 0 + 0 = 56 calls; same report: True" (Claude), "paid
+  0 + 1 = 20 calls; same report: True" (Qwen) — which reads like a pass
+  at a glance, but the real `decide()` call site requires
+  `paid_crash + paid_resume == total`, and in both recorded runs that
+  sum is 0: the whole crash-then-resume sequence was answered entirely
+  from a pre-populated cache, generating zero fresh evidence about
+  double payment, so the strict rule correctly refuses to pass it. The
+  README's own "Read the numbers with their limits" section names only
+  H6 and H7 as claims that "did not meet their stated rules in either
+  edition" — H8 fails the same way, in both editions, and is never
+  mentioned there. Credited as real rigor (a stricter, more correct
+  rule than an outcome-only check would give) alongside a real,
+  checkable omission in the source's own disclosure. Also noted without
+  chasing further: Claude's A2 arm (a solo agent given the same turn
+  budget the median dynamic run's cost would buy) scored 0% mean
+  recall, worse than the plain turn-capped solo arm (1.85%) — a
+  counterintuitive result the README's prose never mentions, plausible
+  but unconfirmed as a compaction-budget effect. **Built**:
+  `/builds/fingerprinted-ledger-prereg/` — two generalizable mechanisms
+  independently reimplemented from the real source: `FingerprintedLedger`
+  (one SHA-256-fingerprinted SQLite table giving cache + replay source +
+  resume journal in one, three modes matching the source's own
+  collect/replay/smoke exactly) and `Preregistration`/`resume_holds()`
+  (a hash-locked hypothesis-verdict harness — `verify_unchanged()`
+  refuses to decide anything if the rule set drifted after results
+  existed — carrying the exact strict resume-rigor rule the H8 finding
+  surfaced, generalized rather than left as a one-off observation).
+  Checked `/builds/` first: `agent-checkpoint-layer/` does stage-level
+  checkpoint/resume with no request-level fingerprinting;
+  `run-terminal-ledger/` is a different concern (terminal-status
+  singleton confirmation); neither has a pre-registration hash lock.
+  27/27 tests pass, including the real Claude and Qwen H8 numbers
+  reproduced exactly as permanent regression fixtures (both correctly
+  fail), the source's own toy S28 demo numbers (correctly passes), and
+  a synthetic genuine-double-charge case (correctly fails) — one real
+  test-authoring bug of this round's own (a missing required `params`
+  argument in one test call) found and fixed immediately by the first
+  real run, not left in. Deliberately not built: the actual lead/
+  worker/runtime (needs a live Anthropic or ModelScope key and hours of
+  real execution, the same standing restriction as every build here)
+  and the paired-bootstrap statistics behind the confidence intervals
+  (already real and built in `/builds/paired-bootstrap-ratchet/` from a
+  different Fareed Khan source — a second implementation would add
+  nothing).
 
 ---
 
