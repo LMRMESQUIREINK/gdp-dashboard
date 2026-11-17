@@ -108,6 +108,24 @@ older APIs. Full build details, the two real bugs found while testing
 blocked first-run encoding download needing a documented fallback), and
 the full proof record are in `/builds/scrapemaster4/README.md`.
 
+## Round 2: all three suggested next-moves
+
+Picked up directly on the user pasting back the three suggested next
+moves from round 1 — all three, not a subset, matching this project's
+established "all three, not a subset" convention from several earlier
+rounds (`curriculum-link-auditor`, `agent-memory-layer`). Full build
+detail (including a real, checked environment limitation found while
+building the Selenium fallback — a real chromedriver on disk six major
+versions behind the only installed Chrome, plus a blocked
+`webdriver-manager` driver download) is in
+`/builds/scrapemaster4/README.md`'s own "Round 2" section rather than
+duplicated here. Test count: 19 → 28, all real (local HTTP fixtures,
+real subprocess CLI calls, a real exercise of the actual blocked
+Selenium state rather than a mock of it). One real UI bug found and
+fixed during the mandatory re-screenshot pass: a checkbox label
+truncating inside its column at desktop width, fixed by shortening the
+label and moving detail to a tooltip.
+
 ## Deliberately not pursued further
 
 - No attempt was made to recover more detail from `from bs4 import

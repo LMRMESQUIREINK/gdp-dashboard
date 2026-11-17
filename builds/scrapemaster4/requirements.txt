@@ -12,3 +12,5 @@ streamlit-tags==1.2.8
 openpyxl==3.1.5
 groq==1.7.0
 google-genai==3.4.0
+selenium==4.53.0
+webdriver-manager==4.1.2

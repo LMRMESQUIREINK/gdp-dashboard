@@ -38,6 +38,12 @@ class FetchError(RuntimeError):
     """Raised after every retry has failed, carrying the last real cause."""
 
 
+class SeleniumUnavailableError(RuntimeError):
+    """Raised when a browser-rendered fetch can't be set up, with the real
+    underlying cause attached rather than letting a raw Selenium exception
+    (or a webdriver-manager network error) surface unexplained."""
+
+
 def fetch_html(url: str, *, max_retries: int = 3, retry_delay: float = 2.0, timeout: float = 10.0) -> str:
     last_exc: Optional[Exception] = None
     for attempt in range(1, max_retries + 1):
@@ -51,6 +57,62 @@ def fetch_html(url: str, *, max_retries: int = 3, retry_delay: float = 2.0, time
             if attempt < max_retries:
                 time.sleep(retry_delay)
     raise FetchError(f"Failed to fetch {url} after {max_retries} attempts") from last_exc
+
+
+def fetch_html_selenium(url: str, *, page_load_timeout: float = 15.0, wait_after_load: float = 1.0) -> str:
+    """A real browser-rendered fetch for JS-heavy sites plain `requests` can't
+    see -- the path one of the original upload's pasted drafts reached for
+    (it named `selenium`/`webdriver-manager`) but never actually wired into
+    any real file.
+
+    Uses `webdriver-manager` to resolve a matching chromedriver for whatever
+    Chrome/Chromium is actually installed, rather than committing a
+    platform-specific `chromedriver.exe` binary into the repo -- the real
+    anti-pattern the original upload's empty `chromedriver.exe` placeholder
+    pointed at. That resolution needs outbound network access (to fetch the
+    driver matching the installed browser's version); when it isn't
+    available -- confirmed directly in this sandbox, where the only
+    installed browser is six major versions ahead of the one chromedriver
+    binary already on disk, and downloading a matching one is blocked by
+    the egress proxy -- this raises a clear, typed error instead of a raw
+    Selenium stack trace."""
+    try:
+        from selenium import webdriver
+        from selenium.common.exceptions import WebDriverException
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+        from webdriver_manager.chrome import ChromeDriverManager
+    except ImportError as exc:
+        raise SeleniumUnavailableError(
+            "selenium/webdriver-manager aren't installed. Run "
+            "`pip install -r requirements.txt` to add them."
+        ) from exc
+
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+
+    try:
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+    except Exception as exc:  # webdriver-manager raises plain ConnectionError on a blocked download
+        raise SeleniumUnavailableError(
+            f"Could not start a browser-rendered fetch for {url}: {exc}. "
+            "This usually means no matching chromedriver could be resolved "
+            "for the installed Chrome/Chromium version, or there's no "
+            "network access to download one."
+        ) from exc
+
+    try:
+        driver.set_page_load_timeout(page_load_timeout)
+        driver.get(url)
+        if wait_after_load:
+            time.sleep(wait_after_load)
+        return driver.page_source
+    except WebDriverException as exc:
+        raise FetchError(f"Browser-rendered fetch of {url} failed: {exc}") from exc
+    finally:
+        driver.quit()
 
 
 def clean_html_to_text(html: str) -> str:
@@ -92,15 +154,22 @@ def scrape(
     *,
     max_pages: int = 1,
     max_input_tokens: int = 6000,
+    use_selenium: bool = False,
 ) -> list[ScrapeResult]:
     """Scrapes start_url, extracts the requested fields via llm_client, and
-    follows a detected "next page" link up to max_pages pages total."""
+    follows a detected "next page" link up to max_pages pages total.
+
+    `use_selenium=True` fetches each page through a real browser instead of
+    a plain HTTP request, for sites that only render their content via
+    JavaScript. See `fetch_html_selenium()`'s own docstring for this
+    sandbox's real, checked limitation on that path."""
+    fetch = fetch_html_selenium if use_selenium else fetch_html
     results: list[ScrapeResult] = []
     url: Optional[str] = start_url
     pages_done = 0
 
     while url and pages_done < max_pages:
-        html = fetch_html(url)
+        html = fetch(url)
         text = clean_html_to_text(html)
         extracted = llm_client.extract(text, fields, max_input_tokens=max_input_tokens)
         results.append(
@@ -114,3 +183,48 @@ def scrape(
         url = detect_next_page_url(url, html) if pages_done < max_pages else None
 
     return results
+
+
+def preview_page(url: str, *, max_chars: int = 2000, use_selenium: bool = False) -> str:
+    """Fetches and cleans a page without calling the LLM -- lets a user
+    confirm the fields they're about to ask for actually appear in the
+    visible text before spending a real API call finding out they don't."""
+    fetch = fetch_html_selenium if use_selenium else fetch_html
+    html = fetch(url)
+    text = clean_html_to_text(html)
+    return text[:max_chars]
+
+
+def batch_scrape(
+    urls: list[str],
+    fields: list[str],
+    llm_client: LLMClient,
+    *,
+    max_pages: int = 1,
+    max_input_tokens: int = 6000,
+    use_selenium: bool = False,
+    on_url_error: Optional[str] = "skip",
+) -> list[ScrapeResult]:
+    """Runs `scrape()` over a list of URLs with one field set, aggregating
+    every page from every URL into one flat result list -- one sheet,
+    unattended, the real shape a scheduled/batch run needs. A single bad
+    URL doesn't abort the whole batch by default (`on_url_error="skip"`);
+    pass "raise" to stop the batch on the first fetch failure instead."""
+    all_results: list[ScrapeResult] = []
+    for url in urls:
+        try:
+            all_results.extend(
+                scrape(
+                    url,
+                    fields,
+                    llm_client,
+                    max_pages=max_pages,
+                    max_input_tokens=max_input_tokens,
+                    use_selenium=use_selenium,
+                )
+            )
+        except FetchError:
+            if on_url_error == "raise":
+                raise
+            logger.warning("batch_scrape: skipping %s after a fetch failure", url)
+    return all_results

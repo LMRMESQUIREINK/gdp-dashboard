@@ -4167,6 +4167,39 @@ yourself every time.
   no-API-key click confirming the plain-English warning renders instead
   of a crash. Not pushed back to the original repo — read-only access
   only, same limit as `github-repo-manager-safety-wrapper`.
+- **`/builds/scrapemaster4` extended with the three suggested next-moves,
+  all three, not a subset.** (1) A Selenium/`webdriver-manager` fallback
+  (`fetch_html_selenium()`, `scrape(..., use_selenium=True)`) for
+  JS-heavy sites, resolving a driver at runtime rather than committing a
+  platform-specific binary — the real anti-pattern the original upload's
+  empty `chromedriver.exe` pointed at. **A real, checked environment
+  limitation found while building it**: this sandbox has a real
+  `chromedriver` on disk (147.x, from a Node.js toolchain) six major
+  versions behind the only installed Chrome (153.x) — Selenium refuses
+  the session outright — and `webdriver-manager`'s own fallback
+  (downloading a matching driver) is also blocked, confirmed directly
+  (`ConnectionError: Could not reach host`). The code is written for a
+  normal deployment with real internet access; what's actually verified
+  from this sandbox is only that the failure surfaces as a clean, typed
+  `SeleniumUnavailableError` rather than a raw stack trace. (2) A
+  zero-LLM-call `preview_page()` (wired to a "Preview page" button
+  showing the cleaned page text) plus a live "Output columns for this
+  run" table — lets a user confirm requested fields actually appear on
+  the page, and see the literal CSV/Excel schema, before spending an API
+  call. (3) `batch_scrape()` (one field set over a list of URLs,
+  aggregated into one flat result list) plus a real standalone CLI,
+  `batch_scrape.py`, for the "scheduled" half of the ask — rather than
+  faking a cron daemon inside the sandbox, the real deliverable is the
+  triggerable unit any real scheduler (cron, Task Scheduler) can point
+  at directly, matching this project's `prop-firm-dashboard` precedent
+  ("the daily-check script fits a scheduled job rather than a long-
+  running server"). 28/28 tests pass (up from 19), including two real
+  subprocess CLI calls and a real exercise of the actual blocked
+  Selenium state rather than a mock of it. **One real UI bug found and
+  fixed during the mandatory re-screenshot pass**: the "Browser
+  rendering (JS-heavy sites)" checkbox label truncated inside its column
+  at desktop width — fixed by shortening the label and moving the detail
+  to a tooltip, re-verified clean on both desktop and mobile afterward.
 
 ---
 
