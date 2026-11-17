@@ -4109,6 +4109,64 @@ yourself every time.
   caught only in extended mode — rather than leaving the boundary as
   unverified prose. No bug found in this build's own first draft, stated
   plainly rather than manufactured.
+- **Deep analysis + new build from a bare external repo link:
+  `LMRESQUIREINK/ScrapeMaster4.0`** — the user's own, separate, mostly-
+  empty GitHub repo, cloned read-only (this session's anonymous git proxy
+  serves public reads with no credentials attached). Measured first:
+  every intended `.py` file (`scraper.py`, `streamlit_app.py`,
+  `api_management.py`, `assets.py`, `pagination_detector.py`, `test.py`,
+  `__init__.py`, `__main__.py`, `__pip-runner__.py`) is 0 bytes, along
+  with `chromedriver.exe`. Full write-up in
+  `/notes/scrapemaster4-analysis.md`: every non-empty file turned out to
+  be a pasted AI-chat exchange or terminal command block saved as a file
+  named after its own first words, not real code landed where it
+  belonged — `README.mdgit` literally contains six unexecuted `git`
+  setup commands run together with the `README.md` heading and no
+  newlines; `"Navigate to Your Project Directory.txt"` is a pasted
+  venv-troubleshooting chat reply quoting the owner's own real Windows
+  path/username; a 115KB file literally named `"from bs4 import
+  BeautifulSoup.txt"` turned out to be four separate AI-generated scraper
+  drafts concatenated together, plus one stray Anthropic prompt-template
+  snippet. **A real, checked finding**: `requirements.txt`'s own pinned
+  versions were checked against PyPI (`pip index versions`, not trusted
+  on sight, same discipline as the Kryptera Pro `plotly`/`vectorbt` pin
+  bugs) and two don't exist at all — `html2text==2023.3.9` and
+  `streamlit-tags==1.3.0` — which would make `pip install -r
+  requirements.txt` fail outright. A second finding surfaced only by
+  actually installing and importing the named packages: `google-
+  generativeai` prints at import time that it's fully retired ("All
+  support... has ended... switch to `google.genai`"), not merely stale
+  like the other old-but-real pins. **Built**: `/builds/scrapemaster4/` —
+  the real, working app the file names and `requirements.txt` clearly
+  intended, assembled using the pasted drafts' salvageable logic as
+  reference rather than starting from nothing (same move as every other
+  "scaffold named but never filled in" round here — Trading Jarvis round
+  1, Kryptera Pro, Kryptera 10X). Both fabricated versions fixed and
+  every dependency bumped to a real current version actually installed
+  and tested; `api_management.py` written against `google-genai`'s real
+  current `Client(api_key=...).models.generate_content(...)` shape,
+  confirmed by introspecting the installed package directly. **Two real
+  bugs found while testing, not assumed working from reading the code**:
+  (1) `clean_html_to_text()`'s first draft relied only on
+  `readability-lxml`'s density heuristic, which (tested against this
+  build's own short fixture) doesn't reliably separate `<nav>`/`<footer>`
+  from real content on a short page — fixed by structurally stripping
+  noise tags first, then letting readability handle what it's actually
+  good at; (2) `tiktoken`'s own vocabulary file downloads from
+  `openaipublic.blob.core.windows.net` on first use, which this
+  sandbox's egress proxy blocks (confirmed via a real 403, not assumed)
+  — `truncate_text()` now falls back to a documented approximate
+  word-based truncation on any encoding-load failure rather than
+  crashing, a real defensive improvement over what the original scaffold
+  would have had even working. 19/19 tests pass, including real local-
+  `http.server` fixtures (not mocked HTTP) for fetch/pagination/end-to-end
+  scraping, and `LLMClient.extract()` exercised through an injectable
+  call for all three providers with no real key needed. `streamlit_app.py`
+  screenshotted with Playwright/Chromium per the screenshot-before-done
+  rule (desktop + mobile), clean on the first pass, plus a driven
+  no-API-key click confirming the plain-English warning renders instead
+  of a crash. Not pushed back to the original repo — read-only access
+  only, same limit as `github-repo-manager-safety-wrapper`.
 
 ---
 
