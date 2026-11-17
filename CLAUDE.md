@@ -4270,6 +4270,36 @@ yourself every time.
   call against it, asserting none of the injected text reaches it — not
   merely that `clean_html_to_text()`'s own output looks clean. 30/30
   tests pass (up from 28), both new.
+- **A repeat upload correctly declined a full redo, and got a real
+  Addendum instead.** The user re-pasted just the Week 20 half of the
+  newsletter already fully covered in
+  `/notes/oss-ai-engineering-stack-week19-20-analysis.md` (Stable
+  Diffusion WebUI, Harper, Colibrì, Ollama, AnythingLLM) with no new
+  instruction attached — confirmed as an exact repeat by title/content
+  before touching anything, same "diff before redoing" rule as every
+  other re-paste in this project. No full rewrite done. But that
+  original round stated plainly "this sandbox has no live network
+  access," and this project has since confirmed real web-search/page-
+  fetch capability in many later rounds — so the two specific numeric
+  claims that round flagged as "stated by the source, not verified"
+  (Harper's "less than 1/50th of LanguageTool's memory footprint,"
+  Colibrì's named model list) were worth actually checking now rather
+  than left stale forever. Both read directly from the real, current
+  READMEs (`Automattic/harper`, `JustVugg/colibri`), not a secondary
+  summary: Harper's claim is quoted verbatim and real, though still
+  unsourced in the README itself (no benchmark/methodology attached);
+  Colibrì's five named models are all real and match real parameter
+  counts (GLM-5.2 744B, Inkling 975B, Kimi K3 2.8T, DeepSeek V4 Flash
+  284B, OLMoE 7B) — but the real repo has since grown to thirteen total
+  engines, ten of them language models, well past the five the article
+  named, the same "repo outgrew the article's snapshot" pattern already
+  found for `bytedance/deer-flow` and `morluto/rea`'s star counts, not
+  an inflation. Written as Addendum 1 to the existing note (correcting
+  Colibrì's "least-established project" characterization in place
+  rather than silently editing the original text) rather than a new
+  file. No build — same reasoning as the original round: survey content
+  about other people's mature projects, now with two claims confirmed
+  instead of flagged, still isn't a gap to build from.
 
 ---
 
