@@ -98,6 +98,29 @@ class TestFrontmatterParsing(unittest.TestCase):
         self.assertFalse(report.ok)
         self.assertIn("missing-skill-md", codes(report))
 
+    def test_yaml_block_scalar_description_parses_correctly(self):
+        # Regression test for a real bug: Cedriccmh/claude-code-skill-scrapling's
+        # real SKILL.md uses `description: |` with the value on following,
+        # more-indented lines. The original parser raised
+        # "unparseable frontmatter line (no ':')" on the first continuation
+        # line, since it treated every frontmatter line as a standalone
+        # key:value pair regardless of indentation.
+        report = validate_skill_dir(FIXTURES / "block-scalar-description")
+        self.assertNotIn("unparseable-frontmatter", codes(report))
+        self.assertTrue(report.ok, report.findings)
+
+    def test_nested_map_with_a_repeated_leaf_key_is_not_a_duplicate(self):
+        # Regression test for a real bug: D4Vinci/Scrapling's own official
+        # Scrapling-Skill SKILL.md has `metadata.homepage` and
+        # `metadata.openclaw.homepage` -- the same leaf key name at two
+        # different YAML nesting depths, which is valid YAML, not a
+        # duplicate top-level key. The original flat line-by-line parser
+        # didn't track indentation at all, so it raised
+        # "duplicate frontmatter key: 'homepage'" on real, legal input.
+        report = validate_skill_dir(FIXTURES / "nested-map-metadata")
+        self.assertNotIn("unparseable-frontmatter", codes(report))
+        self.assertTrue(report.ok, report.findings)
+
 
 class TestReferenceResolution(unittest.TestCase):
     def test_broken_same_folder_reference_is_an_error(self):
@@ -128,6 +151,33 @@ class TestReferenceResolution(unittest.TestCase):
         # should widen what counts as valid, never silence a real gap.
         report = validate_skill_dir(FIXTURES / "broken-reference", repo_root=REPO_ROOT)
         self.assertIn("broken-reference", codes(report))
+
+    def test_a_quoted_runtime_path_fragment_with_no_extension_is_not_flagged(self):
+        # Regression test for a real false positive: cyberchitta/scrapling-fetch-mcp's
+        # real SKILL.md quotes `bin/python3` in prose -- a fragment of a
+        # longer, dynamically-built runtime executable path
+        # ("$(uv tool dir)/scrapling-fetch-mcp/bin/python3"), named only so
+        # a reader recognizes an error message, never a "see this file"
+        # pointer. The original "any path with one slash" fallback in
+        # _extract_references flagged it as broken.
+        from skill_md_validator import _extract_references
+        body = (
+            "If the command fails with `No such file or directory` for the "
+            "`bin/python3` path, see `references/install.md`."
+        )
+        refs = _extract_references(body)
+        self.assertNotIn("bin/python3", refs)
+        self.assertIn("references/install.md", refs)
+
+    def test_a_gitignored_local_overlay_reference_is_a_warning_not_an_error(self):
+        # Regression test for a real false positive: claude-code-skill-scrapling's
+        # SKILL.md references references/cookie-vault.local.md, which its
+        # own .gitignore excludes on purpose so real credentials are never
+        # committed -- a known-absent-by-design file, not a broken one.
+        report = validate_skill_dir(FIXTURES / "gitignored-reference")
+        self.assertNotIn("broken-reference", codes(report))
+        self.assertIn("gitignored-reference", codes(report))
+        self.assertTrue(report.ok, "a gitignored reference must warn, never fail the skill")
 
 
 class TestDuplicateNameDetection(unittest.TestCase):

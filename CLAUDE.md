@@ -4015,6 +4015,67 @@ yourself every time.
   including a rejected program genuinely never reaching `exec()` (a call
   counter inside the would-be worker, not just the exception). Addendum 1
   in `/notes/dynamic-workflow-agents-analysis.md`.
+- **A pasted Apify marketing page, corrected mid-turn into a real source:
+  the Scrapling scraping-library ecosystem.** A bare "E-commerce Scraping
+  Tool" Apify Actor page arrived first; measured and found to be pure
+  marketing/FAQ copy with no code shown, no real connection found to
+  Scrapling or Crawlee by direct web search, and nothing executable
+  enough to extract a generalizable mechanism from — same call as the
+  Week 19/20/Week 23 newsletter-survey rounds, no build from it. The
+  user then corrected course ("HUSH MY BAD!!") with the real intended
+  source: three repos about `D4Vinci/Scrapling`, a real, independently
+  popular Python scraping library unaffiliated with Apify —
+  `D4Vinci/Scrapling` itself (with its own official, author-maintained
+  Claude Code skill), `Cedriccmh/claude-code-skill-scrapling` (a
+  separate, Chinese-language third-party skill for the same library),
+  and `cyberchitta/scrapling-fetch-mcp` (a third-party MCP server
+  wrapping it for low-volume doc fetching, explicitly scoped as "not
+  designed for high-volume scraping" in its own README). Full write-up
+  in `/notes/scrapling-ecosystem-analysis.md`. Credited: a real,
+  specific prompt-injection defense (`--ai-targeted` genuinely wires
+  through to `_sanitize_for_ai()` in `scrapling/core/shell.py`, which
+  strips CSS-hidden/`aria-hidden`/`<template>`/hidden-slot elements
+  before AI-facing conversion — verified by reading past the CLI's own
+  thinner `main_content_only` path before concluding the claim checked
+  out, with the defense's exact scope boundary named rather than assumed
+  total); a real, enforced AI-contribution disclosure policy
+  (`AI_POLICY.md` + the real, browsable `AI-Slop` issue label); and two
+  independently-written skills for the same library that turned out
+  genuinely complementary (different language, different structure,
+  both independently landing on the same `--ai-targeted` recommendation
+  with no cross-reference between them). **Found**: the third-party
+  skill's own `references/cookie-vault.local.md`/`site-patterns.local.md`
+  references are absent from the clone by design, confirmed against its
+  own `.gitignore`, not a packaging mistake. **Extended**
+  `/builds/skill-md-validator/` (checked `/builds/` first — this is
+  exactly the kind of source that tool already exists for) rather than
+  building anything new: running the existing, unmodified validator
+  against all three real external skills — material it had never been
+  tested against before — found three more real gaps, the same way
+  marketingskills and mattpocock-skills each found real gaps this way
+  earlier in this project: (1) a real YAML block scalar
+  (`description: |`, the third-party skill's actual syntax) crashed the
+  frontmatter parser outright; (2) a real nested YAML map with a leaf
+  key repeated at two depths — in the *official* Scrapling skill's own
+  file, not a third party's — crashed it too, with a misleading
+  "duplicate key" message for input that was never a duplicate top-level
+  key; (3) the broken-reference checker's broad "any slash" fallback
+  produced two more false positives for two different reasons: a quoted
+  runtime-path fragment (`` `bin/python3` ``) that was never a file
+  reference at all, and the real, by-design-gitignored `.local.md`
+  files found above, now downgraded to a distinct `gitignored-reference`
+  warning instead of a hard error rather than lumped in with the
+  `bin/python3` fix, since the two are genuinely different failure
+  classes ("never a reference" vs. "a real reference, legitimately
+  absent here"). All three fixed with regression tests built from the
+  real triggering text in each case. 35/35 tests pass, up from 31, with
+  this project's own twelve real skills re-confirmed clean afterward.
+  Deliberately not built: a standalone reimplementation of
+  `_sanitize_for_ai()` as its own generalizable tool — the mechanism is
+  real and not yet covered elsewhere in `/builds/`, but extending the
+  existing validator was the more proportionate response to what these
+  three sources actually surfaced this round, left as a named next-move
+  rather than built reflexively.
 
 ---
 

@@ -71,6 +71,7 @@ Two pack-level checks (via `validate_pack()`, not per-skill):
 
 from __future__ import annotations
 
+import fnmatch
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -127,11 +128,24 @@ class Frontmatter:
 
 def parse_skill_md(text: str) -> Frontmatter:
     """Deliberately minimal: handles exactly the shape this project's
-    own skills use (simple `key: value` pairs, one per line, values
-    never spanning multiple lines). Anything more exotic (YAML lists,
-    block scalars, nested maps) raises rather than silently
-    mis-parsing -- a validator that misreads its own input is worse
-    than one that admits it can't read it."""
+    own skills use (simple top-level `key: value` pairs), plus two
+    real shapes found while testing this parser against genuinely new
+    external skills rather than only this project's own eleven: a
+    top-level YAML block scalar (`description: |`, with the real value
+    on the following more-indented lines -- found in
+    `claude-code-skill-scrapling`'s real SKILL.md), and a nested map
+    under a top-level key (e.g. `metadata: {homepage: ..., openclaw:
+    {homepage: ...}}` -- found in the real `Scrapling-Skill`, whose
+    *leaf* key repeats at two different nesting depths, which is valid
+    YAML and not a duplicate top-level key at all). Nested-map content
+    is intentionally not parsed into `raw` (this validator only reads
+    `name`/`description`/`license`/etc. at the top level) -- it is
+    skipped rather than raised on, so a skill with legitimate nested
+    metadata doesn't fail for a reason unrelated to anything this
+    validator actually checks. Anything else exotic (YAML lists at the
+    top level, multiple block scalars nested inside each other) still
+    raises rather than silently mis-parsing -- a validator that misreads
+    its own input is worse than one that admits it can't read it."""
     if not text.startswith("---"):
         raise FrontmatterParseError("file does not start with '---' frontmatter delimiter")
     lines = text.splitlines()
@@ -143,7 +157,24 @@ def parse_skill_md(text: str) -> Frontmatter:
         raise FrontmatterParseError("no closing '---' found for frontmatter block") from None
 
     raw: dict[str, str] = {}
+    block_key: str | None = None
+    block_lines: list[str] = []
+
+    def _flush_block():
+        if block_key is not None:
+            raw[block_key] = "\n".join(block_lines).strip()
+
     for line in lines[1:close_idx]:
+        indented = line[:1] in (" ", "\t") and line.strip()
+        if indented:
+            if block_key is not None:
+                block_lines.append(line)
+            # else: nested-map content under a non-block-scalar key -- skip
+            continue
+        # A new column-0 line ends whatever block scalar was in progress.
+        _flush_block()
+        block_key, block_lines = None, []
+
         if not line.strip():
             continue
         if ":" not in line:
@@ -155,7 +186,12 @@ def parse_skill_md(text: str) -> Frontmatter:
             raise FrontmatterParseError(f"unparseable frontmatter key: {key!r}")
         if key in raw:
             raise FrontmatterParseError(f"duplicate frontmatter key: {key!r}")
-        raw[key] = value
+        if value in ("|", ">", "|-", ">-", "|+", ">+"):
+            block_key = key
+            raw[key] = ""  # placeholder, replaced by _flush_block() once the block ends
+        else:
+            raw[key] = value
+    _flush_block()
 
     body = "\n".join(lines[close_idx + 1:])
     return Frontmatter(raw=raw, body=body)
@@ -184,13 +220,34 @@ class SkillReport:
         self.findings.append(Finding("warning", code, message))
 
 
+KNOWN_FILE_EXTENSIONS = (
+    ".md", ".py", ".js", ".ts", ".json", ".txt", ".yml", ".yaml", ".html",
+    ".css", ".sh", ".toml", ".csv",
+)
+
+
 def _extract_references(body: str) -> list[str]:
+    """Which backtick/markdown-link path-shaped tokens are real file
+    references, not every token that merely contains a slash. A real
+    external skill's SKILL.md (`cyberchitta/scrapling-fetch-mcp`'s
+    `s-fetch`) quotes `bin/python3` in prose -- a fragment of a longer,
+    dynamically-built runtime executable path (`$(uv tool dir)/.../
+    bin/python3`), named only so a reader can recognize an error
+    message, never a "see this file" pointer -- and the original
+    "any path with one slash" fallback here flagged it as broken. A
+    bare two-segment fragment with no recognizable file extension and
+    no known reference-dir prefix is exactly what that false positive
+    looks like, so the fallback is narrowed to require one or the
+    other, keeping the module's own stated "false negatives are safer
+    than false positives" rule intact instead of violating it."""
     refs = []
     for m in REFERENCE_PATTERN.finditer(body):
         path = m.group(1) or m.group(2)
         if path.startswith(("http://", "https://", "#")):
             continue
-        if any(path.startswith(d) for d in KNOWN_REFERENCE_DIRS) or path.count("/") >= 1:
+        if any(path.startswith(d) for d in KNOWN_REFERENCE_DIRS):
+            refs.append(path)
+        elif path.lower().endswith(KNOWN_FILE_EXTENSIONS) and path.count("/") >= 1:
             refs.append(path)
     return refs
 
@@ -250,10 +307,44 @@ def validate_skill_dir(skill_dir: Path, *, min_description_len: int = 40, max_de
             report.warn("thin-body", "the body's first paragraph is nearly identical to the description -- the skill may not add anything beyond its own one-line summary")
 
     for ref in _extract_references(body):
-        if not _reference_resolves(ref, skill_dir, repo_root):
+        if _reference_resolves(ref, skill_dir, repo_root):
+            continue
+        if _is_gitignored_reference(ref, skill_dir, repo_root):
+            report.warn(
+                "gitignored-reference",
+                f"body references {ref!r}, which doesn't exist in this checkout but matches a .gitignore "
+                "pattern -- likely a local-secrets-overlay file the skill tells a user/agent to create, not "
+                "a broken reference (a real instance: claude-code-skill-scrapling's references/"
+                "cookie-vault.local.md, gitignored on purpose so real credentials are never committed)",
+            )
+        else:
             report.error("broken-reference", f"body references {ref!r}, which resolves under neither {skill_dir} nor the repo root")
 
     return report
+
+
+def _is_gitignored_reference(ref: str, skill_dir: Path, repo_root: Path | None) -> bool:
+    """A real finding from testing against `claude-code-skill-scrapling`:
+    its SKILL.md references `references/cookie-vault.local.md` and
+    `references/site-patterns.local.md`, which never exist in a fresh
+    clone by design -- its own `.gitignore` excludes exactly those two
+    filenames, since they're where a user/agent is told to write real
+    credentials locally, never a committed file. A reference matching a
+    `.gitignore` pattern (by basename; no attempt at full gitignore glob
+    semantics) is downgraded to a warning instead of a hard error."""
+    basename = ref.rsplit("/", 1)[-1]
+    patterns: list[str] = []
+    for base in (skill_dir, repo_root):
+        if base is None:
+            continue
+        gi = base / ".gitignore"
+        if gi.is_file():
+            patterns.extend(
+                line.strip().lstrip("/").removeprefix("**/")
+                for line in gi.read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            )
+    return any(fnmatch.fnmatch(basename, pat) or fnmatch.fnmatch(ref, pat) for pat in patterns)
 
 
 def _reference_resolves(ref: str, skill_dir: Path, repo_root: Path | None) -> bool:

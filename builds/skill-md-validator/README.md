@@ -205,6 +205,88 @@ deliberately warning-only, never error-level — a design choice, not an
 oversight, since neither is a hard failure the way a broken reference
 or a missing frontmatter field is.
 
+## A second round: three more real bugs, found against three genuinely new external skills
+
+A later round pasted a bare Apify "E-commerce Scraping Tool" marketing
+page, then followed up mid-turn with three real, independent repos
+about web scraping, a different kind of source than any prior round
+tested this validator against: `D4Vinci/Scrapling` (a real, popular
+Python scraping library, with its own official first-party agent skill
+at `agent-skill/Scrapling-Skill/`), `Cedriccmh/claude-code-skill-
+scrapling` (a separate, third-party Claude Code skill for the same
+library, written primarily in Chinese), and `cyberchitta/scrapling-
+fetch-mcp` (a third-party MCP server wrapping the library for bot-
+protected doc fetching, with its own `skills/s-fetch` skill). Full
+write-up in `/notes/scrapling-ecosystem-analysis.md`. Running this
+validator against all three real skills — not synthetic fixtures —
+found three more real parser/checker gaps, all caught the same way as
+every prior round's bugs here: by testing against real material this
+project didn't author, not by imagining edge cases:
+
+1. **A real YAML block scalar crashed the frontmatter parser.**
+   `claude-code-skill-scrapling`'s real SKILL.md uses
+   `description: |` with the actual multi-line value on the following,
+   more-indented lines — legal, common YAML this project's own twelve
+   skills never happen to use. The original parser treated every
+   frontmatter line as an independent `key: value` pair with no notion
+   of indentation, so it raised `unparseable frontmatter line (no ':')`
+   on the first continuation line. Fixed by tracking indentation:
+   a column-0 line whose value is exactly `|`/`>` (with modifiers)
+   starts a block scalar, and every more-indented line until the next
+   column-0 line is collected as its value.
+2. **A real nested YAML map with a repeated leaf key crashed it too.**
+   `D4Vinci/Scrapling`'s own *official*, author-maintained skill has
+   `metadata.homepage` and `metadata.openclaw.homepage` — the same leaf
+   key name at two different nesting depths, valid YAML, not a
+   duplicate top-level key. The original parser's flat `if key in raw`
+   check didn't know about nesting either, so it raised
+   `duplicate frontmatter key: 'homepage'` on real, legal input from
+   the library's own maintainer. Fixed the same way as above: any line
+   with leading whitespace that isn't part of an active block scalar is
+   nested-map content, skipped entirely rather than raised on — this
+   validator only ever reads top-level keys (`name`, `description`,
+   etc.), so skipping nested content loses nothing it actually checks.
+3. **The broken-reference checker's broad fallback produced two more
+   real false positives, for two different reasons.** `scrapling-fetch-
+   mcp`'s real `skills/s-fetch/SKILL.md` quotes `` `bin/python3` `` in
+   prose — a fragment of a longer, dynamically-built runtime path
+   (`"$(uv tool dir)/scrapling-fetch-mcp/bin/python3"`), named only so a
+   reader recognizes an error message, never a "see this file" pointer
+   — but the original "any backtick-quoted token with one slash"
+   fallback flagged it as broken anyway, directly violating this
+   checker's own stated "false negatives are safer than false
+   positives" design rule. Fixed by requiring a known reference-dir
+   prefix *or* a recognizable file extension before trusting a bare
+   path-shaped token. Separately, `claude-code-skill-scrapling`'s real
+   SKILL.md references `references/cookie-vault.local.md` and
+   `references/site-patterns.local.md`, which never exist in a fresh
+   clone *by design* — its own `.gitignore` excludes exactly those two
+   filenames, since they're where a user/agent is told to write real
+   credentials locally, never a committed file. A broken reference that
+   matches a `.gitignore` pattern (checked against both the skill's own
+   `.gitignore` and the repo root's) is now downgraded to a
+   `gitignored-reference` **warning** instead of a hard `broken-
+   reference` error — a different fix from the first, since this one
+   isn't "the token was never a reference at all," it's "the reference
+   is real but legitimately, deliberately absent in this checkout."
+
+All three fixed with regression tests reproducing the real text that
+triggered them (`tests/fixtures/block-scalar-description/`,
+`tests/fixtures/nested-map-metadata/`,
+`tests/fixtures/gitignored-reference/`, plus a direct unit test on
+`_extract_references()` for the `bin/python3` case) — **35/35 tests
+pass, up from 31**, with the existing `test_all_real_skills_pass_with_
+no_errors` re-confirmed clean afterward (none of the three fixes
+changes anything for this project's own twelve real skills, which never
+exercised any of these three shapes). Also confirmed, not a bug: both
+`Scrapling-Skill` and `claude-code-skill-scrapling` genuinely fail
+`name-directory-mismatch` (`scrapling-official` vs. `Scrapling-Skill`;
+`scrapling` vs. `claude-code-skill-scrapling`) — real mismatches
+between each repo's own packaging-folder name and its skill's declared
+`name`, not another parser gap; the checker is working correctly here,
+just flagging something neither vendor likely intended to be checked
+against this project's own repo-root-relative convention.
+
 ## What's not built here
 
 - **A live-model trigger-accuracy eval**, the one thing
