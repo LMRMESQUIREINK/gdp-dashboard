@@ -3965,6 +3965,56 @@ yourself every time.
   extracted into `/builds/manifest-drift-guard/` during the original gate
   round, and rebuilding it from the same unchanged commit would add
   nothing. No new build this round.
+- **The full source article behind `FareedKhan-dev/dynamic-workflow-agents`
+  arrived too, and was reconciled the same way as the ontology-driven-
+  observability article above, in the same round.** An earlier round had
+  only the bare repo link ("Building Dynamic Workflows: A New Agentic
+  System"); this round's full article names a `build/` package
+  (`config.py`/`bench.py`/`llm.py`/`runtime.py`/`kit.py`/`plans.py`/
+  `lead.py`) that, checked directly, does not exist — the real repo is
+  still exactly the two notebooks (`claude/`, `qwen/`) the earlier round
+  found, same single commit. The mechanisms the article names are real
+  though, grepped verbatim in the actual notebook: `class Ledger`,
+  `class Budget`, `class Run`, `class Thread`, `ALLOWED_NODES`,
+  `rule_names`, `dry_run`, `approve`, `AUTO_APPROVE`, `PlanRejected`,
+  `check_program`, `class AuditKit`, `scan`/`check`/`vote`/`report`,
+  `class Lead`, `write_program`, `FIXED_PROGRAM`, `match`, `function_at`
+  all appear; two named functions (`rule_syntax`, `blind`) exist under
+  different literal names, found by searching for the behavior once the
+  name came up empty. **The round's strongest finding, nailed down
+  against the real `exp_main.json` in both editions**: the article's own
+  A/A2/B/C/D evaluation table matches the **Qwen** edition's real numbers,
+  not Claude's — every cost figure matches Qwen's to the decimal
+  (`A2_cost: 46.4`, `B_cost: 10.3`) while Claude's are nowhere close.
+  Within that reconciliation, one real, precisely-explained discrepancy:
+  the article states design A's mean precision as 1.00, but Qwen's own
+  field records `A_prec: 0.6667` — reading the per-run `arms` list shows
+  why: A's three Qwen runs have precision `None` (a zero-finding run),
+  `1.0`, `1.0`; the committed field averages the undefined run as 0
+  (0.6667), the article's own printed table averages only the two defined
+  runs (1.0) — both numbers are correct under their own convention, a real
+  discrepancy in which convention is used where, not an error on either
+  side. Also found, grepped directly: the real `ALLOWED_NODES` set has no
+  `ast.Pass`, so the real static checker would reject a harmless empty
+  loop body outright; and the article's own worst-case hostile example
+  (`for i in range(1000000): agent(...)`) is explicitly reported by its
+  own text as passing the static check ("runaway passes the rules:
+  True"), since exactly one million is not "larger than" the limit — the
+  real system only catches it later via a separate runtime worker-count
+  cap. **Extended** `/builds/fingerprinted-ledger-prereg/` (same source,
+  same build) with `plan_guard.py` — the AST whitelist checker
+  (`check_program`/`run_checked`) and the `approved`/`held`/`refused`
+  `ApprovalPolicy` gate. Deliberately adds `ast.Pass` to this build's own
+  whitelist on top of the real source's, stated directly in the module —
+  a backward-compatible widening of an independent reimplementation this
+  project owns, not a silent fix of code it doesn't — and deliberately
+  does **not** tighten the million-literal check to catch the runaway
+  example, since the real source's own text says its static check doesn't
+  either; the test asserts that real, documented behavior rather than a
+  wrong assumption about it. 26 new tests (53/53 total, up from 27),
+  including a rejected program genuinely never reaching `exec()` (a call
+  counter inside the would-be worker, not just the exception). Addendum 1
+  in `/notes/dynamic-workflow-agents-analysis.md`.
 
 ---
 

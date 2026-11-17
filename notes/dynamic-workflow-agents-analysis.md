@@ -124,3 +124,85 @@ implementation in `/builds/paired-bootstrap-ratchet/`, built from a
 different Fareed Khan source — a second implementation here would add
 nothing); the 72-bug planted-fault benchmark itself (tied to one specific
 algorithm corpus, not a generalizable mechanism).
+
+## Addendum 1 — the full source article, reconciled against the real repo
+
+A later round pasted the full article behind this repo ("Building Dynamic
+Workflows: A New Agentic System") — not just the bare link round 1 had.
+Its own file tree (a `build/` package of `config.py`/`bench.py`/`llm.py`/
+`runtime.py`/`kit.py`/`plans.py`/`lead.py`) does **not** match the real repo
+on disk, the same "article describes a package layout that is actually one
+big notebook" pattern already found and documented for
+`FareedKhan-dev/ontology-driven-observability` in this project's own prior
+round. Re-checked directly rather than assumed: the real repo is still
+exactly the two notebooks round 1 already found, same single commit, no
+`build/` directory anywhere. But the mechanisms the article names under
+those module labels are real, grepped directly in the actual notebook text:
+`class Ledger`, `class Budget`, `class Run`, `class Thread`,
+`ALLOWED_NODES`, `rule_names`, `dry_run`, `approve`, `AUTO_APPROVE`,
+`PlanRejected`, `check_program`, `class AuditKit`, `scan`/`check`/`vote`/
+`report`, `class Lead`, `write_program`, `FIXED_PROGRAM`, `match`,
+`function_at` all appear verbatim. Two named functions (`rule_syntax`,
+`blind`) don't exist under those literal names, but the same behavior
+does — found by searching for the behavior once the literal name came up
+empty, the same discipline already applied to `ladder.py`/`correlate.py`
+in the ontology-driven-observability round.
+
+**The round's strongest finding, nailed down precisely against the real
+`exp_main.json` files in both editions**: the article's own A/A2/B/C/D
+evaluation table (mean recall 0.02/0.04/0.17/0.30/0.45, mean cost
+23.7/46.4/10.3/13.8/48.4) matches the **Qwen** edition's real recorded
+numbers, not the Claude edition's — confirmed by comparing both editions'
+full `A_mean`/`A2_mean`/`B_mean`/`C_mean`/`D_mean`/`*_cost` fields side by
+side; every cost figure in the article matches Qwen's to the decimal (e.g.
+`A2_cost: 46.4`, `B_cost: 10.3`, exact), while Claude's equivalents
+(`A2_cost: 1.8071`, `B_cost: 70.4852`) are nowhere close. Within that same
+reconciliation, one real, precisely-explained discrepancy: the article's
+table states design A's mean precision as 1.00, but Qwen's own
+`exp_main.json` records `A_prec: 0.6667`. Read the per-run `arms` list
+rather than stopping at the aggregate field: design A's three individual
+Qwen runs have precision `None` (run 0, which found zero bugs — tp=fp=0,
+precision undefined), `1.0`, `1.0` (runs 1-2). The committed `A_prec`
+field is the mean treating the undefined run as 0 — `(0 + 1.0 + 1.0) / 3 =
+0.6667`, confirmed by hand — while the article's own printed "1.00" is the
+mean over only the two runs where precision is actually defined,
+`(1.0 + 1.0) / 2 = 1.0`. Both numbers are internally consistent with the
+same three real runs; they differ only in which convention excludes a
+zero-finding run from a precision average, a real and checkable
+discrepancy between the committed summary statistic and the article's own
+displayed table, not an error on either side alone. Cost, confirmed
+unaffected by the same ambiguity: `A_cost: 23.7333` is the real mean of
+`25.8, 19.2, 26.2` exactly, since cost (unlike precision) is always
+defined.
+
+**A real, verified gap found in the source's own published whitelist**,
+grepped directly rather than assumed from the article's text: the real
+`ALLOWED_NODES` set has no `ast.Pass`, meaning the real static checker
+would reject a harmless, idiomatic empty loop body
+(`for _ in range(n): pass`) outright. A second, honestly-preserved
+limitation rather than a bug: the article's own worst-case hostile
+example, `for i in range(1000000): agent(...)`, is explicitly reported by
+the article's own text as passing the static check ("runaway passes the
+rules: True"), because a bound of exactly one million is not "larger
+than" the million-literal limit — the real system only catches it later,
+via a separate runtime worker-count cap at dry-run time, not the static
+whitelist.
+
+**Built**: extended `/builds/fingerprinted-ledger-prereg/` (same source,
+same build, not a new one) with `plan_guard.py` — `check_program()`/
+`run_checked()` (the AST whitelist: syntax, method, and name checks, a
+length cap, a required `result` assignment) and `ApprovalPolicy` (the
+`approved`/`held`/`refused` three-way gate against a budget). Deliberately
+adds `ast.Pass` to this build's own whitelist, on top of the real source's,
+with the reason stated directly in the module — a backward-compatible
+widening of an independent reimplementation this project owns, not a
+silent fix of code it doesn't. Deliberately does **not** tighten the
+one-million-literal check to catch the runaway example, since the real
+source's own text states plainly that its static check doesn't either;
+`test_plan_guard.py` asserts the real, documented behavior instead of a
+wrong assumption about it. 26 new tests (53/53 total, up from 27), proven
+including a rejected program genuinely never reaching `exec()` (a call
+counter inside the would-be worker function, not just the exception) and
+the runaway example confirmed to pass the static check exactly as the
+source's own text says it does. Full writeup in
+`/builds/fingerprinted-ledger-prereg/README.md`.
