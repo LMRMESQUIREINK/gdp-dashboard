@@ -3811,6 +3811,43 @@ yourself every time.
   deployed anywhere live, since this build has no hosting target of
   its own (it's a plugin for the user's *own* WordPress site, not a
   RUTHLESS-portfolio web build).
+- **Analysis-only round: a pasted YouTube transcript, "WordPress on
+  AUTOPILOT! (Use AI Agents Do Everything)"** — the real-world source
+  behind the WP-Connect build prompt this session had just executed:
+  every mode/ability/skill/AI-Agent-scheduling mechanic the creator
+  demos matches `/builds/wp-connect/`'s already-shipped, already-tested
+  behavior exactly, confirmed rather than assumed from the shared naming
+  alone. Full write-up in `/notes/wp-connect-autopilot-video-analysis.md`.
+  **No build this round** — the product being demoed is the one already
+  built and proven in the prior round; this is the walkthrough, not a
+  new spec. Credited: the mode/ability/skill structure and the
+  "always allow" (MCP-client-level) vs. per-call-approval (plugin-level)
+  distinction the video demonstrates, correctly, by showing both layers
+  in sequence without ever naming them as separate. Found and checked
+  rather than taken at face value: (1) a real, direct self-contradiction
+  on how long the plugin took to build — "45 minutes" at 1:33 vs. "20 to
+  30 minutes" at 13:22, both about the identical artifact; (2) the
+  video's own passing joke about "another plugin called WP Connect...
+  removed from WordPress.org two years ago" turned out more specific and
+  more relevant than stated once checked directly — a real `wp-connect`
+  plugin was closed on WordPress.org December 30, 2024 for a stated
+  **Security Issue**, not mere abandonment, meaning this session's own
+  shipped plugin reuses a slug WordPress.org once pulled for a security
+  problem; (3) the "all-time high interest... in the last 5 years" claim
+  doesn't hold under its literal reading (the real all-time Google Trends
+  peak dates to 2014; current sources describe a five-year high, not an
+  all-time one) but checks out under the more charitable "five-year high"
+  reading, reported as ambiguous rather than resolved either way; (4) a
+  fourth independent sighting of the "Novamira"/"Nova Mirror" connector
+  this project has already flagged three times (named everywhere, never
+  explained anywhere), consistent with but not newly confirming that
+  pattern. **One real, honestly-named scope gap, not closed this round**:
+  the video's own AI Agent tab shows a 4-provider dropdown (Claude/
+  OpenAI/Gemini/Grok), while the build spec this session actually
+  received and executed specified Claude only — `class-wpc-agent.php`'s
+  `call_api()` is hard-coded to the Anthropic endpoint with no provider
+  abstraction, a stated difference between the demoed product and this
+  session's own build, not a bug, left as a named next-move.
 
 ---
 
