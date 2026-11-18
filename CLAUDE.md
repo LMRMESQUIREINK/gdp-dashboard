@@ -4372,6 +4372,36 @@ yourself every time.
   construction, so this is a genuine "nothing narrow enough to
   extract" call, not a duplicate-avoidance one. With this round, Weeks
   19 through 24 of the series are all analyzed — no known gaps remain.
+- **Week 25 of the same newsletter series** — REA, OpenSEO, Apache
+  Superset, Openship, Handy. Full write-up in
+  `/notes/oss-ai-engineering-stack-week25-analysis.md`. REA is a repeat
+  appearance of a repo this project has already analyzed twice in depth
+  (`/notes/rea-reverse-engineer-anything-analysis.md` +
+  `/builds/go-buildinfo-extractor/`, and a later `ruthless-gate` round
+  at `/notes/rea-gate-analysis.md` + `/builds/rea-gate/`); this
+  article's REA claims (Decompile/Understand/Recreate, CLI+MCP,
+  Hopper/Ghidra/IDA) match what those rounds already confirmed, so no
+  re-verification was needed — a light star-count recheck via web
+  search came back with inconsistent gain-figure windows rather than a
+  clean current total, so no new number is reported. Cloned the four
+  genuinely new repos (`every-app/open-seo`, `apache/superset`,
+  `oblien/openship`, `cjpais/Handy`) and checked the sharpest claim in
+  each: OpenSEO's "alternative to Semrush and Ahrefs" tagline and its
+  DataForSEO-API-key cost structure both matched the real README
+  verbatim; Superset's no-code chart builder/SQL Lab/semantic layer/
+  caching claims and its Apache 2.0 license both confirmed exactly;
+  Openship's desktop/web/CLI interfaces and its snapshot/rollback claim
+  matched the real README almost word-for-word ("frozen into a
+  snapshot, so redeploys and rollbacks re-run *exactly* what shipped");
+  Handy's Silero VAD + Whisper (GPU) + Parakeet V3 (CPU-optimized)
+  stack confirmed exactly. No build — REA already has two; the other
+  four are each mature, complete products with no shared gap or
+  sandbox-testable mechanism to extract (OpenSEO needs a paid API key,
+  Superset is a large BI platform, Openship needs real infra, Handy's
+  stack is itself the mature technology). **The first round of this
+  series to turn up zero new discrepancies** — stated plainly as a
+  genuine clean result from real verification, not a sign the checking
+  was skipped.
 
 ---
 
