@@ -4520,6 +4520,62 @@ yourself every time.
   reachability checks of the `*.puter.com` demo URLs (confirmed this
   sandbox's egress proxy DNS-fails every `puter.com` subdomain, the same
   restriction class as EODHD/FMP/Hugging Face/arXiv, now extended here).
+- **Deep analysis + new build from a pasted Medium article: "Stop
+  Shipping Individual MCP Servers. Start Shipping Agent Plugins"**
+  (Andrii Tkachuk) — MCP (connectivity) plus Agent Skills (procedural
+  knowledge) converging into Agent Plugins, formalized in an August 2026
+  open spec. Full write-up in
+  `/notes/agent-plugins-article-analysis.md`. Unlike most sources this
+  project analyzes, the central claim has a primary, version-controlled
+  governance document, so this round cloned `agentplugins/
+  agent-plugins-spec` directly and read `spec/1.0.0.md`/`MAINTAINERS.md`
+  in full rather than trusting the article's paraphrase. Confirmed
+  exactly: the portable 1.0.0 core really does define only two fixed
+  component types (`skills/`, `mcp.json`), the extension-namespace
+  mechanism matches §8 precisely (including the article's own
+  `com.vendor.client/hooks/` example), and the Core Maintainer roster
+  the article implies (Amazon/Cursor/Microsoft/OpenAI/Vercel) matches
+  `MAINTAINERS.md` exactly. **The real finding**: the article's claim
+  that "Google joined... as a core maintainer" doesn't match the spec's
+  own current governance file — fetched independently twice (this
+  session's clone, plus a separate live GitHub fetch), `MAINTAINERS.md`
+  lists exactly the original five organizations, no Google. A web
+  search found secondary press repeating a Google-joined claim, with
+  one summary noting Google's own blog frames its support as adoption
+  of a TSC publication by the original five, not a claim to Core
+  Maintainer status itself — a real, precise distinction the article's
+  wording collapses, stated here rather than resolved either way (could
+  be a later removal, or secondary coverage the article followed being
+  imprecise from the start). **A claim independently confirmed first-
+  hand, not just taken on the article's word**: Claude Code's own
+  plugin format really isn't spec-portable — checked directly against
+  this project's own three previously-shipped `/builds/claude-code-mods/`
+  plugins (each nests `plugin.json` under `.claude-plugin/`, with no
+  `$schema` field at all) and the real, currently-shipping `andriitk/
+  cc-unibrow` repo the article itself plugs at the end (verified real
+  and accurate, including its exact install command). **Built**: checked
+  `/builds/` first (`skill-md-validator` checks SKILL.md structure;
+  `agent-md-validator` checks subagent frontmatter; neither validates a
+  package manifest against the real spec) — `/builds/
+  agent-plugin-conformance/`, a conformance checker implementing §5's
+  closed manifest schema and exact fatal-vs-non-fatal distinction, §6's
+  component-discovery rules, §8's extension shape/directory rules, and
+  the real, twice-confirmed `.claude-plugin/` non-portability detection.
+  One precise reading flagged explicitly: §5.2 names only two non-fatal
+  exceptions (an unknown field, or `extensions` itself being non-object);
+  §8.1's separate requirement that every *value* inside `extensions` be
+  an object isn't one of those two exceptions, so a non-object value for
+  one namespace is fatal under the spec's own letter — implemented and
+  tested as its own case. 23/23 tests pass, including the real spec's
+  own worked examples reproduced verbatim (all conform cleanly, proving
+  the checker doesn't just reject everything), §5.5's own listed valid/
+  invalid plugin names taken directly from the spec text, the real
+  unmodified `cc-unibrow` manifest as a committed fixture, and this
+  project's own three real `claude-code-mods` plugins audited in place
+  (not copied) as a second independent real-world source for the same
+  finding. Deliberately not built: a fix/PR against either external repo
+  (read-only access only) and a checker for the 1.1.0 working draft's
+  proposed portable-hooks addition (an unpublished, unstable draft).
 
 ---
 
