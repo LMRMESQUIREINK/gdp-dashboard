@@ -47,9 +47,16 @@ async def main() -> None:
             tools = await session.list_tools()
             names = {t.name for t in tools.tools}
             print("=== list_tools ===")
-            check("all four tools registered",
+            # Five on the raw server as of the MCP Apps round: the
+            # original four plus prop_firm_refresh_compare_sizes, an
+            # app-only tool (visibility: ["app"]) added alongside the
+            # compare-sizes dashboard UI resource -- see test_mcp_apps.py
+            # for its own dedicated coverage, including that a
+            # host-level filter correctly hides it from the model.
+            check("all five tools registered on the raw server",
                   names == {"prop_firm_size_check", "prop_firm_session_report",
-                            "prop_firm_pass_probability", "prop_firm_compare_sizes"},
+                            "prop_firm_pass_probability", "prop_firm_compare_sizes",
+                            "prop_firm_refresh_compare_sizes"},
                   detail=str(names))
 
             # ── prop_firm_size_check vs. direct evaluate_size() ─────────

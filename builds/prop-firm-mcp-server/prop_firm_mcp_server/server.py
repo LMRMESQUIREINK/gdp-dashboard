@@ -50,6 +50,7 @@ from .tools import (
     run_size_check,
     run_with_guards,
 )
+from .ui_resources import COMPARE_SIZES_DASHBOARD_HTML, COMPARE_SIZES_DASHBOARD_URI
 
 BUILD_DIR = Path(__file__).resolve().parent.parent
 AUDIT_LOG_PATH = BUILD_DIR / "audit.jsonl"
@@ -131,12 +132,35 @@ def prop_firm_pass_probability(args: PassProbabilityInput) -> dict:
     return run_with_guards(limiter, audit, "prop_firm_pass_probability", run_pass_probability, args)
 
 
-@server.tool()
+@server.tool(
+    meta={"ui": {"resourceUri": COMPARE_SIZES_DASHBOARD_URI, "visibility": ["model", "app"]}}
+)
 def prop_firm_compare_sizes(args: CompareSizesInput) -> dict:
     """Run prop_firm_pass_probability across several contract-count
     scenarios in one call, so sizing decisions are made by comparing real
     numbers side by side instead of one at a time."""
     return run_with_guards(limiter, audit, "prop_firm_compare_sizes", run_compare_sizes, args)
+
+
+@server.tool(meta={"ui": {"resourceUri": COMPARE_SIZES_DASHBOARD_URI, "visibility": ["app"]}})
+def prop_firm_refresh_compare_sizes(args: CompareSizesInput) -> dict:
+    """App-only: re-run the same comparison the dashboard's own Refresh
+    button triggers. Hidden from the model's tool list per MCP Apps'
+    `_meta.ui.visibility: ["app"]` (SEP-1865) -- a UI-only recompute
+    action has no reason to occupy the agent's tool-selection context,
+    the same "don't put pagination/refresh in front of the model" point
+    the source article makes about tool-context size."""
+    return run_with_guards(limiter, audit, "prop_firm_refresh_compare_sizes", run_compare_sizes, args)
+
+
+@server.resource(
+    COMPARE_SIZES_DASHBOARD_URI,
+    name="compare_sizes_dashboard",
+    description="Interactive pass-probability-by-contract-count dashboard for prop_firm_compare_sizes",
+    mime_type="text/html;profile=mcp-app",
+)
+def compare_sizes_dashboard() -> str:
+    return COMPARE_SIZES_DASHBOARD_HTML
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

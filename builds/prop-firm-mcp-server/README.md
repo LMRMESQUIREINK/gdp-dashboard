@@ -225,3 +225,48 @@ plain text — confirmed by writing a small probe server+client and running
 it before committing to this pattern in `errors.py`, rather than
 transcribing the article's code against a different SDK version and
 hoping it still worked.
+
+## MCP Apps: a real UI resource, from the real spec
+
+Added per `/notes/mcp-apps-article-analysis.md` — this server now
+implements the real **MCP Apps** extension (SEP-1865,
+`modelcontextprotocol/ext-apps`), read directly from the cloned spec
+repo rather than guessed from a secondary article:
+
+- `prop_firm_compare_sizes` now carries `_meta.ui.resourceUri` pointing
+  at a real `ui://prop-firm-mcp-server/compare-sizes-dashboard` resource
+  (`ui_resources.py`) — a small, self-contained HTML/JS dashboard
+  implementing the spec's two-way contract (receives the host-delivered
+  tool result via `postMessage`, calls back through the host rather than
+  holding its own server connection).
+- A new tool, `prop_firm_refresh_compare_sizes`, is declared
+  `_meta.ui.visibility: ["app"]` — the dashboard's own Refresh button,
+  deliberately hidden from the model's tool-selection context while
+  remaining callable from inside the App view, per the spec's own
+  tiered-access design.
+- `host_shim.py` is a real, minimal host-enforcement stand-in: probing
+  the installed `mcp` SDK (2.3.0) directly showed it enforces **neither**
+  of the spec's two host-side MUST rules itself (tools/list filtering by
+  visibility, tools/call rejection by caller role) — both are the
+  spec's host requirements, not server requirements, and this sandbox
+  has no live MCP-Apps-compatible host (Claude.ai, ChatGPT, Goose, VS
+  Code) to test them against for real. `host_shim.py` implements both
+  rules faithfully so this server's own test suite can prove the full
+  contract end-to-end over a real stdio connection.
+
+`test_mcp_apps.py`, 15/15 checks pass: the real metadata round-trips
+correctly through the SDK; the app-only tool is excluded from the
+model-visible list and rejected for a model-attributed caller while
+succeeding for an app-attributed one; the `ui://` resource reads back
+with the exact required `text/html;profile=mcp-app` MIME type and real
+HTML5 content wiring the two-way contract; and the app-only tool's
+output matches a direct call to the same, already-proven
+`run_compare_sizes()` exactly. `test_client.py`'s tool-count assertion
+was updated from four to five tools (a real, expected change — not a
+regression) and both pre-existing suites still pass.
+
+Deliberately not built: the HOST's half of the contract (sandboxed
+iframe, CSP construction, real `postMessage` delivery) — no
+MCP-Apps-compatible host exists in this sandbox to test it against, and
+a toy simulation of a security-relevant component like CSP/sandbox
+enforcement would risk false confidence rather than real proof.

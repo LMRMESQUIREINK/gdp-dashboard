@@ -4576,6 +4576,61 @@ yourself every time.
   finding. Deliberately not built: a fix/PR against either external repo
   (read-only access only) and a checker for the 1.1.0 working draft's
   proposed portable-hooks addition (an unpublished, unstable draft).
+- **Deep analysis + extended build from a pasted Medium article: "Stop
+  Returning JSON. Start Shipping UI with MCP Apps"** (Andrii Tkachuk,
+  same author/cc-unibrow plug as the immediately preceding round) — the
+  real SEP-1865 MCP Apps extension, letting MCP servers ship interactive
+  `ui://` resources alongside tools. Full write-up in
+  `/notes/mcp-apps-article-analysis.md`. Cloned both real primary
+  sources directly (`modelcontextprotocol/modelcontextprotocol` for the
+  dated blog posts/SEPs, `modelcontextprotocol/ext-apps` for the actual
+  normative spec file) rather than trusting the article's paraphrase —
+  the cleanest verification round so far: every specific, checkable
+  claim held up exactly, including the Nov 21 2025 SEP-1865 proposal's
+  real authorship, the Jan 26 2026 "first official MCP extension"
+  announcement's exact named launch clients (ChatGPT/Claude/Goose/VS
+  Code), the July 28 2026 Release Candidate's real Extensions Track
+  text, the Sep 11 2026 AWS Bedrock AgentCore example (confirmed real
+  via web search), and the `_meta.ui.resourceUri`/`visibility` mechanism
+  matching the spec's own "Resource Discovery" section character-for-
+  character. **A real technical finding the article itself doesn't
+  flag**: probing the real official `mcp` Python SDK (2.3.0, already
+  used by `/builds/prop-firm-mcp-server/`) directly before writing any
+  code showed it enforces **neither** of the spec's two host-side MUST
+  rules (filtering `tools/list` by visibility; rejecting `tools/call`
+  from the wrong caller role) — both are the spec's host requirements,
+  not server requirements, so a server built on today's reference SDK
+  gets zero enforcement for free. **A real cross-article connection**:
+  Harald Kirschner (VS Code/Microsoft) is quoted in this article's own
+  primary source and separately listed as a Core Maintainer in the
+  previous round's Agent Plugins spec — the same person representing
+  the same company's position across this project's two most recent
+  MCP-standardization rounds, visible only reading both. **Extended**
+  `/builds/prop-firm-mcp-server/` (checked `/builds/` first — this
+  project's one real, tested, official-SDK MCP server had zero UI
+  resources, exactly the gap this article's mechanism fills) with a
+  real `ui://` dashboard resource for `prop_firm_compare_sizes`
+  (`ui_resources.py`, real HTML/JS implementing the spec's two-way
+  `postMessage`/`callServerTool` contract), a genuinely new app-only
+  tool `prop_firm_refresh_compare_sizes` (`visibility: ["app"]`, hidden
+  from the model's tool list, still callable from inside the App), and
+  `host_shim.py` — a minimal, faithful host-enforcement stand-in for the
+  two MUST rules the real SDK leaves unenforced, since no live
+  MCP-Apps-compatible host exists in this sandbox to test against.
+  15/15 new tests pass, including the real metadata round-tripping
+  through the SDK, the host shim correctly excluding/rejecting the
+  app-only tool for a model caller while allowing it for an app caller,
+  the real resource reading back with the exact required
+  `text/html;profile=mcp-app` MIME type and genuine two-way-contract
+  HTML, and a numeric cross-check against the same already-proven
+  `run_compare_sizes()`. Both pre-existing test suites re-run to confirm
+  no regression — `test_client.py` needed one real, expected update
+  (four tools → five) and passes; `test_http_client.py` skips cleanly on
+  its own pre-existing redis-not-installed path. Deliberately not built:
+  the HOST's half of the contract (sandboxed iframe, CSP construction,
+  real postMessage delivery) — no compatible host exists here to test
+  it against, and a toy simulation of a security-relevant component
+  would risk false confidence rather than real proof.
 
 ---
 
