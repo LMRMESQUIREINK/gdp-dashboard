@@ -4332,6 +4332,46 @@ yourself every time.
   or generalizable gap to extract; checked `/builds/agent-memory-layer/`
   and `/builds/interface-lift-toolkit/` as the nearest existing
   builds before concluding neither needed extending from this round.
+- **Week 24 of the same newsletter series, closing the second (and
+  last) known gap** (19/20, 21, 22, 23 were already done; this closes
+  24). Five repos: Understand Anything, Grafana, Keycloak, ERPNext,
+  AutoGen. Full write-up in
+  `/notes/oss-ai-engineering-stack-week24-analysis.md`. Cloned all five
+  and checked the sharpest claims against real source: Grafana's
+  AGPL-3.0-only + Apache-2.0-exceptions claim matched its real
+  `LICENSE`/`LICENSING.md` exactly; Keycloak's `bin/kc.sh start-dev`
+  matched the real README's `bin/kc.[sh|bat] start-dev` + Docker
+  alternative exactly; ERPNext's "Frappe UI, a Vue-based component
+  library" claim matched the real README verbatim; AutoGen's Core/
+  AgentChat/Extensions API split and AutoGen Studio/Bench both
+  confirmed real and correctly described. **Two real findings**: (1)
+  the article links `Lum1104/Understand-Anything`, but every install
+  command inside that repo's own README (plugin marketplace, curl
+  installer, LICENSE badge) names `Egonex-AI/Understand-Anything`
+  instead — checked directly and found both repos resolve to the exact
+  same commit hash, mirrors of one project rather than a stale fork or
+  factual error, but still a real point of confusion for a reader
+  following the article's link and then the README's own copy-paste
+  commands. (2) AutoGen's real README contradicts itself on its own
+  maintenance status across three lines in the same file — "archived
+  and no longer maintained by Microsoft" (the strongest framing,
+  normally meaning a read-only repo), "in maintenance mode... bug
+  fixes, security patches, and documentation improvements" (presumes
+  an active contribution process, incompatible with a literal archive),
+  and "community-managed" — with the article's own "maintenance mode"
+  phrasing matching the middle framing rather than the strongest one.
+  Whether the repo carries GitHub's literal read-only archive banner
+  wasn't independently confirmed — would need the GitHub API, which
+  requires minting push-capable credentials just to read one flag, a
+  disproportionate step for a wording question, same restriction class
+  as every other GitHub-API-needing check in this project. No build —
+  the four mature projects have no shared gap, and Understand
+  Anything's one real mechanism (multi-agent LLM codebase analysis)
+  needs a live model API this sandbox doesn't have; checked `/builds/`
+  first and confirmed no existing build does codebase-knowledge-graph
+  construction, so this is a genuine "nothing narrow enough to
+  extract" call, not a duplicate-avoidance one. With this round, Weeks
+  19 through 24 of the series are all analyzed — no known gaps remain.
 
 ---
 
