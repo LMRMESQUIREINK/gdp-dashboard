@@ -4469,6 +4469,57 @@ yourself every time.
   full Sigstore trust-chain verification (these bundles chain to a
   private NVIDIA CA, not a public root, so there is none to verify
   against from outside NVIDIA — a structural reason, not a sandbox gap).
+- **Deep analysis + new build from a bare repo link:
+  `HeyPuter/everything`** — a bare, slightly malformed GitHub URL
+  (`github/` missing `.com`), corrected as the obvious intent rather than
+  asked about, per this project's own rule for trivial ambiguity. Full
+  write-up in `/notes/heyputer-everything-analysis.md`. "The Everything
+  Project," a sibling mono-repo to the real, independently-confirmed
+  `HeyPuter/puter` (44.2k stars, AGPL-3.0, "The Internet Computer"):
+  51 app directories rebuilding Office/Slack/Photoshop/AutoCAD-class
+  software as free MIT alternatives. Confirmed real engineering before
+  reading for meaning: `documents/` alone is 266,752 lines of real JS/TS,
+  ships a genuine ECMA-376 OOXML conformance checker (hash-pinned
+  official XSD download, `lxml`-based validation) and 2,258 real `.docx`
+  test fixtures. Checked this project's own recurring "script references
+  a tool file never supplied" pattern against all 12 apps running
+  `check:licenses` as a prebuild step — all 12 genuinely have the file,
+  a clean result this time, not a gap. **The real finding**: the
+  README's own top comment promises "missing destinations point to the
+  link-status note," but no `#link-status` anchor/heading exists
+  anywhere in the document — three rows (Expenses, Assets, Property
+  Management) link their "Try it" button to it regardless. Separately,
+  the Assets row's icon and "Source" link both correctly point at
+  `src/assets/`, but its own title link points to `../equipment/` — a
+  path that doesn't exist and climbs outside the repo root — the one
+  row, out of ~45, whose own links disagree. Confirmed both bugs are
+  structural, not translation-specific: identical in the English,
+  Spanish, and Chinese README variants. **Built**: checked `/builds/`
+  first (`curriculum-link-auditor` checks external claims about a repo;
+  `skill_md_validator.py` checks SKILL.md references; neither resolves
+  an anchor fragment or detects a relative-link escape) —
+  `/builds/readme-link-auditor/`, a standalone tool resolving every
+  `#anchor` against a Unicode-aware GitHub heading-slug reproduction,
+  every relative link against the real repo tree (distinguishing
+  "doesn't exist" from "escapes the repo root"), and cross-checking that
+  a table row's own links agree on which entity they name. **A real bug
+  found and fixed in this build's own first draft, not the source**: the
+  first slug function used a literal ASCII character class, silently
+  stripping every accented Latin letter and CJK ideograph, manufacturing
+  a dozen false findings against the real Spanish/Chinese READMEs before
+  being caught and fixed with Unicode-aware `str.isalnum()`. A second,
+  smaller bug (a `./src/tasks/` vs `src/tasks/` leading-dot-slash
+  mismatch) was also caught and fixed the same way — by testing against
+  the real multi-language files, not assumed safe from the English case.
+  17/17 tests pass, including the real unmodified README fixtures in all
+  three languages, a lightweight skeleton of the real 51-directory tree,
+  a planted discrimination case, and regression tests for both fixes —
+  confirmed identically against the complete, uncommitted 37,642-file
+  clone directly as a second check. Deliberately not built: a fix/PR
+  against the real repo (read-only clone access only) and live
+  reachability checks of the `*.puter.com` demo URLs (confirmed this
+  sandbox's egress proxy DNS-fails every `puter.com` subdomain, the same
+  restriction class as EODHD/FMP/Hugging Face/arXiv, now extended here).
 
 ---
 
