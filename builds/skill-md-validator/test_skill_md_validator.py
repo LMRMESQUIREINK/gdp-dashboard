@@ -165,7 +165,7 @@ class TestReferenceResolution(unittest.TestCase):
             "If the command fails with `No such file or directory` for the "
             "`bin/python3` path, see `references/install.md`."
         )
-        refs = _extract_references(body)
+        refs = [path for path, _preceding in _extract_references(body)]
         self.assertNotIn("bin/python3", refs)
         self.assertIn("references/install.md", refs)
 
@@ -178,6 +178,22 @@ class TestReferenceResolution(unittest.TestCase):
         self.assertNotIn("broken-reference", codes(report))
         self.assertIn("gitignored-reference", codes(report))
         self.assertTrue(report.ok, "a gitignored reference must warn, never fail the skill")
+
+    def test_a_negated_existence_statement_is_a_warning_not_an_error(self):
+        # Regression test for a real false positive found against NVIDIA's
+        # real, unmodified nvidia-ontology-setup SKILL.md: "The app factory
+        # is create_app() in auto_ontology/server/__main__.py. There is no
+        # auto_ontology/server/main.py." -- a deliberate statement that the
+        # path does NOT exist, not a dangling "see this file" pointer.
+        # (The fixture is only the skill's own subdirectory, not the full
+        # repo, so its two OTHER real-path references genuinely can't
+        # resolve here and correctly still error -- this test checks only
+        # that 'main.py' specifically is downgraded, not that the whole
+        # skill passes clean.)
+        report = validate_skill_dir(FIXTURES / "nvidia-skills" / "nvidia-ontology-setup")
+        main_py_findings = [f for f in report.findings if "server/main.py" in f.message]
+        self.assertTrue(main_py_findings, "expected a finding mentioning auto_ontology/server/main.py")
+        self.assertEqual({f.code for f in main_py_findings}, {"negated-reference"})
 
 
 class TestDuplicateNameDetection(unittest.TestCase):

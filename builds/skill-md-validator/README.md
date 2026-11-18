@@ -316,3 +316,71 @@ against this project's own repo-root-relative convention.
   restrictions, or any YAML beyond simple `key: value` lines — this
   project's own twelve real skills never use any of that, so there was
   no real material to build or test it against.
+
+## `verify_signature.py` — a second, separate check: cryptographic skill integrity
+
+Built from a bare `NVIDIA/auto-ontology` repo link — full analysis in
+`/notes/nvidia-auto-ontology-analysis.md`. That repo ships three real
+Claude Agent Skills, each carrying a `skill.oms.sig` file: a real
+Sigstore-bundle-format signature wrapping a signed, content-addressed
+manifest of the skill's own files (a sha256 digest per file, built by
+the same `model_signing` scheme Sigstore's model-transparency project
+uses for ML model provenance, repurposed here for skill bundles). This
+is a different concern from everything above — cryptographic integrity,
+not authoring quality — so it lives in its own module and, unlike the
+rest of this build, needs a real, justified new dependency:
+`cryptography` (no stdlib equivalent exists for X.509/ECDSA parsing).
+
+`verify_skill_signature(skill_dir)` does two things:
+
+1. Recomputes a sha256 digest for every file the signed statement
+   names and reports exactly which match, drifted, or are missing.
+2. Cryptographically verifies the DSSE envelope's ECDSA signature
+   against the leaf certificate's embedded public key, confirming the
+   signed statement is internally self-consistent.
+
+It deliberately does **not** validate the certificate chain against a
+public root of trust: these bundles chain to "NVIDIA Agent Capabilities
+CA," a private NVIDIA-operated CA, not Sigstore's public Fulcio root —
+there is no public root to check against from outside NVIDIA. Chain
+metadata (subject/issuer/validity) is reported for a human to read,
+never as a trust decision.
+
+**A real bug found and fixed in this build's own first draft**: the
+first version hardcoded SHA-256 for the ECDSA check and failed against
+all three real skills. Before concluding anything about NVIDIA's
+signing, inspected the leaf certificate directly — it uses secp384r1
+(P-384), which pairs with SHA-384, not SHA-256. Fixed by deriving the
+hash algorithm from the public key's curve size instead of assuming
+one. After the fix, all three real, unmodified bundles verify cleanly.
+
+**A real, consistent finding about the scheme itself, not a bug**: all
+three bundles' `tlogEntries` lists are empty — no Sigstore transparency-
+log entry recorded for any of them. These signatures are authentic
+(the ECDSA check proves that) but not independently, publicly
+auditable the way a standard public "keyless" Sigstore signature would
+be; the audit trail depends entirely on trusting NVIDIA's own private
+CA. Surfaced plainly in the tool's own output, not treated as a flaw.
+
+**A real false positive found in the existing `skill_md_validator.py`
+while testing against these skills, and fixed**: it flagged
+`nvidia-ontology-setup`'s reference to `auto_ontology/server/main.py`
+as broken — but the real line reads "**There is no**
+`auto_ontology/server/main.py`," a deliberate statement that the path
+does NOT exist, written to head off a wrong assumption. Fixed with a
+new `negated-reference` check (downgrades to a warning when the text
+immediately before a non-resolving reference contains an explicit
+negation-of-existence phrase), narrow enough that the fixture's two
+genuinely unresolvable *other* references still correctly error.
+
+Proven against the three real, unmodified `skill.oms.sig` bundles and
+`SKILL.md` files (committed as fixtures under
+`tests/fixtures/nvidia-skills/`), plus a planted file-tamper test and a
+planted signature-tamper test, both correctly caught. 44/44 tests pass
+across both suites, and this project's own twelve real skills still
+validate clean after both fixes.
+
+Deliberately not built: full Sigstore trust-chain verification against
+a public root — these bundles chain to a private NVIDIA CA, so there is
+no public root to verify against from outside NVIDIA; this is a real,
+structural reason, not a sandbox limitation to work around.

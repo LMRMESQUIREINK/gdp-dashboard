@@ -245,11 +245,36 @@ def _extract_references(body: str) -> list[str]:
         path = m.group(1) or m.group(2)
         if path.startswith(("http://", "https://", "#")):
             continue
+        preceding = body[max(0, m.start() - 80):m.start()]
         if any(path.startswith(d) for d in KNOWN_REFERENCE_DIRS):
-            refs.append(path)
+            refs.append((path, preceding))
         elif path.lower().endswith(KNOWN_FILE_EXTENSIONS) and path.count("/") >= 1:
-            refs.append(path)
+            refs.append((path, preceding))
     return refs
+
+
+_NEGATION_PATTERN = re.compile(
+    r"(there is no|there's no|there are no|no longer (?:exists?|has|is)|"
+    r"does(?:n't| not) exist)",
+    re.IGNORECASE,
+)
+
+
+def _is_negated_reference(preceding: str) -> bool:
+    """A real false positive found against NVIDIA's `auto-ontology`
+    SKILL.md: 'The app factory is create_app() in
+    auto_ontology/server/__main__.py. There is no
+    auto_ontology/server/main.py.' -- a deliberate statement that the
+    path does NOT exist, written to head off a reader's wrong
+    assumption, not a dangling 'see this file' pointer. Same
+    false-positive class as this project's negated-medical-language and
+    negated-meta-statement findings elsewhere (Recovery Desk's
+    "doesn't diagnose or treat", the solo-bot-business-gate's
+    "guaranteed pass"): the text right before the reference states its
+    own non-existence, so a path that genuinely doesn't resolve is
+    exactly what the author intended, not a mistake to flag as an
+    error."""
+    return bool(_NEGATION_PATTERN.search(preceding))
 
 
 def validate_skill_dir(skill_dir: Path, *, min_description_len: int = 40, max_description_len: int = 1500,
@@ -306,7 +331,7 @@ def validate_skill_dir(skill_dir: Path, *, min_description_len: int = 40, max_de
         if first_para and _similarity(first_para.lower(), description.lower()) > 0.85:
             report.warn("thin-body", "the body's first paragraph is nearly identical to the description -- the skill may not add anything beyond its own one-line summary")
 
-    for ref in _extract_references(body):
+    for ref, preceding in _extract_references(body):
         if _reference_resolves(ref, skill_dir, repo_root):
             continue
         if _is_gitignored_reference(ref, skill_dir, repo_root):
@@ -316,6 +341,13 @@ def validate_skill_dir(skill_dir: Path, *, min_description_len: int = 40, max_de
                 "pattern -- likely a local-secrets-overlay file the skill tells a user/agent to create, not "
                 "a broken reference (a real instance: claude-code-skill-scrapling's references/"
                 "cookie-vault.local.md, gitignored on purpose so real credentials are never committed)",
+            )
+        elif _is_negated_reference(preceding):
+            report.warn(
+                "negated-reference",
+                f"body references {ref!r}, which doesn't resolve -- but the text just before it states the "
+                "path does NOT exist (a real instance: NVIDIA/auto-ontology's nvidia-ontology-setup skill, "
+                "'There is no auto_ontology/server/main.py.'), so this reads as deliberate, not broken",
             )
         else:
             report.error("broken-reference", f"body references {ref!r}, which resolves under neither {skill_dir} nor the repo root")

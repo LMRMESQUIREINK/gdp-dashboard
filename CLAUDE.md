@@ -4402,6 +4402,73 @@ yourself every time.
   series to turn up zero new discrepancies** — stated plainly as a
   genuine clean result from real verification, not a sign the checking
   was skipped.
+- **Deep analysis + extended build from a bare repo link:
+  `NVIDIA/auto-ontology`** — a real, substantial, actively-shipping
+  NVIDIA open-source project (Apache 2.0, 1,084 files) that builds an
+  enterprise semantic layer/ontology from database metadata, exposing
+  it to any agent harness via MCP/CLI/API so a text-to-SQL agent can
+  ground answers in certified business meaning instead of guessing
+  joins. Full write-up in `/notes/nvidia-auto-ontology-analysis.md`.
+  Checked the README's top two badges ("#1 on the BEAVER leaderboard,"
+  "#2 on the BIRD-Interact leaderboard") directly rather than repeated
+  as fact — both leaderboard hosts returned `getaddrinfo ENOTFOUND`
+  from this sandbox, extending the same egress-restriction class
+  already documented for EODHD/FMP/Hugging Face/arXiv/agentskills.io;
+  reported unverified, not disputed. Confirmed the README's disclosed
+  internal trust boundary (FastAPI trusts an unauthenticated
+  `x-auto-ontology-user-id` header forwarded by the frontend gateway,
+  so ports 3001/3002 must stay private) exactly against the real
+  `identity.py` code and the shipped setup skill's own repeated
+  warning. **The round's real finding**: the repo ships three real
+  Claude Agent Skills (`nvidia-ontology-setup/query/management`) — the
+  first vendor-shipped (not third-party) skills this project has found
+  inside a product's own repo — each carrying a `skill.oms.sig`: a real
+  Sigstore-bundle-format signature over a content-addressed sha256
+  manifest of the skill's own files, built on the same `model_signing`
+  scheme Sigstore's model-transparency project uses for ML model
+  provenance, plus a real three-tier publication gate (static
+  validation, semantic dedup, live two-agent Kubernetes-sandboxed
+  evaluation with a measured baseline-vs-skill uplift table).
+  **Extended** `/builds/skill-md-validator/` (checked `/builds/` first
+  — the right home, and cryptographic integrity is a clearly separate
+  concern from the existing frontmatter checks) with
+  `verify_signature.py`, needing a real, justified new dependency
+  (`cryptography`, stated plainly rather than silently added) to
+  recompute file digests against the signed manifest and
+  cryptographically verify the DSSE envelope's ECDSA signature against
+  the leaf certificate. **A real bug found and fixed in this build's
+  own first draft**: the first version hardcoded SHA-256 and failed on
+  all three real skills; before blaming the source, inspected the leaf
+  cert directly — it's secp384r1 (P-384), which needs SHA-384, not
+  SHA-256 — fixed by deriving the hash from the key's curve size. After
+  the fix, all three real bundles verify cleanly, a genuine positive
+  finding about NVIDIA's signing. **A second real, consistent finding,
+  not a bug**: all three bundles' `tlogEntries` are empty — no public
+  Sigstore transparency-log entry recorded for any of them, a
+  materially different trust model than standard public "keyless"
+  signing despite reusing its bundle format, surfaced plainly in the
+  tool's own output. **A third real finding, a false positive in this
+  project's own pre-existing validator**, caught by running it
+  unmodified against these real skills: it flagged
+  `auto_ontology/server/main.py` as a broken reference, but the real
+  line reads "**There is no** `auto_ontology/server/main.py`" — a
+  deliberate negative-existence statement, same false-positive class as
+  Recovery Desk's "doesn't diagnose or treat" and the solo-bot-
+  business-gate's "guaranteed pass." Fixed with a new
+  `negated-reference` check, downgrading to a warning only when an
+  explicit negation phrase precedes a non-resolving reference, narrow
+  enough that two genuinely broken references in the same stripped-down
+  test fixture still correctly error. 44/44 tests pass across both
+  suites (up from 35), including the three real, unmodified
+  `skill.oms.sig` bundles and `SKILL.md` files committed as fixtures,
+  planted file- and signature-tamper tests both correctly caught, and
+  this project's own twelve real skills re-confirmed clean after both
+  fixes. Deliberately not built: the ontology-generation/text-to-SQL
+  pipeline itself (needs a live NIM/OpenAI-compatible model endpoint,
+  same standing restriction as every model-dependent build here) and
+  full Sigstore trust-chain verification (these bundles chain to a
+  private NVIDIA CA, not a public root, so there is none to verify
+  against from outside NVIDIA — a structural reason, not a sandbox gap).
 
 ---
 
