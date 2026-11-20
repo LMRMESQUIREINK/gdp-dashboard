@@ -4631,6 +4631,90 @@ yourself every time.
   real postMessage delivery) — no compatible host exists here to test
   it against, and a toy simulation of a security-relevant component
   would risk false confidence rather than real proof.
+- **Sixth `ruthless-gate` round, and the first on three vendor PDFs at
+  once**: "AI Agents in Data Platforms For Dummies®, Cloudera® Special
+  Edition" (Dipankar Mazumdar/Wiley, 51pp), "The Data Readiness Index:
+  Understanding the Foundations for Successful AI" (Cloudera, 9pp),
+  and "The RAG Cookbook" (Progress Software, 13pp) — triggered by the
+  standard phrase, no other instruction. Full pointer in
+  `/notes/data-readiness-gate-analysis.md`; verdict page at
+  `/builds/data-readiness-gate/` (two vendors, so the multi-source rule
+  applied per-source rather than per-company: all three named sources
+  got at least one credit and one stop). Measured first: all three
+  PDFs' sha256 hashes re-derived fresh rather than trusted from an
+  earlier-round transcription — an earlier concern that one hash
+  looked 65 characters long (one over SHA-256's correct 64) was
+  checked directly and resolved (RESOLVED, recorded on the page per
+  the skill's "correct yourself in public" rule): a manual-counting
+  artifact, not a real data problem. Resolved a `pdftotext`
+  chart-label-scrambling ambiguity the skill's own precedent examples
+  hadn't covered before (all prior instances were regex/text-matching;
+  this was rotated bar-chart axis labels) by rendering the Readiness
+  Index's own pages 6–8 visually via the Read tool's native PDF-page
+  image output and reading the real bar values directly, rather than
+  trusting pdftotext's scrambled reading order. 9 external claims
+  checked via web search — 2 arXiv papers, 1 GitHub repo
+  (cloudera/iceberg-mcp-server), Neon's branching architecture, REMi
+  (confirmed real, open-source, Mistral-7B-based, built by Nuclia/
+  Progress), "qualitative easing" (confirmed a real, legitimate
+  financial term — not a garbled stand-in for "quantitative easing"),
+  a Harvard Business Review Analytic Services statistic, a 2025
+  Cloudera survey statistic, and a webinar's real speaker — all 9 came
+  back confirmed real, a clean verification round on pure factual
+  existence. Found a real, well-evidenced internal seam in the
+  Readiness Index: two adjacent catalog/lineage stats (91%/47%) are
+  joined with "However," implying tension, but share no stated
+  denominator (91%+47%=138%, impossible as mutually exclusive shares
+  of one base) — confirmed as a real, isolated exception by checking
+  that two OTHER paired sub-stats in the same document (38+47=85,
+  8+15=23) add up exactly. Two genuine cross-source findings, each
+  needing two different PDFs read together: the Dummies book presents
+  catalog+lineage as solved, foundational architecture, while
+  Cloudera's own separate survey (same vendor) shows real deployment
+  is partial (only 47% enterprise-standardized); and the RAG
+  Cookbook's (Progress) advanced retrieval techniques all presuppose
+  well-integrated source data, while Cloudera's own independent survey
+  (a different vendor) shows only 30% of IT leaders call their data
+  fully integrated. A precisely dated finding: Cloudera ran two
+  distinct, differently-sampled, differently-partnered AI-data-
+  readiness surveys within about two days of each other in March
+  2026, cited by one as if merely corroborating the other. A
+  document-internal paradox the source half-states but never closes:
+  Telecommunications tops both the visibility (89%) and access (84%)
+  charts and separately reports the highest rate (60%) of
+  infrastructure "always" hindering operations — the document
+  explicitly connects the first two facts, then immediately shows
+  Telecom is ALSO the worst-governed of 7 industries, without ever
+  stating that specific connection; a Spearman rank correlation
+  recomputed independently in `test.js` (ρ≈-0.393 both ways) confirmed
+  this is a real pattern across all 7 industries, not a two-industry
+  anecdote. A precise credit: Chapter 5's title, "More than Ten Key
+  Takeaways," is exactly accurate — 10 core bullets (matching the
+  chapter's own "Ten important concepts" preview) plus one explicitly
+  separate bonus section, 11 total, counted directly. A genuine gap:
+  the one empirical benchmark paper the Dummies book cites is never
+  referenced again anywhere in its 51-page body (confirmed via grep,
+  one hit total). A minor real copy-editing error in the RAG
+  Cookbook's own CTA ("What to know more?" for "Want to know more?").
+  **A real rendering bug found and fixed during verification, not
+  assumed working from reading the CSS** — the same failure class
+  this project's `wp-prompt-pack-gate` round hit: the first draft's
+  375px mobile screenshot came back 466px wide, traced to all four
+  `<table>` elements lacking `table-layout: fixed` and growing past
+  their container, hidden from `document.documentElement.scrollWidth`
+  (clipped by `overflow-x: hidden`) while `document.body.scrollWidth`
+  — what the real screenshot measures — still showed the overflow;
+  fixed with `table-layout: fixed` plus `overflow-wrap`/`word-break`
+  on every table cell, and `test.js` hardened to check
+  `document.body.scrollWidth` in addition to `documentElement`'s at
+  both 375px and 1280px so a regression can't hide again.
+  Re-screenshotted clean afterward (confirmed 375×23050 and
+  1280×10922 via direct PNG header read, not by eye alone). Three new
+  detector types (per-source credit/stop requirement, source-
+  fingerprint recompute, `--stop`-as-text-colour check) each proven to
+  actually fire via a planted counterexample before being restored.
+  345/345 assertions pass on the final run. Build fingerprint:
+  `185e8c5a38d70543`. Source fingerprint: `669ac0de7eaa06dc`.
 
 ---
 
