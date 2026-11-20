@@ -4715,6 +4715,72 @@ yourself every time.
   actually fire via a planted counterexample before being restored.
   345/345 assertions pass on the final run. Build fingerprint:
   `185e8c5a38d70543`. Source fingerprint: `669ac0de7eaa06dc`.
+- **Deep analysis + new build from four pasted NocoBase articles** — a
+  years-long "Top N open-source X on GitHub" listicle series, bare URLs
+  given first, full article text pasted after this round confirmed
+  `medium.com`, `nocobase.com`, and `dev.to` are all unreachable from
+  this sandbox (DNS failures, the same egress-restriction class as
+  arxiv.org/Hugging Face/agentskills.io/puter.com, confirmed directly
+  via `curl` and four failed web-fetch subagent dispatches before the
+  user pasted the text directly). Full write-up in
+  `/notes/nocobase-listicle-series-analysis.md`. All four are
+  cross-posts of NocoBase's own blog, not independent reviews.
+  **Headline finding**: NocoBase ranks its own product in every one of
+  its own "Top N" surveys of that category — #11 of 11 (dead last) in
+  admin dashboards, #6 of 10 in ERP/CRM, listed first in both AI-
+  platform lists — disclosed voluntarily mid-article in the two 2026
+  posts ("Hey, you're reading the NocoBase blog") but absent from the
+  2024/2025 posts, a real, checkable improvement in transparency over
+  roughly 18 months. A real, reproducible link bug: both "Gentelella"
+  and "Ngx-admin" in the admin-dashboard article have their title link
+  pointing at the exact same URL — React-Admin's own homepage, a third,
+  unrelated entry — read directly off the article's markup. A real
+  factual misattribution, checked via web search: the ERP/CRM article
+  credits Huly Platform to "the Human Colossus Foundation," but the
+  real developer is Huly Labs (GitHub org `hcengineering`); the Human
+  Colossus Foundation is a real, entirely unrelated nonprofit, with no
+  connection found beyond the coincidental shared word. ERPNext's
+  claims cross-check cleanly against this project's own, separately-run
+  Week 24 round. **The strongest finding needed two dated snapshots
+  read together**: of four projects appearing in both AI-platform
+  articles (~2.5 months apart), RAGFlow (+4.3K) and MaxKB (+0.6K) grew
+  as expected, but Windmill (−0.2K) and Activepieces (−0.3K) both show
+  real GitHub star counts *decreasing* — essentially impossible on
+  their own, more likely an imprecise manual re-snapshot than genuine
+  star loss, stated as the likely explanation rather than an
+  accusation. NocoBase's own count for itself, across all four dated
+  articles over two years (13.0K→15.5K→23.9K→24.8K), moves cleanly the
+  expected direction the whole time — a direct, stated correction of an
+  earlier wrong hypothesis from this same round (this round's own
+  pre-paste web searches had surfaced NocoBase's self-reported count at
+  several seemingly scattered values, read at the time as possible
+  inconsistent self-reporting; the real article text showed those were
+  simply different snapshots from *other*, differently-timed NocoBase
+  articles in adjacent categories, not inconsistency — corrected in
+  public rather than silently dropped). **Built**: checked `/builds/`
+  first — `curriculum-link-auditor` checks a list's claims against a
+  repo's real README, `readme-link-auditor` resolves anchors/relative
+  links within one document; neither does cross-entry link-collision
+  detection or cross-snapshot metric-drift checking — `/builds/
+  listicle-integrity-checker/`, a standalone, dependency-free Python
+  tool generalizing all three mechanisms (self-referential-ranking
+  detection, link-collision detection, cross-snapshot metric-
+  monotonicity checking), tested against the real transcribed text of
+  all four source articles (not synthetic fixtures) plus discrimination
+  cases proving each check stays quiet on clean input (a short
+  publisher name doesn't false-positive on an unrelated substring
+  match; two entries linking to two different real homepages isn't a
+  collision; a metric that only increases isn't flagged). 22/22 tests
+  pass, including real subprocess CLI runs with clean, non-traceback
+  error handling for a missing file and malformed JSON. No bug found in
+  this build's own first draft, stated plainly rather than
+  manufactured. Deliberately not built: fetching the source articles
+  itself (worked around by the user pasting text directly, consistent
+  with this round's confirmed restriction) and a live GitHub-API lookup
+  to resolve the two star-count regressions definitively — minting
+  push-capable credentials to an unrelated third-party repo just to
+  read one number is the same disproportionate step this project's
+  `curriculum-link-auditor` round already declined for the same reason.
 
 ---
 

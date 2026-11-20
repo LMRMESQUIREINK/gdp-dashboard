@@ -1,0 +1,75 @@
+[
+  {
+    "title": "Top 11 Open-Source Admin Dashboard Projects on GitHub",
+    "publisher": "NocoBase",
+    "published_date": "2024-12-27",
+    "total_count": 11,
+    "entries": [
+      {"name": "NocoBase", "rank": 11, "title_link": "https://www.nocobase.com/", "metric_value": 13000},
+      {"name": "APITable", "rank": 10, "title_link": "https://aitable.ai/", "metric_value": 13500},
+      {"name": "Vue-Admin-Better", "rank": 9, "metric_value": 17100},
+      {"name": "Gentelella", "rank": 8, "title_link": "https://marmelab.com/react-admin/", "metric_value": 20000},
+      {"name": "React-Admin", "rank": 7, "metric_value": 25100},
+      {"name": "Ngx-admin", "rank": 6, "title_link": "https://marmelab.com/react-admin/", "metric_value": 25300},
+      {"name": "Appsmith", "rank": 5, "title_link": "https://www.appsmith.com/", "metric_value": 35000},
+      {"name": "Tabler", "rank": 4, "title_link": "https://tabler.io/admin-template", "metric_value": 44200},
+      {"name": "AdminLTE", "rank": 3, "title_link": "https://adminlte.io/", "metric_value": 44200},
+      {"name": "NocoDB", "rank": 2, "title_link": "https://nocodb.com/", "metric_value": 50400},
+      {"name": "Vue-Element-Admin", "rank": 1, "metric_value": 88300}
+    ]
+  },
+  {
+    "title": "Top 10 Most-Starred Open-Source ERP and CRM on GitHub",
+    "publisher": "NocoBase",
+    "published_date": "2025-05-06",
+    "total_count": 10,
+    "entries": [
+      {"name": "Odoo", "rank": 1, "metric_value": 42600},
+      {"name": "Twenty", "rank": 2, "metric_value": 27700},
+      {"name": "ERPNext", "rank": 3, "metric_value": 24700},
+      {"name": "Monica", "rank": 4, "metric_value": 22700},
+      {"name": "Huly Platform", "rank": 5, "metric_value": 20600},
+      {"name": "NocoBase", "rank": 6, "metric_value": 15500},
+      {"name": "Krayin CRM", "rank": 7, "metric_value": 14400},
+      {"name": "Akaunting", "rank": 8, "metric_value": 8600},
+      {"name": "Grocy", "rank": 9, "metric_value": 7500},
+      {"name": "iDURAR ERP/CRM", "rank": 10, "metric_value": 7300}
+    ]
+  },
+  {
+    "title": "10 Open-Source AI Agent Platforms for Business: From Automation to Internal Apps",
+    "publisher": "NocoBase",
+    "published_date": "2026-09-05",
+    "total_count": 10,
+    "entries": [
+      {"name": "NocoBase", "rank": 1, "metric_value": 23900},
+      {"name": "Activepieces", "rank": 2, "metric_value": 24000},
+      {"name": "Kestra", "rank": 3, "metric_value": 28000},
+      {"name": "Windmill", "rank": 4, "metric_value": 17700},
+      {"name": "Coze Studio", "rank": 5, "metric_value": 21500},
+      {"name": "Langflow", "rank": 6, "metric_value": 153900},
+      {"name": "Dify", "rank": 7, "metric_value": 154000},
+      {"name": "MaxKB", "rank": 8, "metric_value": 22600},
+      {"name": "AnythingLLM", "rank": 9, "metric_value": 65400},
+      {"name": "RAGFlow", "rank": 10, "metric_value": 89700}
+    ]
+  },
+  {
+    "title": "10 Open-Source Enterprise AI Platforms You Can Self-Host",
+    "publisher": "NocoBase",
+    "published_date": "2026-11-17",
+    "total_count": 10,
+    "entries": [
+      {"name": "NocoBase", "rank": 1, "metric_value": 24800},
+      {"name": "Activepieces", "rank": 2, "metric_value": 23700},
+      {"name": "Windmill", "rank": 3, "metric_value": 17500},
+      {"name": "Sim", "rank": 4, "metric_value": 29400},
+      {"name": "Mastra", "rank": 5, "metric_value": 28000},
+      {"name": "MaxKB", "rank": 6, "metric_value": 23200},
+      {"name": "RAGFlow", "rank": 7, "metric_value": 94000},
+      {"name": "LiteLLM", "rank": 8, "metric_value": 60000},
+      {"name": "MLflow", "rank": 9, "metric_value": 28800},
+      {"name": "Langfuse", "rank": 10, "metric_value": 32800}
+    ]
+  }
+]
