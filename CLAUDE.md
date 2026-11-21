@@ -5118,6 +5118,85 @@ yourself every time.
   Deliberately not built: perceptual image hashing (this round's real
   finding was byte-identical reuse, which sha256 already catches
   exactly; no evidence of a near-duplicate case to justify it).
+- **An exact duplicate re-paste correctly declined.** The user pasted
+  "Building Fast Computer Agents to Solve Complex Tasks" / "The Case for
+  Interface Lifting in AI Agents" (Fareed Khan) again, with no new
+  instruction. Confirmed via `grep`/`ls` against this file and
+  `/notes/`/`/builds/` that this exact article was already analyzed and
+  built from twice before in this project
+  (`/notes/interface-lifting-fast-computer-agents-analysis.md`,
+  `/builds/interface-lift-toolkit/`), per this project's own "diff a
+  repeat upload before touching anything" rule. No changes made; the
+  user was told plainly rather than the work being silently redone.
+- **Deep analysis + extended build from a pasted Medium article:
+  "Building DeepSeek R1 from Scratch Using Python"** (Fareed Khan, an
+  eleventh source from this author) — a from-scratch reproduction of
+  DeepSeek R1's GRPO training pipeline on a small `Qwen2.5-0.5B-
+  Instruct` stand-in, with five named reward functions whose names and
+  style closely resemble Hugging Face's own `open-r1` project. Full
+  write-up in `/notes/deepseek-r1-from-scratch-analysis.md`. Cloned
+  both real repos, `FareedKhan-dev/train-deepseek-r1` and
+  `huggingface/open-r1`, per the same provenance-checking discipline as
+  the two immediately preceding rounds. `train-deepseek-r1`'s own
+  `LICENSE` correctly names Fareed Khan, not a third party — same
+  pattern as the langgraph-101 case. **Real, verbatim-level reuse
+  confirmed on two of the five reward functions**: `reasoning_steps_
+  reward`'s regex pattern is character-for-character identical
+  (`r"(Step \d+:|^\d+\.|\n-|\n\*|First,|Second,|Next,|Finally,)"`, same
+  bullet markers, same "magic number 3" scaling), and `get_repetition_
+  penalty_reward`'s core formula and error string
+  (`raise ValueError(f"max_penalty {max_penalty} should not be
+  positive")`) match exactly — measured at 22/179 shared n-gram windows
+  (12.3%) via this project's own `content-provenance-check` tool. Real,
+  independent rewriting elsewhere: `accuracy_reward` trades `open-r1`'s
+  "skip unparseable examples" (`None`) for a fixed neutral reward
+  (`0.5`); `get_cosine_scaled_reward` reuses `accuracy_reward()`
+  internally and **caps `progress` at 1.0** where `open-r1`'s own
+  version doesn't — a real, credited fix of a latent bug in the
+  original (uncapped progress can push the cosine term past a full
+  period); the repetition-penalty reward here drops `open-r1`'s
+  Chinese/`jieba` branch and its citation of the reward's own source
+  paper. **The finding: real reuse, and real, specific disclosure** —
+  the repo's own real `README.md` (lines 1661-1673) carries an explicit
+  "## Citation" section naming "Open R1: A fully open reproduction of
+  DeepSeek-R1" and `https://github.com/huggingface/open-r1` directly, a
+  specific credit, not a bare "Hugging Face" brand mention (confirmed:
+  every other "Hugging Face" reference in that same README is a
+  dataset/library-usage link, the same false-disclosure trap the
+  rag-ecosystem round's "LangChain" mentions were) — the opposite
+  verdict from rag-ecosystem, matching the langgraph-101 round. One
+  honest limit stated plainly: whether this citation also appears in
+  the Medium article's own text (vs. only the repo README) wasn't
+  independently confirmed this round, since the pasted article content
+  available ended at the Distillation section, immediately before it.
+  **A real gap found in `/builds/content-provenance-check/` itself**:
+  `find_reuse()`'s n-gram overlap on `reasoning_steps_reward` measured
+  under 3% despite the regex being 100% identical, because the pattern
+  string has no internal whitespace — a single unbroken "word" to the
+  word-splitting fingerprinter — and the surrounding docstrings were
+  independently rewritten, so no 8-word window ever lines up around it.
+  The same class of gap `find_binary_reuse()` closed for images last
+  round ("this content carries no words to fingerprint"), just a
+  different reason. **Extended**: a third, independent real-world
+  fixture pair (the real repetition-penalty and reasoning-steps cells
+  from both repos, the real Citation-section text), proving
+  `check_provenance()` reaches the correct "disclosed" verdict a third
+  time and that a bare "Hugging Face" mention still correctly fails
+  `is_disclosed()`; and `extract_literal_tokens()`/
+  `find_literal_token_reuse()`, a new function closing the gap above —
+  exact-match detection for whitespace-free literal tokens at least 20
+  characters long, proven directly against the real identical regex.
+  39/39 tests pass (30 prior + 9 new), including one real bug caught by
+  the test suite's own first run: a first-draft assertion checked for a
+  specific phrase only inside `find_reuse()`'s default 3-sample
+  preview, which didn't happen to include it — fixed by requesting more
+  samples in the test, not by weakening the assertion. Deliberately not
+  built: wiring the new literal-token function into `check_provenance()`/
+  the CLI by default (a 20-character token match is a weaker signal
+  than an 8-word shared phrase, so it stays separately called, same
+  convention as `find_binary_reuse()`); a reuse verdict on
+  `accuracy_reward`/`format_reward`/`get_cosine_scaled_reward`, each of
+  which shows real independent rewriting.
 
 ---
 

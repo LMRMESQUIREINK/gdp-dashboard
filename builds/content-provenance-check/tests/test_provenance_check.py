@@ -7,7 +7,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from provenance_check import (
     ProvenanceReport,
     check_provenance,
+    extract_literal_tokens,
     find_binary_reuse,
+    find_literal_token_reuse,
     find_reuse,
     is_disclosed,
     ngram_fingerprints,
@@ -35,6 +37,21 @@ ARTICLE_PROSE_LANGCHAIN_MENTION = fixture("article_prose_langchain_mention.txt")
 REFERENCE_LANGGRAPH101_CHINOOK = fixture("reference_langgraph101_chinook_cell.txt")
 CANDIDATE_MULTIAGENT_CHINOOK = fixture("candidate_multiagent_chinook_cell.txt")
 ARTICLE_PROSE_LANGGRAPH101_DISCLOSURE = fixture("article_prose_langgraph101_disclosure.txt")
+
+# A third, independent real-world case -- "Building DeepSeek R1 from
+# Scratch" (Fareed Khan) checked against the real reward-function
+# implementations in Hugging Face's own open-r1 project. Unlike either
+# case above, this one needed two different detection mechanisms: the
+# repetition-penalty function shares enough surrounding prose to show up
+# under find_reuse()'s n-gram approach, but the reasoning-steps function's
+# one character-for-character identical element -- its regex pattern --
+# is a single whitespace-free token that n-gram fingerprinting can't see
+# at all once the surrounding docstrings/comments diverge.
+CANDIDATE_DEEPSEEKR1_REPETITION = fixture("candidate_deepseekr1_repetition_cell.py")
+REFERENCE_OPENR1_REPETITION = fixture("reference_openr1_repetition_cell.py")
+CANDIDATE_DEEPSEEKR1_REASONING_STEPS = fixture("candidate_deepseekr1_reasoning_steps_cell.py")
+REFERENCE_OPENR1_REASONING_STEPS = fixture("reference_openr1_reasoning_steps_cell.py")
+ARTICLE_PROSE_OPENR1_CITATION = fixture("article_prose_openr1_citation.txt")
 
 
 class TestNormalizeAndFingerprints(unittest.TestCase):
@@ -187,6 +204,89 @@ class TestSecondRealWorldCaseProperDisclosure(unittest.TestCase):
         # naming the specific repo, and that must NOT count as disclosed
         bare_mention = "We used LangChain throughout this project."
         self.assertFalse(is_disclosed(bare_mention, ["langgraph-101", "langchain-ai"]))
+
+
+class TestThirdRealWorldCaseDeepSeekR1OpenR1(unittest.TestCase):
+    """A third, independent real-world pair: "Building DeepSeek R1 from
+    Scratch" (Fareed Khan) vs. the real reward-function implementations
+    in Hugging Face's open-r1 project. Real, measurable n-gram overlap
+    (12.3%, 22/179 windows) exists on the repetition-penalty function,
+    including the verbatim `raise ValueError(f"max_penalty {max_penalty}
+    should not be positive")` line. The repo's own real README.md (lines
+    1661-1673) carries an explicit "## Citation" section naming the
+    source by project title and URL -- genuine, specific disclosure,
+    not a bare brand mention -- so this, like the langgraph-101 case,
+    should come back as disclosed reuse, not undisclosed."""
+
+    def test_repetition_penalty_reuse_is_found_by_ngrams(self):
+        matches = find_reuse(
+            CANDIDATE_DEEPSEEKR1_REPETITION, {"open-r1": REFERENCE_OPENR1_REPETITION}, max_samples=25
+        )
+        self.assertEqual(len(matches), 1)
+        self.assertGreater(matches[0].shared_ngrams, 15)
+        self.assertTrue(any("should not be positive" in s for s in matches[0].sample_matches))
+
+    def test_real_citation_names_the_specific_project_and_url(self):
+        self.assertTrue(
+            is_disclosed(ARTICLE_PROSE_OPENR1_CITATION, ["open-r1", "huggingface/open-r1"])
+        )
+
+    def test_full_check_finds_no_undisclosed_reuse(self):
+        report = check_provenance(
+            candidate_text=CANDIDATE_DEEPSEEKR1_REPETITION,
+            references={"open-r1": REFERENCE_OPENR1_REPETITION},
+            disclosure_text=ARTICLE_PROSE_OPENR1_CITATION,
+            source_markers={"open-r1": ["open-r1", "huggingface/open-r1"]},
+        )
+        self.assertEqual(len(report.reuse), 1)
+        self.assertEqual(report.undisclosed_reuse, [])
+
+    def test_bare_hugging_face_brand_mention_alone_would_not_have_sufficed(self):
+        # the design choice generalizes a third time: a disclosure could
+        # easily say "Hugging Face" without naming the specific project
+        bare_mention = "We used several Hugging Face libraries in this project."
+        self.assertFalse(is_disclosed(bare_mention, ["open-r1", "huggingface/open-r1"]))
+
+    def test_ngram_overlap_on_reasoning_steps_is_low_despite_identical_regex(self):
+        # the real blind spot this round found: the regex pattern itself
+        # is character-for-character identical, but n-gram overlap on
+        # the surrounding function is low because the docstrings/comments
+        # around it were independently rewritten
+        matches = find_reuse(
+            CANDIDATE_DEEPSEEKR1_REASONING_STEPS, {"open-r1": REFERENCE_OPENR1_REASONING_STEPS}
+        )
+        self.assertEqual(len(matches), 1)
+        self.assertLess(matches[0].overlap_ratio, 0.05)
+
+
+class TestFindLiteralTokenReuse(unittest.TestCase):
+    """Closes the blind spot found above: `find_reuse()`'s n-gram window
+    can't see a single identical token with no internal whitespace (a
+    regex pattern, an f-string format literal) once the words around it
+    differ. find_literal_token_reuse() checks for those directly,
+    against the same real reasoning-steps-reward pair."""
+
+    def test_identical_regex_pattern_is_caught_as_a_literal_token(self):
+        matches = find_literal_token_reuse(
+            CANDIDATE_DEEPSEEKR1_REASONING_STEPS, {"open-r1": REFERENCE_OPENR1_REASONING_STEPS}
+        )
+        tokens = {m.token for m in matches}
+        self.assertTrue(any("First,|Second,|Next,|Finally," in t for t in tokens))
+
+    def test_short_tokens_below_min_len_are_not_flagged(self):
+        matches = find_literal_token_reuse("the cat sat", {"ref": "the cat sat"}, min_len=20)
+        self.assertEqual(matches, [])
+
+    def test_unrelated_texts_produce_no_matches(self):
+        matches = find_literal_token_reuse(
+            "a completely unrelated paragraph about something else entirely",
+            {"ref": "nothing in common with the candidate text whatsoever here"},
+        )
+        self.assertEqual(matches, [])
+
+    def test_extract_literal_tokens_respects_min_len(self):
+        tokens = extract_literal_tokens("short ab reallylongtokenabove20chars", min_len=20)
+        self.assertEqual(tokens, {"reallylongtokenabove20chars"})
 
 
 class TestFindBinaryReuse(unittest.TestCase):

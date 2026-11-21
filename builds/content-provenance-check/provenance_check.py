@@ -12,6 +12,20 @@ identical cells (the Step-Back Prompting few-shot examples: "Could the
 members of The Police perform lawful arrests?" / "Jan Sindel's was born
 in what country?", confirmed present in both repos byte-for-byte).
 
+A third round (a different Fareed Khan article/repo, "Building DeepSeek
+R1 from Scratch," checked against Hugging Face's real `open-r1` project)
+found a real blind spot in the n-gram approach below: a single, highly
+distinctive literal token with no internal whitespace -- a regex pattern
+string, a specific error-message format string -- forms exactly one
+"word" under `ngram_fingerprints()`'s word-splitting, so it can be
+character-for-character identical in both texts and still never produce
+a shared 8-word window if the surrounding prose/comments differ (which
+they usually do when one author rewrites the other's docstrings). This
+is the same class of gap `find_binary_reuse()` was built to close for
+images -- "this kind of content carries no words to fingerprint" -- so
+`find_literal_token_reuse()` below closes it the same way, as its own
+separate, narrower mechanism rather than a variant of `find_reuse()`.
+
 Despite the correctly-preserved MIT copyright line (a legally proper
 minimum), the article's own prose never names the original source
 anywhere -- every "LangChain" mention in the README/article is about
@@ -141,6 +155,42 @@ def sha256_of_file(path: str) -> str:
 class BinaryMatch:
     filename: str
     reference_name: str
+
+
+def extract_literal_tokens(text: str, min_len: int = 20) -> set[str]:
+    """Whitespace-delimited tokens at least `min_len` characters long --
+    long enough that an exact match happening by coincidence is
+    implausible (a regex pattern, a distinctive error-format string, a
+    URL, a magic constant). Case-sensitive and otherwise unnormalized,
+    unlike `ngram_fingerprints()`: a literal like a regex pattern is
+    exactly the content that word-n-gram fingerprinting can't see, since
+    it forms a single unbroken "word" no matter how much the surrounding
+    prose/comments differ between two authors."""
+    return {tok for tok in text.split() if len(tok) >= min_len}
+
+
+@dataclass(frozen=True)
+class LiteralTokenMatch:
+    reference_name: str
+    token: str
+
+
+def find_literal_token_reuse(
+    candidate_text: str, references: dict[str, str], min_len: int = 20
+) -> list[LiteralTokenMatch]:
+    """Check a candidate text against one or more named reference texts
+    for exact-match, whitespace-free literal tokens at least `min_len`
+    characters long -- catching verbatim reuse of a regex pattern, an
+    error-message format string, or similar, that `find_reuse()`'s 8-word
+    sliding window would miss entirely if it's surrounded by differently-
+    worded prose on both sides."""
+    candidate_tokens = extract_literal_tokens(candidate_text, min_len)
+    matches = []
+    for name, ref_text in references.items():
+        ref_tokens = extract_literal_tokens(ref_text, min_len)
+        for tok in sorted(candidate_tokens & ref_tokens):
+            matches.append(LiteralTokenMatch(reference_name=name, token=tok))
+    return matches
 
 
 def find_binary_reuse(candidate_dir: str, references: dict[str, str]) -> list[BinaryMatch]:

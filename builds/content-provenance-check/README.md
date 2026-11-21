@@ -3,11 +3,13 @@
 A dependency-free Python tool, originally built from a pasted Medium
 article, "Building the Entire RAG Ecosystem and Optimizing Every
 Component" (Fareed Khan, a ninth source from this author analyzed in
-this project), and extended one round later against a second,
-independent real-world case from the same author's next article,
-"Building a Multi-Agent AI System with LangGraph and LangSmith." Full
-analysis: `/notes/rag-ecosystem-analysis.md` and
-`/notes/multi-agent-langgraph-analysis.md`.
+this project), extended one round later against a second, independent
+real-world case from the same author's next article, "Building a
+Multi-Agent AI System with LangGraph and LangSmith," and extended again
+a round after that against a third, from "Building DeepSeek R1 from
+Scratch Using Python." Full analysis: `/notes/rag-ecosystem-analysis.md`,
+`/notes/multi-agent-langgraph-analysis.md`, and
+`/notes/deepseek-r1-from-scratch-analysis.md`.
 
 ## The real finding
 
@@ -76,6 +78,70 @@ filename + identical bytes, same filename + different bytes, and a
 filename that only exists on one side — stated plainly as synthetic
 rather than committing large real PNGs disproportionate to a test.
 
+## A third real-world case: real reuse, real disclosure, and a real
+blind spot in the tool itself
+
+"Building DeepSeek R1 from Scratch Using Python" (the same author's
+11th source analyzed in this project) walks through reproducing
+DeepSeek R1's GRPO training pipeline, including five named reward
+functions (`accuracy_reward`, `format_reward`, `reasoning_steps_reward`,
+`get_cosine_scaled_reward`, `get_repetition_penalty_reward`) whose names
+and implementation style closely resemble Hugging Face's own `open-r1`
+project. Checked directly: cloned the real, linked
+`FareedKhan-dev/train-deepseek-r1` (LICENSE correctly names Fareed Khan,
+not a third party — same pattern as the langgraph-101 case, not the
+rag-ecosystem one) and Hugging Face's real `huggingface/open-r1`.
+
+- **`reasoning_steps_reward`'s regex pattern is character-for-character
+  identical** between the two: `r"(Step \d+:|^\d+\.|\n-|\n\*|First,|
+  Second,|Next,|Finally,)"`, down to the same bullet markers and
+  transition words, and both use the identical "magic number 3" scaling
+  (`min(1.0, count / 3)`).
+- **`get_repetition_penalty_reward`'s core formula and error string are
+  verbatim**: `scaling = 1 - len(ngrams) / total`, `reward = scaling *
+  max_penalty`, and `raise ValueError(f"max_penalty {max_penalty} should
+  not be positive")` match exactly. Measured overlap: 22/179 n-gram
+  windows (12.3%) between the two real functions.
+- Elsewhere, real independent rewriting: `accuracy_reward` swaps
+  `open-r1`'s "skip unparseable examples" (`reward = None`) for a fixed
+  neutral reward (`0.5`); `format_reward` uses a looser regex;
+  `get_cosine_scaled_reward` reuses `accuracy_reward()` internally
+  rather than re-parsing, and caps `progress` at 1.0 where `open-r1`'s
+  own version doesn't — a real fix of a latent bug in the original
+  (uncapped `progress` can push `cosine` past one full period); the
+  `get_repetition_penalty_reward` here is English-only, dropping
+  `open-r1`'s Chinese/`jieba` branch and its citation of the reward's own
+  source paper (`https://huggingface.co/papers/2502.03373`) and reference
+  implementation.
+- **The repo's own real `README.md`, lines 1661-1673, carries an
+  explicit "## Citation" section**: "This project was completed with the
+  help of the OpenR1 implementation from Hugging Face," followed by a
+  formal BibTeX-style citation naming the project title and
+  `https://github.com/huggingface/open-r1` directly — a specific,
+  genuine disclosure, not a bare "Hugging Face" brand mention (every
+  other "Hugging Face" reference in this repo's README is a dataset/
+  library-usage link, the same false-disclosure trap the
+  rag-ecosystem round's "LangChain" mentions were). This is the
+  opposite verdict from rag-ecosystem and matches the langgraph-101
+  case: real reuse, properly credited. Whether this exact citation also
+  appears in the Medium article's own text (vs. only the repo's README)
+  wasn't independently confirmed this round, stated plainly rather than
+  assumed either way.
+
+**A real gap found in this tool itself while checking the first case**:
+`find_reuse()`'s n-gram overlap on `reasoning_steps_reward` measured
+under 3% despite the regex pattern being 100% identical — because the
+pattern string has no internal whitespace, it's a single unbroken
+"word" to the word-splitting fingerprinter, and the surrounding
+docstrings/comments were independently rewritten on both sides, so no
+8-word window ever lines up. The exact same kind of gap
+`find_binary_reuse()` was built to close for images one round ago
+("this content carries no words to fingerprint"). Closed the same way:
+**`find_literal_token_reuse()`**, a new function checking for exact-match
+whitespace-free tokens at least 20 characters long — long enough that
+an incidental match is implausible — confirmed to catch the identical
+regex pattern directly.
+
 ## Checked `/builds/` first
 
 `curriculum-link-auditor/` checks a curated list's *factual claims*
@@ -108,12 +174,22 @@ reuse is disclosed. A genuinely new gap.
 - **`check_provenance(...)`** — combines both into one report, with
   `undisclosed_reuse` as the actual finding: reuse with no matching
   disclosure.
+- **`find_binary_reuse(candidate_dir, references)`** — sha256-based
+  byte-identical file detection by filename, for content (images) that
+  carries no words to fingerprint.
+- **`extract_literal_tokens(text, min_len=20)`** /
+  **`find_literal_token_reuse(candidate, references, min_len=20)`** —
+  exact-match detection for whitespace-free literal tokens (a regex
+  pattern, a distinctive error-format string) long enough that an
+  incidental match is implausible — content that also carries no words
+  for `find_reuse()`'s n-gram window to see, for a different reason
+  than images do (one unbroken "word," not zero words).
 
 ## Proof
 
 `python3 -m unittest tests.test_provenance_check tests.test_cli -v` —
-**30/30 tests pass** (22 original + 8 new: the second real-world case
-and `find_binary_reuse()`), including:
+**39/39 tests pass** (30 prior + 9 new: the third real-world case and
+`find_literal_token_reuse()`), including:
 
 - Real, short excerpts from both actual repos — `rag-from-scratch`'s
   real cell 32 and `rag-ecosystem`'s real cell 53 — committed as
@@ -149,3 +225,20 @@ directly, not guessed at.
   checked directly; whether they trace to a different LangChain
   evaluation cookbook wasn't chased further, stated as unconfirmed
   rather than assumed either way).
+- Wiring `find_literal_token_reuse()` into `check_provenance()`/the CLI
+  by default — kept as its own separate, explicitly-called mechanism,
+  same convention as `find_binary_reuse()`, rather than silently merged
+  into the main report where its different (and much more permissive)
+  false-positive profile — a 20-character shared token is a weaker
+  signal alone than an 8-word shared phrase — would need its own
+  disclosure-matching semantics to combine safely.
+- A verdict on whether the DeepSeek R1 article's other reward functions
+  (`accuracy_reward`, `format_reward`, `get_cosine_scaled_reward`) trace
+  to `open-r1` specifically versus general GRPO-training convention —
+  the two functions checked (`reasoning_steps_reward`,
+  `get_repetition_penalty_reward`) are the ones with distinctive enough
+  verbatim elements (an exact regex, an exact error string) to support a
+  real finding; the other three show real independent rewriting
+  (different defaults, a different accuracy-reward design, a cosine
+  implementation that reuses `accuracy_reward()` rather than
+  re-parsing), so no reuse claim is made about them.
