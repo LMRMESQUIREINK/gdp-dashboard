@@ -4781,6 +4781,75 @@ yourself every time.
   push-capable credentials to an unrelated third-party repo just to
   read one number is the same disproportionate step this project's
   `curriculum-link-auditor` round already declined for the same reason.
+- **Deep analysis + new build from a pasted Substack article: "The
+  presentation rules MIT taught its students, turned into a Claude
+  skill"** (Frank Andrade/Artificial Corner) — a paywalled piece: the
+  free portion covers Patrick Winston's real MIT "How to Speak" lecture
+  rules and three free prompts; the paid portion (never seen) describes
+  a Claude skill applying them automatically plus a branded PowerPoint
+  export. Full write-up in
+  `/notes/winston-talk-checker-analysis.md`. Confirmed Frank Andrade/
+  Artificial Corner is a real, existing Substack newsletter, but its
+  claimed "93,000 people read it every week" couldn't be confirmed to
+  that exact figure — the only public number found (a related Substack
+  profile) shows "51K+," a different metric from a different page.
+  `ocw.mit.edu` is blocked by this sandbox's egress proxy (confirmed via
+  direct `curl`, extending the same restriction class as arxiv.org/
+  Hugging Face/agentskills.io/dev.to/medium.com/nocobase.com), so the
+  primary lecture transcript couldn't be read directly — checked the
+  article's 7 specific claims instead against two independent sets of
+  real student/reader lecture notes (GitHub Gists). 4 of 7 confirmed
+  exactly by both independent sources (no logos/clutter/background
+  decoration; arrows not a laser pointer; the five memorable-talk
+  elements, Symbol/Slogan/Surprise/Salient idea/Story, named
+  identically). 1 of 7 confirmed in substance but stated more
+  absolutely in the article than in the real notes: ending on a
+  "Contributions" slide and never literally saying "thank you" last —
+  one of the two real sources frames "Contributions" as "perhaps
+  better," not a hard rule, and lists "salute the audience" as one of
+  three closing options, not the article's implied single correct
+  choice. 2 of 7 specific, confident numbers (a ~7-second pause after
+  asking the room a question, a minimum "40-point" font, ~20% of any
+  audience checked out at any moment) weren't found in either
+  independent source at all — not proven false, genuinely unconfirmed,
+  consistent with this project's standing practice of flagging
+  precise-sounding figures with no traceable primary source. Credited:
+  the real, well-corroborated core mechanism (say the main idea three
+  times, "fence" what it's not, signpost between sections, close on
+  contributions) matches both independent sources closely. **Built**:
+  checked `/builds/` and `.claude/skills/` first — nothing in this
+  project checks presentation/deck content, a genuinely new gap —
+  `/builds/winston-talk-checker/`, a dependency-free Python tool
+  implementing only the confirmed rules as mechanical checks over a
+  structured deck representation (slides + optional speaker notes),
+  not the paywalled skill (never seen, nothing derived from it) and
+  not the three unverified numbers. Honestly marks two checks
+  `not_assessable` by default: whether a slide visually has logo/
+  clutter (this checker reads text, not a rendered image — needs a
+  hand-filled field or a future `.pptx` reader) and whether the
+  declared Symbol/Slogan/Surprise/Salient idea/Story are *genuinely*
+  memorable (an opt-in, self-reported field, never inferred from
+  prose). 38/38 tests pass, including a real discrimination pair (a
+  deliberately well-built deck passing every checkable rule, a
+  deliberately bad one failing/warning on every rule it violates on
+  purpose, modeled on the article's own described demo — a 10-minute
+  "How I use Claude" team talk — since the article never shows the
+  actual deck content, stated plainly as this build's own content) and
+  real subprocess CLI tests with clean, non-traceback error handling.
+  **Three real bugs found and fixed in this build's own first draft,
+  not manufactured**: the "good" fixture's opening slide stated the
+  promise but not the main idea itself, so the newly-written
+  `main_idea_repeated` check correctly failed it on the first run
+  (fixed the fixture, not the check — Winston's rule is to say the
+  idea at the start too); the "bad" fixture's deliberately-overlong
+  slide bullet was actually only ~32 words, under the 40-word
+  threshold it was meant to violate (fixed the fixture, not the
+  threshold); and a plain test-authoring mistake
+  (`Deck(five_elements=...)` missing the required `slides` argument),
+  caught immediately by a `TypeError` on the first real run.
+  Deliberately not built: a `.pptx` reader to populate the clutter
+  check automatically from a real file, and anything resembling the
+  paywalled skill's own actual prompt or branded-export behavior.
 
 ---
 
