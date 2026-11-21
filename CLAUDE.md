@@ -5243,7 +5243,23 @@ yourself every time.
   docs tie these three skills to any specific pair, and a Claude
   connector is an account-level OAuth integration where a wrong guess
   costs real setup effort, so this was left for the user to name
-  rather than guessed at.
+  rather than guessed at. **Resolved**: the user named Figma for one.
+  Checked rather than assumed: `ListConnectors` confirmed Figma isn't
+  among this account's currently-connected integrations at all (Canva,
+  Airtable, Notion, ACE Music, Make, Tango are), and
+  `SearchMcpRegistry` confirmed a real, directory-listed Figma
+  connector exists (`generate_diagram`, `get_design_context`,
+  `get_screenshot`, `create_design_system_rules`, etc.) but isn't
+  installed for this org — surfaced to the user via
+  `SuggestConnectors` rather than claimed as connected, since
+  connecting one is an account-level OAuth action only the user can
+  take, not something this session can do on its own. For the second
+  connector, named Canva — already connected and enabled in this
+  session per the same `ListConnectors` check — as the natural
+  complementary pairing for this design-skill stack (asset/mockup/
+  brand-template generation alongside Figma's design-context pull and
+  the three newly-vendored craft/taste skills), rather than guessing a
+  second unconnected one.
 
 ---
 
