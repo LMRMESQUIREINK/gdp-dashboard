@@ -1,0 +1,724 @@
+# ai-agent-testing-framework
+
+A real, working reproduction of the TypeScript + Vitest project from
+rajesh yemul's nine-part (so far) Medium series: "Building an AI Agent
+Testing Framework from Scratch with TypeScript and Vitest" (Part 1),
+"Testing AI Agents: A Practical Quality Engineering Journey" (Part 2),
+"What Does 'Correct' Mean for an AI Agent?" (Part 3), "Writing Our First
+Functional Test for an AI Agent" (Part 4), "Negative Testing: What
+Happens When the Input Is Bad?" (Part 5), "Testing Ambiguity in AI
+Agents" (Part 6), "True Ambiguity: Can an AI Agent Recognize Multiple
+Valid Interpretations?" (Part 7), "Testing Grounding: Can an AI Agent
+Stay Within the Evidence?" (Part 8), and "Testing AI Agent Boundaries:
+Output Contracts, Grounding and Prompt Injection" (Part 9) — the
+author's own small, from-scratch agent-execution harness (Markdown+YAML
+agent definitions → `AgentConfigLoader` → `AgentRuntime` → `LLMClient`
+→ an LLM → `AgentResult` → Vitest). Unlike most sources in this
+project, this article series *is* real, runnable code shown in full
+(Parts 1-2, 4-9) plus a precisely-stated framework (Part 3), not a
+vague conceptual piece to extract a mechanism from — so this build is a
+faithful, continuously-updated reproduction, actually installed and run
+in this sandbox, with real bugs found and fixed along the way in most
+rounds — including, in Parts 6-9, four rounds in a row of real bugs
+found by testing against new material. Analyzed in
+`/notes/ai-agent-testing-framework-analysis.md` (Part 1),
+`/notes/ai-agent-testing-framework-part2-analysis.md` (Part 2),
+`/notes/ai-agent-testing-framework-part3-analysis.md` (Part 3),
+`/notes/ai-agent-testing-framework-part4-analysis.md` (Part 4),
+`/notes/ai-agent-testing-framework-part5-analysis.md` (Part 5),
+`/notes/ai-agent-testing-framework-part6-analysis.md` (Part 6),
+`/notes/ai-agent-testing-framework-part7-analysis.md` (Part 7),
+`/notes/ai-agent-testing-framework-part8-analysis.md` (Part 8), and
+`/notes/ai-agent-testing-framework-part9-analysis.md` (Part 9).
+
+## A note on provenance: this author's two series connect
+
+The same author (rajesh yemul) has a separate "Quality Engineering"
+series this project already analyzed and built from
+(`/notes/orchestration-agent-loop-analysis.md`,
+`/builds/orchestration-decision-engine/`) — that series' own Season 3
+producer pipeline names a "Requirement Analyzer" as its first producer.
+This article's own worked example defines exactly that agent
+(`agentId: requirement-analyzer`), strongly suggesting this "Testing
+Framework from Scratch" series is the technical foundation underneath
+that higher-level orchestration narrative, from the same author, across
+two separately-numbered series. Neither article states this connection
+directly; it's only visible reading both together.
+
+## Two real bugs found and fixed, both reproduced for real, not just read
+
+1. **A genuine syntax error in the article's own shown `vitest.config.ts`.**
+   Counting braces in the pasted snippet (`grep -o '{' | wc -l` → 3,
+   `grep -o '}' | wc -l` → 4) found an unbalanced object literal. Copied
+   verbatim and run for real (as plain ESM, bypassing the `.ts`-specific
+   parsing quirks that let a quick `tsc`/`node --check` pass silently):
+   `node` throws `SyntaxError: missing ) after argument list` pointing
+   at the exact extra `}`. This repo's `vitest.config.ts` has the fix
+   (one closing brace removed, a trailing comma added) — confirmed by
+   actually running the real test suite against it (10/10 passing, see
+   below).
+2. **A real gap between the article's stated goal and what its own code
+   delivers.** The article explicitly motivates having an `LLMClient`
+   abstraction as enabling "deterministic tests for the testing
+   framework itself" — but `AgentRuntime`'s real constructor types its
+   parameter as the **concrete** `LLMClient` class, not an interface.
+   Reproduced directly: a plain object implementing only `generate()`
+   was passed where `AgentRuntime` expects an `LLMClient`, and
+   `tsc --strict` rejected it —
+   `error TS2741: Property 'client' is missing in type '{ generate(...): Promise<string>; }' but required in type 'LLMClient'`
+   — because TypeScript matches class types structurally **including
+   their private fields**, and the real `LLMClient` has a private
+   `client: OpenAI` field no mock can supply. This directly blocks the
+   exact deterministic-test capability the article's own prose promises.
+   **Fixed** by extracting a real `LLMClient` interface into
+   `src/types/AgentTypes.ts` (just the `generate()` signature), having
+   the concrete class `implements` it, and retyping `AgentRuntime`'s
+   constructor against the interface instead of the class. A plain mock
+   object now satisfies it cleanly under `strict` mode — proven directly
+   in `tests/requirement-analyzer/requirement-analyzer.test.ts`.
+
+## Part 2 update: the real `requirement_analyzer.md`, a strict output parser, and a grounding checker
+
+Part 2 of the same series ("Testing AI Agents: A Practical Quality
+Engineering Journey") gave this agent's real, complete definition for the
+first time — Part 1 only showed the `# Role` fragment. **This build's
+Part-1 placeholder has been replaced with the real file**, correcting it
+rather than silently overwriting it (see
+`/notes/ai-agent-testing-framework-part2-analysis.md` for the full diff).
+The real file uses a different Responsibilities list (Actor/Feature/
+Preconditions/Positive scenarios/Negative scenarios/Ambiguities, not the
+placeholder's Trigger/Expected-Outcome), seven specific numbered grounding
+Rules (not the placeholder's three generic ones), and a strict-JSON-only
+Output Requirements contract (not the placeholder's prose sections).
+
+Two new modules operationalize rules the agent's own instructions state
+but that neither Part 1 nor Part 2's own shown code ever actually checks:
+
+- **`src/output/parseAgentOutput.ts`** — enforces the real Output
+  Requirements contract literally: valid JSON only, no Markdown code
+  fences, no surrounding prose, the exact six-field schema
+  (`actor`/`feature`/`preconditions[]`/`positiveScenarios[]`/
+  `negativeScenarios[]`/`ambiguities[]`). `AgentRuntime.run()` still
+  returns a raw `output: string` (the article's own deliberate choice —
+  "our testing layer will eventually determine whether that output
+  satisfies the contract"); this is that missing enforcement.
+- **`src/grounding/checkGrounding.ts`** — a real, honestly-scoped
+  grounding/hallucination checker built directly from Part 2's own two
+  worked "the JSON is valid but the agent is still wrong" examples: one
+  fabricating "OTP" and "within 5 minutes," the other fabricating "OAuth
+  2.0" and "AES-256 encryption," for a requirement that mentions neither.
+  Checked `/builds/` first — `humanizer` checks prose *style*,
+  `paired-bootstrap-ratchet` checks statistical significance of accuracy
+  *claims*, `defender-loop-verifier` is about crash self-report, none of
+  them check per-response grounding against a source document, so this
+  is a genuinely new mechanism.
+
+  **Deliberately not a full word-presence check** — and this was
+  verified, not assumed: Part 2 also gives a real paraphrase-equivalence
+  example (two differently-worded but behaviorally equivalent scenario
+  descriptions). A standalone script run *before* writing this module
+  confirmed a naive "every output word must appear in the input" check
+  really does flag `["user", "initiates", "recovery", "completes"]` as
+  unsupported against that exact pair — a false positive against the
+  article's own explicit point that different phrasings can be equally
+  valid. `checkGrounding()` instead targets only the two concrete
+  patterns Part 2's own two fabrication examples actually are: numeric/
+  duration claims, and a small, named, auditable list of security/auth
+  technical terms. This is **not** full semantic correctness checking —
+  the article's own "test oracle problem," explicitly deferred to a
+  future part of its own series — it's a narrow, evidenced check for
+  exactly the fabrication pattern this source demonstrates, stated
+  plainly as a limitation rather than oversold.
+
+Also updated: the existing mocked-LLMClient pipeline test now uses the
+real JSON schema (it previously used a prose-format mock matching the
+now-superseded placeholder) and runs the full real pipeline —
+`AgentConfigLoader` → `AgentRuntime` → `parseAgentOutput` →
+`checkGrounding` — end to end.
+
+**A real bug found while verifying this round, in the build's own test
+setup, not the source**: running `npm test` after `npm run build` first
+reported 50 passing tests — double the real count. `tsc`'s own `dist/`
+output includes a compiled copy of every `tests/**/*.ts` file, and
+Vitest's default include pattern was picking those up too, silently
+running every test twice. Caught by actually counting (5 real test
+files × their real assertion counts = 25, not 35 or 50, both of which
+were seen at different points depending on how stale `dist/` happened
+to be) rather than trusting the first number Vitest printed. Fixed by
+adding an explicit `exclude: ["**/node_modules/**", "**/dist/**"]` to
+`vitest.config.ts` — Vitest's own default excludes cover
+`node_modules/` but not a project's own build output directory.
+
+## Part 3 update: a real Required/Allowed/Forbidden quality-boundary oracle
+
+Part 3 ("What Does 'Correct' Mean for an AI Agent?") has no new runnable
+code of its own — it's the series' own named "test oracle problem"
+(deferred since Part 1) finally defined precisely enough to implement: a
+**Required / Allowed / Forbidden** framework, four correctness dimensions
+(structural, semantic, groundedness, instruction-following), and TC001's
+own exact 8-item Required checklist for the canonical password-reset
+requirement.
+
+- **`src/oracle/qualityBoundary.ts`** — the generic mechanism. A
+  `QualityBoundary<T>` is just a `required` list and a `forbidden` list,
+  each a set of named, independently reportable checks.
+  `evaluateBoundary()` never collapses this to one boolean — the
+  article's own central Section 6-7 lesson ("the problem may not be the
+  agent, the problem may be our test") requires being able to see
+  **exactly** which check failed. "Allowed" has no list anywhere in the
+  API, by design — it's the implicit complement of Required + Forbidden,
+  matching the article's point that fragile exact-string assertions are
+  the wrong tool for anything that may legitimately vary.
+- **`src/oracle/requirementAnalyzerOracle.ts`** — the concrete TC001
+  acceptance oracle, instantiating the article's own 8-item checklist
+  verbatim (reproduced in the module's own docstring), reusing Part 2's
+  `checkGrounding()` directly as its one Forbidden check rather than
+  reimplementing fabrication detection.
+
+**The single most important design decision in this file**: it
+deliberately never requires `negativeScenarios.length > 0`. This is Part
+3's own central lesson, operationalized rather than just read about — a
+requirement with no negative-path evidence (the real canonical
+password-reset example never describes a wrong-input case) must pass
+with an empty `negativeScenarios` array; requiring it to be non-empty
+would be **the test inventing an expectation the source material never
+supports**, exactly the mistake Part 3 names and warns against. Proven
+directly as two named test cases ("Situation A" / "Situation B" in
+`requirementAnalyzerOracle.test.ts`): Situation A (empty, unsupported
+negative scenarios) passes; a constructed Situation B (a *fabricated*
+negative scenario inventing a specific unstated rule) correctly fails —
+but as a **Forbidden** violation, not a missing Required item, which is
+the real distinction Part 3 is making.
+
+**A real, honestly-stated gap found while trying to implement this**:
+checklist items 6-7 ("Actor represents the user," "Feature represents
+password reset") are Part 3's own named "semantic correctness" dimension
+— but neither Part 3 nor Parts 1-2 ever specify an algorithm for
+determining this beyond one obviously-wrong worked example. Same shape
+of gap as Part 1's YAML-vs-prose mismatch in the sibling "Quality
+Engineering" series: a real capability is named as necessary, with no
+mechanism supplied to automate it. Stated plainly in the module's own
+docstring: checks 6-7 here are **lexical-grounding** checks (non-empty,
+shares a significant word with the requirement, allowing simple
+singular/plural variation), not a claim of real semantic understanding.
+
+**A real bug found and fixed while building this, caught by the test
+suite itself, not by inspection**: the first version of the
+lexical-grounding check used exact token-set intersection, which failed
+the article's own most basic case — `actor: "User"` against a
+requirement that only ever says "**users**" (plural) shares no exact
+token. Fixed with the simplest stemming that resolves it (strip a
+trailing "s" from either side before comparing). A second, smaller bug
+in the same run: three Required checks assumed `ctx.result` was always a
+real object and threw a raw `TypeError` on a missing result instead of
+returning `false` — fixed with explicit null guards, since
+`evaluateBoundary()` runs every check regardless of whether an earlier
+one already failed (by design, so nothing can hide behind an earlier
+failure).
+
+46/46 Vitest assertions pass (up from 25), covering: the real canonical
+requirement passing all 8 Required items; the Situation A/B pair above;
+the real Part 2 paraphrase-equivalence example staying correctly
+Allowed; each of the 8 Required items failing independently, one at a
+time; and both of Part 2's real fabrication examples (OTP/5-minutes,
+OAuth 2.0/AES-256) correctly tripping the Forbidden check via the reused
+`checkGrounding()` module.
+
+**Still deliberately not built**: true semantic correctness for checks
+6-7 (a real, unresolved gap in the source, not papered over); TC001
+executed against a live agent (same standing no-live-API-access
+restriction as every build here — this oracle is the acceptance
+criteria TC001 would check against, not a live-fired test); and
+instruction-following as its own dimension (named by Part 3 but given no
+worked example distinct from groundedness/structural correctness to
+build against).
+
+## Part 4 update: TC001 written literally, and two findings confirmed/sharpened by actually running it
+
+Part 4 ("Writing Our First Functional Test for an AI Agent") writes TC001
+for real, as actual Vitest code against the real runtime path — unlike
+Part 3's framework-only treatment, this is real runnable code shown in
+full, the same treatment Parts 1-2 got.
+
+- **`tests/requirement-analyzer/TC001.test.ts`** — a faithful, literal
+  reproduction of the article's own TC001, laid out by its exact 7-layer
+  structure (Execution, Identity, Output, Structure, Contract, Semantics,
+  Behavioral expectation), run against the real pipeline
+  (`AgentConfigLoader` → `AgentRuntime` → mocked `LLMClient`, same
+  standing no-live-API-access convention as every build here).
+
+**Independent confirmation, not a new finding**: Part 4 arrives at the
+exact same conclusion Part 3's oracle (`requirementAnalyzerOracle.ts`,
+built last round) already implemented — never require
+`negativeScenarios.length > 0` — but arrives at it through its own
+concrete walkthrough (write the assertion, watch it fail on real output,
+investigate, remove it) rather than from the abstract framework. A
+dedicated test (`cross-checks against the Part 3 oracle`) proves both
+reach the same verdict on the same real pipeline output: the oracle was
+built and committed before this round ever read Part 4's text, so their
+agreement is real evidence that the Part 3 design decision was correct,
+not a restated premise.
+
+**A real, verified precision gap in the article's own stated reasoning**,
+checked with code rather than taken at face value: the article flags
+`const parsed = JSON.parse(x); expect(() => parsed).not.toThrow();` as
+wrong because "the parsing has already happened... if `JSON.parse()`
+fails, the test has already thrown." True, but this understates the
+actual problem — `() => parsed` is a closure returning an
+already-captured value, so it **can never throw regardless of what that
+value is**, even on the success path where parsing returns something
+structurally nonsensical. Reproduced directly in the test suite: the
+"incorrect" assertion passes unconditionally for `parsed = { this: "is
+not a RequirementAnalysis at all" }`, proving it verifies nothing at
+all, not just that it runs too late. Confirmed separately that this
+build's own `parseAgentOutput()` (built in Part 2) already follows the
+correct discipline — no change was needed there.
+
+**A real, stated design divergence, not a bug**: the article's Layer 6
+semantic checks hardcode one literal substring per field
+(`.toContain("user")`, `.toContain("password")`) tied to this one
+requirement's exact wording, while Part 3's `isGroundedField()` checks
+for any shared significant word against the full requirement text
+(generalizing to a differently-worded requirement without rewriting the
+check). Neither is wrong for its own scope — stated plainly rather than
+assumed one subsumes the other.
+
+13 new Vitest assertions (59/59 total, up from 46), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+Full write-up in `/notes/ai-agent-testing-framework-part4-analysis.md`.
+
+## Part 5 update: negative testing (TC002-TC004), generalized onto the existing Required/Forbidden mechanism
+
+Part 5 ("Negative Testing: What Happens When the Input Is Bad?") gives
+three new tests challenging different boundaries: TC002 (empty input —
+missing evidence), TC003 (meaningful but off-domain input — scope
+adherence), TC004 (nonsense input — semantic validity). Its own named
+principle: "the agent must not convert insufficient evidence into
+invented facts." Its own real code for asserting this is:
+
+```ts
+const serializedOutput = JSON.stringify(parsed).toLowerCase();
+expect(serializedOutput).toMatch(
+  /unknown|missing|not specified|not provided|insufficient|empty|ambiguous/
+);
+expect(serializedOutput).not.toContain("banana management");
+expect(serializedOutput).not.toContain("password reset");
+```
+
+**Recognized directly as the same Required+Forbidden shape Part 3's
+`qualityBoundary.ts` already generalizes**, rather than hand-rolled as a
+parallel mechanism:
+
+- **`src/oracle/safeFailureOracle.ts`** — built on the existing
+  `evaluateBoundary()`: one Required check (the safe-failure signal
+  regex against the serialized, lowercased output) plus a Forbidden
+  check per named invented-concept string. One real addition beyond the
+  article's own literal code: `serialize()` falls back to the raw output
+  string when the response isn't valid JSON at all, rather than letting
+  a bare `JSON.parse()` throw before any safe-failure assertion gets a
+  chance to run — closing the same class of problem Part 4's
+  JSON.parse-assertion finding identified, architecturally this time
+  instead of just flagged.
+- **`tests/requirement-analyzer/negative-testing.test.ts`** — TC002-TC004
+  each tested two ways against the real pipeline: a literal reproduction
+  of the article's own exact assertion pattern using its own real,
+  quoted agent output, and the same case through `evaluateSafeFailure()`
+  confirming the generalized oracle agrees. Each TC also gets a
+  **discrimination check** — a planted, hallucinated response the agent
+  did NOT actually produce (inventing a password-reset feature from
+  empty input; inventing "banana management" from an elephant/banana
+  statement; inventing a login feature from pure gibberish) — proving
+  the oracle genuinely fails these rather than passing everything handed
+  to it, the same discrimination discipline this project applies
+  everywhere else (`humanizer`, `ten-k-website-grader`,
+  `voice-extractor`).
+
+10 new Vitest assertions (69/69 total, up from 59), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+**No bug found this round** — everything passed on the first real run,
+stated plainly rather than manufactured. Full write-up in
+`/notes/ai-agent-testing-framework-part5-analysis.md`.
+
+## Part 6 update: a real regression bug found in this build's own already-shipped checkGrounding(), found and fixed
+
+Part 6 ("Testing Ambiguity in AI Agents") narrates TC005 (subjective
+ambiguity: `"...reset their password quickly using email."`) and — its
+central event — a naive forbidden-term assertion
+(`not.toContain("otp")`) that failed against the agent's own correct
+output, because "OTP" was mentioned as a hedged, labeled *possibility*
+("...is not specified... e.g., OTP"), not asserted as a fact.
+
+**This project checked that directly instead of treating it as
+hypothetical**, and found this build's own `checkGrounding()` module
+(shipped in Part 2, already reused as Part 3's Forbidden check and
+Part 5's `safeFailureOracle`) has **exactly this bug**: running the real
+TC005 output through the unmodified module returned a false-positive
+finding on "OTP," reproduced before touching any code.
+
+**Fixed** with hedge detection, not a weaker check: `HEDGE_PATTERN` in
+`checkGrounding.ts` exempts a claim/term from being flagged only when
+the *same* field/array-item text also contains hedging language
+(`"not specified"`, `"e.g."`, `"possibly"`, `"hypothetical"`, etc.).
+This widens what's Allowed without narrowing what's Forbidden — verified
+directly: both of Part 2's original fabrication examples (neither
+hedges its invented term) still correctly flag after the fix, and a new
+test proves the article's own "Response A" (an unhedged OTP claim) still
+fails at the full-oracle level too.
+
+**A second finding, documented rather than "fixed"**: Part 6 itself
+observes that the real schema's `ambiguities` array conflates true
+ambiguity ("quickly" is subjective) with plain missing information
+(password strength rules, error handling). This project does not add a
+`missingInformation` field — `requirement_analyzer.md` is the real,
+authoritative file the source series supplies, and inventing a field for
+it would be fabricating spec nobody gave. The finding is instead
+confirmed with a test against the real output, not silently acted on.
+
+10 new Vitest assertions (79/79 total, up from 69), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+Full write-up in `/notes/ai-agent-testing-framework-part6-analysis.md`.
+
+## Part 7 update: a real second-order bug in last round's own hedge fix, plus an honestly-tracked gap in this project's own oracle
+
+Part 7 ("True Ambiguity") tests TC006 — a requirement supporting
+multiple *concrete, competing* interpretations (`"...cancel an order
+within one day..."`: 24 hours from the timestamp, or a calendar-day
+boundary?) rather than Part 6's merely *undefined* term. Its central
+move is self-critical: the article names its own TC006 as **correct but
+incomplete** — it only verifies the agent acknowledges the ambiguity,
+not that it never asserts one interpretation as fact.
+
+This project turned that question on its own code, not just the
+article's narrative, and found **a real bug in last round's own hedge
+fix**: the first test written against TC006's real output failed
+unexpectedly. Investigating found `HEDGE_PATTERN` (added in Part 6) had
+two real defects: `\be\.g\.\b` never matched *anything* (a literal `.`
+can't form a word-boundary transition right after it — dead code since
+the moment it was written, invisible because Part 6's own fixture
+happened to also contain `"is not specified"` in the same sentence,
+masking it), and `"ambiguous"` — arguably the clearest hedge word there
+is — was never in the list at all. Both fixed in
+`src/grounding/checkGrounding.ts`; confirmed the fix doesn't loosen
+true-positive detection by re-running every existing fabrication
+fixture from Parts 2 and 6.
+
+**Then, deliberately, this project tested its own oracle the way the
+article tests its**: constructing the article's own named "Behavior A"
+(an unhedged numeric interpretation asserted as fact — `"...within 24
+hours..."`) and "Behavior B" (an unhedged *non-numeric* interpretation
+asserted as fact — `"...until midnight on the following calendar
+day."`). Behavior A is confirmed already caught by the existing
+numeric-claim mechanism. **Behavior B is confirmed to slip through
+undetected** — an honestly-tracked, named limitation, not silently
+papered over: a general fix needs detecting "does this field assert a
+specific interpretation as fact with no evidence," which is the same
+semantic-correctness problem Part 3 already named as unsolved. A test
+asserts the *current* (gap) behavior explicitly, so a future real fix
+shows up as an intentional change to a named test, not a silent
+behavior shift.
+
+10 new Vitest assertions (87/87 total, up from 79), `tsc --strict
+--noEmit` clean, `npm run build` clean, `npm audit` 0 vulnerabilities.
+Full write-up in `/notes/ai-agent-testing-framework-part7-analysis.md`.
+
+## Part 8 update: four evidence situations (TC007-TC010), one generalized mechanism instead of six hand-written regexes, two more real bugs found
+
+Part 8 ("Testing Grounding") tests a new requirement
+(`"...upload a profile picture."`) across four evidence situations:
+**TC007** sparse evidence (preserve the unknowns), **TC008** explicit
+evidence (`"...stored in Amazon S3."` — use it, don't discard it, don't
+expand beyond it), **TC009** conflicting evidence (local device AND
+S3 — surface the conflict, don't silently pick a side), **TC010**
+unsupported inference (six named reasonable-sounding claims — auth
+required, JPEG/PNG support, a 5MB limit, S3 storage, an upload button,
+automatic thumbnails — none of which are supported).
+
+The article repeats Parts 6-7's exact lesson for TC007 (a naive
+word-presence assertion fails against a hedged mention), then fixes it
+with **six separate hand-written, per-claim regexes** — one per unsupported
+claim pattern, each narrowly scoped, with the article naming its own
+limitation plainly (a differently-phrased claim could slip past a
+narrow pattern). **This project's `checkGrounding()` already generalizes
+exactly this principle** (hedge-aware term/numeric detection, not
+per-claim regexes), so this round extended its existing term list and
+numeric-unit list with Part 8's real vocabulary instead of writing six
+new one-off assertions — TC010's six named categories are proven caught
+by one mechanism in a single parameterized test loop.
+
+**Two real bugs found while testing against this round's real/named
+material:**
+
+1. A real morphological-variant gap, same bug class as Part 3's
+   "user"/"users" finding: TC010's own named example is "Users must
+   **authenticate**..." — the term list had "authentication" (noun) but
+   not "authenticate" (verb), so this exact claim, lifted verbatim from
+   the article, slipped through on the first real run. Fixed by adding
+   the verb form explicitly — `TECHNICAL_TERMS` does no stemming by
+   design, so variants need listing, not assuming.
+2. A real, verified defect in **the article's own TC009 regex**: its
+   given silent-resolution pattern doesn't match either of its own two
+   named "tempting but wrong" example responses — confirmed directly
+   with a standalone script before writing any code, not assumed.
+   `src/oracle/contradictionOracle.ts` (new, built on the same
+   `qualityBoundary.ts` mechanism as `safeFailureOracle.ts`) keeps the
+   article's original patterns and adds four more, verified to actually
+   catch both of the article's own named examples.
+
+17 new assertions in a new `grounding-testing.test.ts` plus 1 regression
+test in `checkGrounding.test.ts` (105/105 total, up from 87), `tsc
+--strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+vulnerabilities. **A third round in a row with at least one real bug
+found and fixed.** Full write-up in
+`/notes/ai-agent-testing-framework-part8-analysis.md`.
+
+## Part 9 update: a real Zod contract (closing two real gaps) plus prompt-injection resistance
+
+Part 9 ("Testing AI Agent Boundaries") names three distinct boundaries
+explicitly — Evidence (grounding), Output (contract), Instructions
+(prompt injection) — and gives real content for the latter two:
+
+- **A real Zod schema**, `RequirementAnalysisSchema` (reproduced
+  verbatim, `zod@4.6.7` installed and its `.strict()` API confirmed
+  working by actually running it): required strings can't be empty,
+  arrays may stay empty, the schema is closed against extra fields.
+- **TC012-TC016**, deterministic contract tests needing no live agent
+  call (missing field, wrong type, extra field, empty string,
+  Markdown/code-fence output) vs. TC001-TC011/TC017-TC020's live
+  behavioral tests.
+- **TC017-TC020**, prompt-injection resistance: direct instruction
+  override, role/identity hijacking, data/instruction boundary
+  confusion, output-format manipulation.
+
+**Two real, verified gaps found in this project's own pre-existing
+`parseAgentOutput.ts`** (hand-rolled since Part 2), checked directly
+against the article's own schema rather than assumed: an unexpected
+extra field (`"confidence": 0.92`) was silently **dropped** instead of
+rejected, and an empty string (`"actor": ""`) **passed** validation —
+both reproduced against the unmodified module before refactoring.
+Fixed by rewiring `parseAgentOutput.ts` onto the real Zod schema
+(`src/schema/RequirementAnalysisSchema.ts`); the existing parse-into-
+`unknown`-before-validating discipline needed no change, since this
+module already did that correctly.
+
+**TC017-TC020's central connecting insight**: the grounding series'
+"mentioning 'JPEG' ≠ claiming JPEG is supported" (Parts 6-8) is the
+exact same reasoning pattern as "mentioning 'Delete all users' ≠
+adopting it as the feature." Built
+**`src/oracle/injectionResistanceOracle.ts`** on the same
+`qualityBoundary.ts` mechanism as every other oracle here: Required
+checks that actor/feature stay lexically anchored to the real,
+un-injected requirement (reusing Part 3's `isGroundedField`, extracted
+this round into **`src/oracle/lexicalGrounding.ts`** so both oracles
+share one implementation) and Forbidden checks that the injected
+values don't appear in the actor/feature fields themselves — checking
+adoption directly on those fields, not the whole serialized blob,
+cleanly separates "named in `ambiguities`" (Allowed) from "adopted into
+actor/feature" (Forbidden) without needing hedge detection here. The
+article gives no literal quoted output for TC017-020 (unlike earlier
+TCs), so every fixture is constructed from the article's own named
+desired/undesired values and labeled as such.
+
+**A real, honest limitation found while testing, not assumed**: the
+first draft of the TC017 discrimination test predicted both anchoring
+checks would fail on a fully-adopted bad response — running it showed
+only the actor check failed, because the forbidden feature value
+("Delete all users") happens to share the literal word "users" with the
+real requirement, so `isGroundedField`'s plain shared-word heuristic
+incorrectly reports it as anchored. The overall verdict still correctly
+fails, but only because the separate Forbidden check independently
+catches it — documented with a dedicated test proving this blind spot
+exists rather than silently adjusting the expectation to hide it.
+
+**TC020 is a different boundary entirely** — tested through the
+existing Zod-backed `parseAgentOutput()` contract directly (no
+actor/feature to check if the agent abandons JSON). The article's own
+literal injected bad output (`"# Status\nThe requirement has been
+approved."`) is correctly rejected — a positive finding: this boundary
+was already closed by Part 2/9's contract work, now proven against
+this specific attack framing.
+
+15 new Vitest assertions across two files (120/120 total, up from 105),
+`tsc --strict --noEmit` clean, `npm run build` clean, `npm audit` 0
+vulnerabilities. **A fourth round in a row with at least one real
+finding.** Full write-up in
+`/notes/ai-agent-testing-framework-part9-analysis.md`.
+
+## What's faithfully reproduced, unmodified
+
+Every file the article shows in full is reproduced as shown:
+`package.json`'s scripts, `tsconfig.json` (including `strict: true`),
+`AgentConfigLoader.ts` (`gray-matter`-based front matter parsing),
+`LLMClient.ts` (the real OpenAI SDK pointed at Gemini's real, web-
+verified OpenAI-compatible endpoint,
+`https://generativelanguage.googleapis.com/v1beta/openai/`), the
+`.gitignore`, and `src/index.ts`'s entry point. `AgentTypes.ts` and
+`AgentRuntime.ts` carry the one structural fix above; everything else is
+unchanged from the article's own shown code.
+
+## Proven
+
+```bash
+npm install          # real dependencies, 0 vulnerabilities (npm audit)
+npx tsc --noEmit      # strict mode, clean, including test files
+npm test              # 120/120 passing
+npm run build         # real dist/ output
+npm run agent         # fails fast and cleanly without a live GEMINI_API_KEY
+```
+
+**120/120 Vitest assertions pass** across thirteen real test files:
+
+- `tests/config/AgentConfigLoader.test.ts` — loads the **real**
+  `requirement_analyzer.md` from disk and asserts every front-matter
+  field parses correctly, that the instructions body never leaks
+  front-matter fields, that a relative path resolves consistently, and
+  that a missing file throws rather than returning a malformed config.
+- `tests/llm/LLMClient.test.ts` — the real fail-fast-on-missing-key
+  behavior, proven without any network call.
+- `tests/output/parseAgentOutput.test.ts` — the real Output Requirements
+  contract enforced against real fixtures: the article's own valid-
+  response example parses correctly; a Markdown-fenced response, prose
+  surrounding the JSON, malformed JSON, a top-level array, a missing
+  required field, and a wrong-typed array field are all rejected with a
+  typed `OutputContractViolation`, not a raw parse exception.
+- `tests/grounding/checkGrounding.test.ts` — the article's own two real
+  fabrication examples (OTP/5-minutes; OAuth 2.0/AES-256) are correctly
+  flagged; the article's own real paraphrase-equivalence example and a
+  genuinely clean response are correctly **not** flagged; a technical
+  term or number that genuinely *is* present in the requirement is
+  correctly not flagged; and a finding correctly names which field and
+  array index it came from.
+- `tests/requirement-analyzer/requirement-analyzer.test.ts` — the
+  **full real pipeline** (`AgentConfigLoader` → `AgentRuntime` →
+  `LLMClient` → `parseAgentOutput` → `checkGrounding`), using the
+  deterministic mock this build's own interface fix makes possible: the
+  real agent config loads, the real `AgentRuntime.run()` executes, the
+  mock's exact call arguments (instructions, input, model) are asserted
+  to match the real loaded config exactly, an empty-response edge case
+  is handled without throwing, and a two-call sequence proves the
+  runtime never caches or fabricates a result.
+- `tests/oracle/qualityBoundary.test.ts` — the generic Required/Forbidden
+  mechanism: passes when every Required check passes and no Forbidden
+  check fires, names **every** failing check rather than stopping at the
+  first, and confirms Allowed is a real absence (no list, no check
+  anywhere) rather than an unused stub.
+- `tests/oracle/requirementAnalyzerOracle.test.ts` — the concrete TC001
+  oracle (Part 3): the real canonical requirement passing all 8 Required
+  items; the Situation A/B pair at the heart of Part 3's central lesson;
+  the real Part 2 paraphrase example staying correctly Allowed; each of
+  the 8 Required items failing independently, one at a time; and both of
+  Part 2's real fabrication examples tripping the one reused Forbidden
+  check.
+- `tests/requirement-analyzer/TC001.test.ts` — the literal TC001 (Part 4),
+  laid out by the article's own 7-layer structure against the real
+  pipeline; the investigation proving the removed negativeScenarios
+  assertion really would have failed on this exact real output, and that
+  the requirement gives no negative-path evidence to justify it; the
+  cross-check confirming the Part 3 oracle and Part 4's own literal test
+  independently agree; and the JSON.parse-assertion tautology finding,
+  reproduced directly rather than taken on the article's word.
+- `tests/requirement-analyzer/negative-testing.test.ts` — TC002-TC004
+  (Part 5): empty input, wrong-domain input, nonsense input, each tested
+  against the article's own real quoted agent output both as a literal
+  reproduction of its exact assertion pattern and through the new
+  `safeFailureOracle`; plus a discrimination check per TC proving a
+  planted hallucinated response correctly fails, and an edge case
+  proving the oracle degrades cleanly on non-JSON output instead of
+  throwing.
+- `tests/grounding/checkGrounding.test.ts`'s "Part 6 fix" block — the
+  real TC005 output now passes cleanly; the article's own unhedged
+  "Response A" still correctly fails; both of Part 2's original
+  fabrication fixtures still correctly fail; a hedged numeric claim is
+  exempted too, proving the fix isn't technical-term-only.
+- `tests/requirement-analyzer/ambiguity-testing.test.ts` — TC005 (Part
+  6) at the full pipeline level: the real output passes `checkGrounding()`
+  and the full `requirementAnalyzerOracle` cleanly; a literal
+  reproduction of the article's own flagged-as-too-weak assertion,
+  shown genuinely failing against this real output; the Response A/B
+  distinction proven at the oracle level; and the Contract-defect
+  finding (the real `ambiguities` array mixing subjective ambiguity and
+  missing information) confirmed with code against the real output.
+- `tests/grounding/checkGrounding.test.ts`'s "Part 7 fix" block — the
+  `e.g.`-alone and `ambiguous`-alone cases now correctly exempt a
+  mention, isolated from any other hedge phrase (the real second bug
+  found in Part 6's own `HEDGE_PATTERN`).
+- `tests/requirement-analyzer/true-ambiguity-testing.test.ts` — TC006
+  (Part 7) at the full pipeline level: the real output passes
+  `checkGrounding()` and the full `requirementAnalyzerOracle` cleanly;
+  a literal reproduction of the article's own flagged-as-dangerous
+  assertion, shown genuinely failing against this real output;
+  Behavior A confirmed caught by existing code; Behavior B honestly
+  demonstrated as an open, tracked gap; and the Contract-defect finding
+  reconfirmed on independent real data.
+- `tests/requirement-analyzer/grounding-testing.test.ts` — TC007-TC010
+  (Part 8): sparse evidence passes cleanly with a discrimination check
+  for an unhedged format claim; explicit S3 evidence is both preserved
+  and not over-expanded, with a discrimination check for the "overly
+  cautious agent" failure mode (discarding given evidence); conflicting
+  evidence is surfaced correctly, with both of the article's own named
+  bad examples caught by `contradictionOracle`; all six of TC010's
+  named unsupported-claim categories are caught by the one generalized
+  mechanism, proven in a single parameterized loop.
+- `tests/grounding/checkGrounding.test.ts`'s "Part 8 fix" block — the
+  "authenticate" verb-form regression test.
+- `tests/output/parseAgentOutput.test.ts`'s "Part 9" block — TC012-
+  TC016, including the two real gaps the Zod refactor closed (extra
+  field rejected, empty string rejected) and a confirmation that arrays
+  may legitimately stay empty.
+- `tests/requirement-analyzer/injection-resistance.test.ts` — TC017-
+  TC020 (Part 9): direct instruction override, role/identity hijacking,
+  and data/instruction boundary confusion each proven both ways (an
+  anchored response passes, an adopted one fails); the honest
+  anchoring-blind-spot finding documented with its own dedicated test;
+  and TC020 proven through the existing Zod contract rather than a new
+  mechanism.
+
+No live Gemini API access from this sandbox — same standing egress
+restriction as every other build in this project (no `GEMINI_API_KEY`
+is set anywhere here; `npm run agent`'s real failure mode above is the
+proof of that, not a workaround).
+
+## What's deliberately not built here
+
+- **True semantic correctness** for the oracle's "actor"/"feature"
+  checks — Part 3 names this dimension but never supplies an algorithm
+  for it beyond one obviously-wrong worked example; built instead as an
+  honestly-scoped lexical-grounding check, stated as a real limitation
+  rather than an overclaimed solution. (This project's own
+  `/builds/gate-floor-checker/` and `/builds/paired-bootstrap-ratchet/`
+  are adjacent prior art on "what counts as passing" in a different
+  domain, cross-referenced rather than reused here, since neither solves
+  semantic correctness scoring either.)
+- **A live LLM call of any kind** — no API key exists in this sandbox.
+- **TC001 executed against a live agent** — `src/oracle/
+  requirementAnalyzerOracle.ts` (Part 3) is the acceptance criteria
+  TC001 would check a real response against, built and tested for real;
+  actually firing it against a live Gemini call is still blocked by the
+  same standing no-API-key restriction as everything else here.
+- **Instruction-following as its own correctness dimension** — named by
+  Part 3 as one of four dimensions, but given no worked example distinct
+  from groundedness/structural correctness to build against.
+- **A `missingInformation` schema field** — the real Contract defect
+  Parts 6 and 7 both name (the `ambiguities` array conflating true
+  ambiguity with plain missing information, confirmed on two
+  independent real examples), deliberately documented with tests rather
+  than acted on, since the real agent schema is the source series' own
+  file, not this project's to redesign speculatively.
+- **Closing the Behavior B gap** — general detection of a specific
+  non-numeric interpretation asserted as fact without evidence (Part 7)
+  — deliberately left open and tracked with a named test rather than
+  force-closed with a fragile keyword heuristic.
+- **Full semantic-claim detection beyond term/numeric patterns** — Part
+  8 itself names this limitation plainly (a differently-phrased claim,
+  e.g. "JPEG images are accepted" vs. "supports JPEG," could slip past
+  pattern-based detection); this project's generalized term+hedge
+  mechanism is more robust than the article's own per-claim regexes
+  (both phrasings are caught equally, since neither depends on the verb
+  used) but is still pattern-based, not true semantic evaluation.
+- **Closing the TC017 anchoring blind spot** — a forbidden value that
+  shares incidental vocabulary with the real requirement can slip past
+  `isGroundedField`'s plain shared-word check; closing it generally
+  needs real semantic similarity, the same unresolved gap Part 3 named.
+- **Tool-calling / action testing** — Part 9's own closing section
+  previews this directly as the next part's subject (tool selection,
+  arguments, failure recovery, trajectory evaluation), explicitly
+  deferred by the article itself; nothing here anticipates it.

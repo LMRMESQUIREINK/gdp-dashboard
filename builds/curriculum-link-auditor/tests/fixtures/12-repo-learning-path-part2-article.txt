@@ -1,0 +1,59 @@
+1. OpenAI Cookbook: Learn to work with LLM APIs
+Repository: openai/openai-cookbook (https://github.com/openai/openai-cookbook?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Intermediate
+The OpenAI Cookbook contains code examples and guides for working with the OpenAI API.
+
+2. Claude Cookbooks: Explore another model integration
+Repository: anthropics/claude-cookbooks (https://github.com/anthropics/claude-cookbooks?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Intermediate
+Claude Cookbooks contains notebooks and recipes demonstrating ways to use Claude.
+
+3. Awesome LLM Apps: Build complete applications with RAG
+Repository: Shubhamsaboo/awesome-llm-apps (https://github.com/Shubhamsaboo/awesome-llm-apps?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Advanced, depending on the example
+This collection contains open-source LLM applications, RAG implementations, AI agents, multi-agent projects, and MCP integrations.
+
+4. Hugging Face Agents Course: Learn tools and agent fundamentals
+Repository: huggingface/agents-course (https://github.com/huggingface/agents-course?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate
+The Hugging Face Agents Course is a structured course that progresses from agent fundamentals to agent frameworks and practical assignments.
+
+5. GenAI Agents: Explore agent architectures and multi-agent systems
+Repository: NirDiamant/GenAI_Agents (https://github.com/NirDiamant/GenAI_Agents?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate to Advanced
+This repository contains tutorials and implementations covering generative AI agent techniques.
+
+6. AI Project Gallery: Learn from applied AI projects
+Repository: KalyanM45/AI-Project-Gallery (https://github.com/KalyanM45/AI-Project-Gallery?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Intermediate
+This repository catalogs projects across machine learning, deep learning, and generative AI.
+
+7. System Prompts Leaks: Study prompt patterns and security risks
+Repository: asgeirtj/system_prompts_leaks (https://github.com/asgeirtj/system_prompts_leaks?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate
+This repository collects documented system prompts attributed to various AI assistants and coding tools.
+
+8. Vibe Coding Playbook: Use AI coding assistants systematically
+Repository: priyanshop754/vibe-coding-playbook (https://github.com/priyanshop754/vibe-coding-playbook?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Intermediate
+The Vibe Coding Playbook focuses on structured AI-assisted development.
+
+9. AI System Design Guide: Design production AI systems
+Repository: ombharatiya/ai-system-design-guide (https://github.com/ombharatiya/ai-system-design-guide?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate to Advanced
+This guide focuses on AI system design, including RAG architectures, agents, model selection, evaluation, and production engineering.
+
+10. System Design Primer: Learn the infrastructure underneath AI
+Repository: donnemartin/system-design-primer (https://github.com/donnemartin/system-design-primer?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate to Advanced
+The System Design Primer covers general distributed-system concepts.
+
+11. App Ideas: Choose a project with the right difficulty
+Repository: florinpop17/app-ideas (https://github.com/florinpop17/app-ideas?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Intermediate
+App Ideas organizes software projects into tiers based on the experience and techniques needed.
+
+12. Project Ideas And Resources: Turn learning into a portfolio
+Repository: The-Cool-Coders/Project-Ideas-And-Resources (https://github.com/The-Cool-Coders/Project-Ideas-And-Resources?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Advanced, depending on the project
+This repository provides project ideas with objectives, user stories, and development resources.

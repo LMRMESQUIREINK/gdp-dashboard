@@ -1,0 +1,64 @@
+12 Open-Source GitHub Repositories to Learn AI and LLM Engineering From Scratch
+
+This article gives you a practical path through 12 open-source GitHub repositories, starting with mathematics and AI fundamentals and progressing toward language models, training, and deep learning research.
+
+1. Mathematics for Machine Learning
+Repository: mml-book/mml-book.github.io (https://github.com/mml-book/mml-book.github.io?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Intermediate
+What it is: A companion repository for the book Mathematics for Machine Learning.
+
+2. Microsoft AI For Beginners
+Repository: microsoft/AI-For-Beginners (https://github.com/microsoft/AI-For-Beginners?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner
+What it is: A beginner-friendly AI curriculum containing 24 lessons, practical labs, and quizzes.
+
+3. Microsoft Generative AI for Beginners
+Repository: microsoft/generative-ai-for-beginners (https://github.com/microsoft/generative-ai-for-beginners?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner
+What it is: A 21-lesson curriculum that combines explanations of generative AI concepts with practical application-building exercises.
+
+4. Prompt Engineering Guide
+Repository: dair-ai/Prompt-Engineering-Guide (https://github.com/dair-ai/Prompt-Engineering-Guide?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Intermediate
+What it is: A collection of guides, papers, lessons, notebooks, and resources covering prompt engineering and related topics.
+
+5. LLM Course by Maarten Grootendorst
+Repository: mlabonne/llm-course (https://github.com/mlabonne/llm-course?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate
+What it is: A free course for learning large language models through learning roadmaps, notebooks, and practical resources. The course is organized around LLM Fundamentals, The LLM Scientist, and The LLM Engineer.
+
+6. Build LLMs From Scratch
+Repository: rasbt/LLMs-from-scratch (https://github.com/rasbt/LLMs-from-scratch?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate to Advanced
+What it is: The official code repository for Sebastian Raschka's book Build a Large Language Model (From Scratch).
+
+7. Train LLM From Scratch
+Repository: FareedKhan-dev/train-llm-from-scratch (https://github.com/FareedKhan-dev/train-llm-from-scratch?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate to Advanced
+What it is: A PyTorch implementation of a language-model training pipeline.
+
+8. NanoChat
+Repository: karpathy/nanochat (https://github.com/karpathy/nanochat?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Advanced
+What it is: Andrej Karpathy's compact experimental system for training and working with LLMs.
+
+9. Hugging Face ML Intern
+Repository: huggingface/ml-intern (https://github.com/huggingface/ml-intern?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Advanced
+What it is: An open-source ML engineering agent designed to research topics and work with code across the Hugging Face ecosystem.
+Important status note: The repository is archived, and its hosted application and CLI have been retired. Treat it as a historical case study, not a maintained tool to depend on for current workflows.
+
+10. Harvard CS249r: Machine Learning Systems
+Repository: harvard-edge/cs249r_book (https://github.com/harvard-edge/cs249r_book?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Intermediate to Advanced
+What it is: A textbook and learning resource focused on the engineering principles behind machine learning systems.
+
+11. Annotated Deep Learning Paper Implementations
+Repository: labmlai/annotated_deep_learning_paper_implementations (https://github.com/labmlai/annotated_deep_learning_paper_implementations?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Advanced
+What it is: A collection of documented PyTorch implementations of deep learning papers.
+
+12. AI Engineering From Scratch
+Repository: rohitg00/ai-engineering-from-scratch (https://github.com/rohitg00/ai-engineering-from-scratch?utm_campaign=x&utm_medium=referral&utm_source=read.vijayasekhardeepak.com)
+Difficulty: Beginner to Advanced, depending on the learning path
+What it is: A broad, structured curriculum spanning mathematics, machine learning, deep learning, language models, AI engineering, agents, and production topics.

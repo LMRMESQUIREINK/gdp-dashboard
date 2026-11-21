@@ -37,6 +37,8 @@ Full writeup, all three rounds: `/notes/trading-jarvis-analysis.md`.
 | `jarvis_orchestrator.py` | Claude API tool-calling front end — now includes a `swamp_decompose` tool plus the three prop-firm tools below |
 | `run_strategy.py` | CLI entry point — one-shot check, `--swamp` reasoning mode, live monitor, NL query, or position tracking |
 | `prop_firm_sizing.py`, `prop_firm_position_sizing.py`, `prop_pass_simulator.py` | Copied in from `/builds/prop-firm-sizing/` (same files, unmodified) — TPT funded-account sizing, wired into `jarvis_orchestrator.py` as three separate tools, see below |
+| `memory_layer.py`, `persistence.py` | Copied in from `/builds/agent-memory-layer/` (same files, unmodified) — real lifecycle/supersession/persistence mechanics, see below |
+| `jarvis_memory.py` | Thin single-trader wrapper giving `jarvis_orchestrator.py` a persistent standing-preference store (`jarvis_memory.sqlite3`) |
 
 ## What changed, across all three rounds
 
@@ -144,6 +146,56 @@ plain-English error (valid tiers/symbols listed, or the expected
 
 Full source-document analysis these were built and cross-checked
 against: `/notes/prop-firm-sizing-analysis.md`.
+
+## Session memory
+
+Three more tools — `remember_preference`, `recall_preferences`,
+`supersede_preference` — wire `/builds/agent-memory-layer/`'s real,
+already-tested `MemoryStore`/`SQLiteMemoryStore` into Jarvis as a third,
+separate flow from both the symbol-trading and prop-firm tools above. A
+trader who says "always size conservatively for NQ" or "I prefer EMA
+crossover signals" once has that persist in `jarvis_memory.sqlite3`
+across sessions, instead of needing to restate it on every query.
+
+- **`remember_preference`** — stores a new standing preference. Always
+  creates a new record; never auto-updates an existing one.
+- **`recall_preferences`** — lists every live standing preference, each
+  with its `memory_id`, ranked by `score_candidates()` (real min-max-
+  normalized recency+importance; relevance is a wash since this module
+  never computes embeddings — nothing in `trading-jarvis` calls an
+  embedding model).
+- **`supersede_preference`** — replaces one *named* prior preference
+  (by `memory_id`) with a new one. The old record is marked
+  `SUPERSEDED`, never deleted or silently merged.
+
+**Why there's no auto-supersede on topic match.** A new preference never
+automatically replaces an existing one just because they look related —
+there's no embedding or keyword-matching layer in this codebase to judge
+"same topic" honestly, and faking that judgment with a regex would be
+exactly the kind of fabricated-intelligence shortcut this project avoids
+elsewhere. Instead, `recall_preferences` surfaces every live preference
+with its `memory_id`, and the system prompt instructs Claude — which can
+actually read and compare the text — to call `supersede_preference`
+naming a *specific* `memory_id` when the trader's new statement clearly
+updates or contradicts something already on file.
+
+**Single-trader scope, by design.** Every memory is scoped to a fixed
+`subject_id`, matching `positions_store.py`'s own stated single-trader
+convention exactly — this codebase has no auth or per-user identity
+layer, so faking multi-tenancy on top of it would be worse than not
+having it.
+
+**What's proven, and what isn't re-proven.** `/builds/agent-memory-layer/`'s
+own test suite (57 assertions across `test_memory_layer.py` and
+`test_persistence.py`, including a real cross-process restart proof) is
+what proves the underlying lifecycle/supersession/persistence mechanics.
+This build's own `test_jarvis_memory.py` (16 assertions) proves only
+that *this wiring* calls those real functions correctly — including a
+real `ask_jarvis()` tool-dispatch-loop round trip against a mocked
+Anthropic client (same established convention as every other dispatch-
+loop test in this project), confirming a preference the mocked model
+asks to remember is actually, durably persisted, not just echoed back by
+the mock.
 
 ## What's deliberately out of scope, and why
 
@@ -278,6 +330,20 @@ Proven in this build environment, without live EODHD/FMP/Anthropic keys
   `CONTRACTS:AVG_PNL:PNL_STD` format rather than a raw parse exception.
 - `data_pipeline.fetch_eod()` fails fast and locally on a missing/
   placeholder API key, before any request goes out.
+- The three session-memory tools (`remember_preference`,
+  `recall_preferences`, `supersede_preference`) proven directly via
+  `_run_tool()` against a real, isolated `SQLiteMemoryStore` (16/16
+  assertions in `test_jarvis_memory.py`): a stored preference round-
+  trips exactly, a second preference gets a genuinely new `memory_id`,
+  recall ranks the higher-importance preference first (real
+  `score_candidates()` logic, not insertion order), supersede correctly
+  removes the old preference from recall and persists the new one, and
+  superseding a `memory_id` never actually seen from `recall_preferences`
+  raises `KeyError` rather than silently creating a dangling link —
+  then proven again through the full `ask_jarvis()` tool-dispatch loop
+  with a mocked Anthropic client, confirming a preference the mocked
+  model asks to remember is actually, durably persisted via the real
+  store, not just echoed back by the mock.
 
 **Not yet run against live EODHD/FMP/Anthropic APIs from this
 environment** — that needs a real API key and a network path this sandbox

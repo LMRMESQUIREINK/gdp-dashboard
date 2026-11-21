@@ -1,0 +1,95 @@
+{
+  "clone": {
+    "commit": "a9097b2108af6e87cc38c4d6836271cd69917672",
+    "commitDate": "2026-11-16T15:29:14-05:00",
+    "clonedAt": "2026-11-16",
+    "packageVersion": "6.9.0",
+    "fileCount": 9128
+  },
+  "growth": {
+    "priorRoundClone": {
+      "date": "2026-10-18",
+      "version": "6.7.0",
+      "tsFiles": 3235,
+      "testTsFiles": 1582,
+      "prodDeps": 40,
+      "devDeps": 24
+    },
+    "thisClone": {
+      "date": "2026-11-16",
+      "version": "6.9.0",
+      "tsFiles": 6905,
+      "testTsFiles": 3735,
+      "prodDeps": 42,
+      "devDeps": 28
+    },
+    "tsFilesGrowthPct": 113.5,
+    "testTsFilesGrowthPct": 136.0,
+    "daysBetweenClones": 29
+  },
+  "strykerConfigs": {
+    "present": ["stryker.config.mjs", "stryker.semantics.config.mjs"],
+    "count": 2
+  },
+  "pycMagic": {
+    "claimedInSource": {
+      "file": "src/python/PythonPycParser.ts",
+      "cpython314": 3627,
+      "cpython315": 3666
+    },
+    "cpython314": {
+      "corroborated": true,
+      "independentSources": ["xdis magics.py table (labels 3627 '3.14rc3')", "pyobfuscate.com version table"],
+      "realPrereleaseRange": [3600, 3627],
+      "rangeSourcedFrom": "morluto/rea PR #8927 description",
+      "atLeastTwoBumpsWithin314ConfirmedBy": "official CPython 3.14.0rc3 release announcement (states rc3 bumped the magic again, invalidating rc1 pyc files)"
+    },
+    "cpython315": {
+      "corroborated": false,
+      "reason": "Python 3.15 is itself still pre-release; no independent source found a confirmed final magic for it",
+      "provenanceState": "source-is-silent"
+    }
+  },
+  "starCount": {
+    "readmeStated": 400000,
+    "readmeLine": 444,
+    "independentTrackers": [
+      { "source": "star-history.com", "date": "2026-11-15", "value": 461300, "weeklyGrowthStated": 19400, "contributors": 407 },
+      { "source": "repowise.dev", "date": "2026-11-16", "value": 462492 },
+      { "source": "beeknoee.com", "date": "2026-11-16", "value": 461842 },
+      { "source": "unnamed-tracker-earlier", "date": "2026-11-12", "value": 453918, "weeklyGrowthStated": 18700 }
+    ],
+    "understatementVsReadme": {
+      "lowEstimate": 61300,
+      "highEstimate": 62492,
+      "direction": "understatement"
+    },
+    "recomputedGrowthRate": {
+      "fromSnapshot": { "date": "2026-11-12", "value": 453918 },
+      "toSnapshot": { "date": "2026-11-16", "value": 462000 },
+      "daysElapsed": 4,
+      "perDay": 2020.5,
+      "perWeekExtrapolated": 14143.5,
+      "comparedToStarHistoryStatedWeeklyGrowth": 19400
+    },
+    "unreadCommentary": [
+      { "title": "REA Hit 248K Stars. The Real Story Is Scarier.", "domain": "dev.to", "fetchResult": "getaddrinfo ENOTFOUND dev.to" },
+      { "title": "REA Reverse Engineer Anything: How to Use, Fake Stars?, Legal", "domain": "thegenaimagazine.com", "fetchResult": "getaddrinfo ENOTFOUND thegenaimagazine.com" }
+    ]
+  },
+  "changelogVelocity": {
+    "version": "6.9.0",
+    "releaseDate": "2026-11-11",
+    "priorVersionReleaseDate": "2026-10-25",
+    "daysSpan": 17,
+    "uniquePrLinks": 244,
+    "uniqueIssueLinks": 110,
+    "prsPerDay": 14.35
+  },
+  "thirdPartyNotices": {
+    "windowsAddonLicense": "GPLv3 + GCC Runtime Library Exception 3.1 (statically-linked MinGW-w64/GCC runtime)",
+    "exceptionDoesNotRelicenseRuntimeUnderMit": true,
+    "declaredButUnverifiedLicenseDeps": ["clean-git-ref@2.0.1", "minimisted@2.0.1"],
+    "lgplDep": "frida@17.23.2 (LGPL-2.0 WITH WxWindows-exception-3.1)"
+  }
+}

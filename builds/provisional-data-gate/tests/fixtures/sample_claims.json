@@ -1,0 +1,14 @@
+[
+  {
+    "claim_id": "a4-opus-pass",
+    "text": "the full machine passed 33 of 36 tickets with Opus",
+    "path": "arms.A4.opus.pass",
+    "disclosed": false
+  },
+  {
+    "claim_id": "a1-opus-pass",
+    "text": "a plain prompt passed 17 of 36 tickets with Opus",
+    "path": "arms.A1.opus.pass",
+    "disclosed": true
+  }
+]

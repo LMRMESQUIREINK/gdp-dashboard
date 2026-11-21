@@ -1,0 +1,25 @@
+from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
+
+# Few-shot examples to teach the model how to generate step-back (more generic) questions
+examples = [
+    {
+        "input": "Could the members of The Police perform lawful arrests?",
+        "output": "what can the members of The Police do?",
+    },
+    {
+        "input": "Jan Sindel's was born in what country?",
+        "output": "what is Jan Sindel's personal history?",
+    },
+]
+
+# Define how each example is formatted in the prompt
+example_prompt = ChatPromptTemplate.from_messages([
+    ("human", "{input}"),  # User input
+    ("ai", "{output}")     # Model's response
+])
+
+# Wrap the few-shot examples into a reusable prompt template
+few_shot_prompt = FewShotChatMessagePromptTemplate(
+    example_prompt=example_prompt,
+    examples=examples,
+)

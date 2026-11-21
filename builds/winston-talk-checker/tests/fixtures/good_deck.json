@@ -1,0 +1,39 @@
+{
+  "main_idea": "claude turns a vague ask into a finished draft",
+  "five_elements": {
+    "symbol": "a half-finished draft turning solid",
+    "slogan": "Claude turns a vague ask into a finished draft",
+    "surprise": "most of the team thought AI tools only save typing time",
+    "salient_idea": "the review time saved, not the draft time",
+    "story": "how a Friday-afternoon report got done before the status meeting"
+  },
+  "slides": [
+    {
+      "title": "How I use Claude",
+      "bullets": ["By the end you'll know one workflow you can copy this week"],
+      "notes": "By the end of this talk you will know exactly one workflow you can copy this week: Claude turns a vague ask into a finished draft."
+    },
+    {
+      "title": "Not a typing shortcut",
+      "bullets": ["This isn't about saving typing time"],
+      "notes": "This is not about saving typing time -- that was the first thing, now the second: it's about saving review time.",
+      "has_logo_or_clutter": false
+    },
+    {
+      "title": "The real idea",
+      "bullets": ["Claude turns a vague ask into a finished draft"],
+      "notes": "The idea I want you to leave with: Claude turns a vague ask into a finished draft. How many of you have rewritten the same status update three times this month?",
+      "has_logo_or_clutter": false
+    },
+    {
+      "title": "Contributions",
+      "bullets": [
+        "Claude turns a vague ask into a finished draft",
+        "One workflow you can copy today",
+        "A 10-minute setup, reusable every week"
+      ],
+      "notes": "So that's it -- Claude turns a vague ask into a finished draft, and I hope you walk away ready to try it before Friday.",
+      "has_logo_or_clutter": false
+    }
+  ]
+}
