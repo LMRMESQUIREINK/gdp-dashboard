@@ -4850,6 +4850,67 @@ yourself every time.
   Deliberately not built: a `.pptx` reader to populate the clutter
   check automatically from a real file, and anything resembling the
   paywalled skill's own actual prompt or branded-export behavior.
+- **Deep analysis + new build from a pasted Substack article: "How to
+  build your second brain with NotebookLM"** — a guest post by Hamza
+  Khalid (AI in public) for Frank Andrade's Artificial Corner, the same
+  publication the Winston Talk Checker round analyzed, a different
+  guest author this time. Full write-up in
+  `/notes/second-brain-notebooklm-analysis.md`. Checked rather than
+  taken on the article's word: NotebookLM really was renamed "Gemini
+  Notebook" on July 16, 2026 (Google's own Workspace Updates blog,
+  `notebooklm.google.com` now redirecting to the real
+  `notebook.google.com`); "Configure Chat" is a real, current feature
+  matching Google's own help docs exactly (Default/Learning Guide/
+  Custom styles, Default/Longer/Shorter length); Hamza Khalid/"AI in
+  public" is a real, active Substack; and the article's Ebbinghaus
+  claim ("more than half of new material was gone within an hour")
+  matches the real, independently-replicated figures (~50-56%), not an
+  invented statistic. No live NotebookLM/Gemini Notebook access from
+  this sandbox (needs a real Google login) — UI claims checked against
+  Google's own written docs, never exercised live, stated plainly.
+  **The real finding**: the article cites Ebbinghaus's forgetting
+  curve (decay fastest early) to justify urgency, then prescribes a
+  flat weekly batch review ("every Sunday, add what you saved that
+  week") with no per-item spacing — the opposite structural idea from
+  spaced repetition, the technique Ebbinghaus's own research directly
+  motivated. Quantified with real `date.weekday()` arithmetic, not
+  estimated: an item saved on a Monday waits 5 extra days for its first
+  review versus a day-1 spaced-repetition checkpoint, averaging 2.0
+  extra days across the week. A real caveat included rather than
+  oversold: Karpicke & Roediger (2007) found equally-spaced retrieval
+  beat expanding retrieval on recall after two days in at least one
+  study, so this is a real tension in the article's own reasoning, not
+  proof its cadence is simply wrong. Credited: the article's own
+  custom-instructions block (Step 4) is a genuinely well-constructed
+  anti-hallucination contract — grounding-only, an explicit fallback
+  phrase, a citation requirement, disagreement-surfacing — arrived at
+  independently in a different domain (personal knowledge management)
+  from this project's own repeated RAG-grounding work
+  (`checkGrounding.ts`, `qualityBoundary.ts`), a real convergent
+  finding. **Built**: checked `/builds/` first — `agent-memory-layer`'s
+  lifecycle is for *agent* memory records, a different concept from
+  human review scheduling; nothing checks a system-prompt/custom-
+  instructions block's text against a stated rule set outside this
+  project's deck/skill-frontmatter checkers in other domains —
+  `/builds/second-brain-toolkit/`: `review_scheduler.py` (the computed
+  weekly-lag finding above, plus a real expanding-interval scheduler,
+  `DEFAULT_INTERVALS = (1, 3, 7, 14, 30)`, explicitly caveated rather
+  than claimed optimal) and `prompt_auditor.py` (six checks derived
+  directly from specific clauses in the article's own real Step 4 text,
+  three load-bearing FAIL-level and three softer WARN-level, not a
+  generic rubric). 31/31 tests pass, including the article's own real,
+  verbatim instructions text passing every check and a naive "be a
+  helpful assistant" block failing/warning on every one — a true
+  discrimination pair. **A real bug caught in this build's own first-
+  draft hand math, not manufactured**: a manual pass computed Monday's
+  lag to the next Sunday as 5 days; running the actual
+  `date.weekday()` arithmetic gave 6 — caught by recomputing directly,
+  with every affected test and the README's table corrected to the
+  real numbers. Deliberately not built: anything resembling the
+  paywalled Starter Kit's four notebook blueprints/12 prompts/AI-mentor
+  technique (never seen), a live NotebookLM/Gemini Notebook
+  integration, or a claim that the expanding-interval schedule is
+  proven optimal for all material.
 
 ---
 
