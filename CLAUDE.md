@@ -5084,6 +5084,40 @@ yourself every time.
   general web-crawling plagiarism detector (this module takes reference
   texts as explicit input, matching how this round's own investigation
   worked) and a verdict on the evaluation chapter's unconfirmed source.
+- **Deep analysis + extended build from a pasted Medium article: "Building
+  a Multi-Agent AI System with LangGraph and LangSmith"** (Fareed Khan, a
+  tenth source from this author, and the direct follow-up round to the
+  RAG Ecosystem analysis). Full write-up in
+  `/notes/multi-agent-langgraph-analysis.md`. Cloned both
+  `FareedKhan-dev/Multi-Agent-AI-System` and the real, directly-named
+  `langchain-ai/langgraph-101`. **The opposite verdict from last round,
+  and it matters that it's reported fairly**: this repo's own `LICENSE`
+  names Fareed Khan as copyright holder (not LangChain), and 9 of 11
+  shared-filename diagram images between the two real repos are
+  byte-for-byte identical (confirmed via `sha256sum`) — but this time
+  the article's own captions read "(From LangChain — OpenSource)" with
+  a direct repo link, genuinely disclosing exactly that reuse. The core
+  `get_engine_for_chinook_db()` function is functionally identical
+  between the two repos but not word-for-word copied — Fareed Khan's
+  version layers his own expanded explanatory comments on top — and
+  full-notebook n-gram overlap is only ~9.6%, far below the near-
+  universal overlap found in the rag-ecosystem round. Checked
+  `/builds/` first — `content-provenance-check/`, built from last
+  round's finding, is the direct, obvious fit, not a new build.
+  **Extended**: added a second, independent real-world fixture pair
+  (the Chinook DB function from both repos, the article's real caption
+  text) proving `check_provenance()` reaches the *correct, opposite*
+  verdict on a second real input, not just the one finding it was
+  built from; and `find_binary_reuse()`, a new sha256-based function
+  for byte-identical file detection (images carry no words for the
+  existing n-gram fingerprinting to work on) — the same method used by
+  hand to confirm the 9-of-11 image finding, tested against small
+  synthetic fixture directories modeling the real shape rather than
+  committing large real PNGs. 30/30 tests pass (22 original + 8 new).
+  No bug found this round, stated plainly rather than manufactured.
+  Deliberately not built: perceptual image hashing (this round's real
+  finding was byte-identical reuse, which sha256 already catches
+  exactly; no evidence of a near-duplicate case to justify it).
 
 ---
 

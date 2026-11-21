@@ -1,9 +1,13 @@
 # content-provenance-check
 
-A dependency-free Python tool built from a pasted Medium article,
-"Building the Entire RAG Ecosystem and Optimizing Every Component"
-(Fareed Khan, a ninth source from this author analyzed in this
-project). Full analysis: `/notes/rag-ecosystem-analysis.md`.
+A dependency-free Python tool, originally built from a pasted Medium
+article, "Building the Entire RAG Ecosystem and Optimizing Every
+Component" (Fareed Khan, a ninth source from this author analyzed in
+this project), and extended one round later against a second,
+independent real-world case from the same author's next article,
+"Building a Multi-Agent AI System with LangGraph and LangSmith." Full
+analysis: `/notes/rag-ecosystem-analysis.md` and
+`/notes/multi-agent-langgraph-analysis.md`.
 
 ## The real finding
 
@@ -46,6 +50,32 @@ indexing/routing core of the article (roughly the first two-thirds)
 tracks LangChain's own public "RAG From Scratch" notebook series
 closely, not an original synthesis.
 
+## A second real-world case: this time, proper disclosure
+
+"Building a Multi-Agent AI System with LangGraph and LangSmith" (the
+same author's next article) names and links `langchain-ai/langgraph-101`
+directly, and captions several diagrams "(From LangChain —
+OpenSource)". Checked against the real repo: **9 of 11 shared-filename
+diagram images between the two real repos are byte-for-byte identical**
+(confirmed via `sha256sum`), and the core `get_engine_for_chinook_db()`
+function is functionally identical with Fareed Khan's own expanded
+explanatory comments layered on top. Unlike the rag-ecosystem case,
+this is the *opposite* verdict — real reuse, genuinely disclosed. Added
+as a second fixture pair and a dedicated test class
+(`TestSecondRealWorldCaseProperDisclosure`) proving this tool correctly
+reaches different conclusions on two different real inputs, not just
+one hard-coded finding.
+
+This round also added **`find_binary_reuse()`** — images carry no words
+to fingerprint, so the 9/11-identical-PNGs finding needed a separate,
+sha256-based check (the same method used to verify the finding by
+hand), not a variant of the text-based `find_reuse()`. Tested against
+small synthetic fixture directories (`tests/fixtures/candidate_images/`,
+`reference_images/`) modeling the exact real shape found — same
+filename + identical bytes, same filename + different bytes, and a
+filename that only exists on one side — stated plainly as synthetic
+rather than committing large real PNGs disproportionate to a test.
+
 ## Checked `/builds/` first
 
 `curriculum-link-auditor/` checks a curated list's *factual claims*
@@ -82,7 +112,8 @@ reuse is disclosed. A genuinely new gap.
 ## Proof
 
 `python3 -m unittest tests.test_provenance_check tests.test_cli -v` —
-**22/22 tests pass**, including:
+**30/30 tests pass** (22 original + 8 new: the second real-world case
+and `find_binary_reuse()`), including:
 
 - Real, short excerpts from both actual repos — `rag-from-scratch`'s
   real cell 32 and `rag-ecosystem`'s real cell 53 — committed as

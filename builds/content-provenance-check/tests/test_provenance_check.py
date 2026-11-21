@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from provenance_check import (
     ProvenanceReport,
     check_provenance,
+    find_binary_reuse,
     find_reuse,
     is_disclosed,
     ngram_fingerprints,
@@ -24,6 +25,16 @@ def fixture(name: str) -> str:
 REFERENCE_RAG_FROM_SCRATCH = fixture("reference_rag_from_scratch_cell32.txt")
 CANDIDATE_RAG_ECOSYSTEM = fixture("candidate_rag_ecosystem_cell53.txt")
 ARTICLE_PROSE_LANGCHAIN_MENTION = fixture("article_prose_langchain_mention.txt")
+
+# A second, independent real-world case -- from a different Fareed Khan
+# article/repo ("Building a Multi-Agent AI System with LangGraph and
+# LangSmith"), checked against the real langchain-ai/langgraph-101 repo
+# it names and links directly. Unlike the rag-ecosystem case above, this
+# article's own image captions ("From LangChain — OpenSource") and a
+# direct repo link disclose the reuse plainly.
+REFERENCE_LANGGRAPH101_CHINOOK = fixture("reference_langgraph101_chinook_cell.txt")
+CANDIDATE_MULTIAGENT_CHINOOK = fixture("candidate_multiagent_chinook_cell.txt")
+ARTICLE_PROSE_LANGGRAPH101_DISCLOSURE = fixture("article_prose_langgraph101_disclosure.txt")
 
 
 class TestNormalizeAndFingerprints(unittest.TestCase):
@@ -137,6 +148,80 @@ class TestCheckProvenanceRealFinding(unittest.TestCase):
         )
         self.assertEqual(report.reuse, [])
         self.assertEqual(report.undisclosed_reuse, [])
+
+
+class TestSecondRealWorldCaseProperDisclosure(unittest.TestCase):
+    """Generalization test: a second, independent real-world pair,
+    proving this tool doesn't just reproduce one fixed finding. This
+    time, checked against "Building a Multi-Agent AI System with
+    LangGraph and LangSmith" and the real `langchain-ai/langgraph-101`
+    repo it names directly: 9 of 11 shared-filename images between the
+    two real repos are byte-identical (confirmed via sha256), and the
+    article's own real captions ("From LangChain — OpenSource") plus a
+    direct repo link disclose exactly that reuse -- the opposite
+    verdict from the rag-ecosystem case, and just as real."""
+
+    def test_real_reuse_is_found(self):
+        matches = find_reuse(CANDIDATE_MULTIAGENT_CHINOOK, {"langgraph-101": REFERENCE_LANGGRAPH101_CHINOOK})
+        self.assertEqual(len(matches), 1)
+        self.assertGreater(matches[0].shared_ngrams, 5)
+
+    def test_real_disclosure_text_names_the_specific_repo(self):
+        self.assertTrue(is_disclosed(ARTICLE_PROSE_LANGGRAPH101_DISCLOSURE, ["langgraph-101", "langchain-ai"]))
+
+    def test_full_check_finds_no_undisclosed_reuse(self):
+        # unlike the rag-ecosystem case, this real pairing should come
+        # back clean -- the reuse is real, but so is the disclosure
+        report = check_provenance(
+            candidate_text=CANDIDATE_MULTIAGENT_CHINOOK,
+            references={"langgraph-101": REFERENCE_LANGGRAPH101_CHINOOK},
+            disclosure_text=ARTICLE_PROSE_LANGGRAPH101_DISCLOSURE,
+            source_markers={"langgraph-101": ["langgraph-101", "langchain-ai"]},
+        )
+        self.assertEqual(len(report.reuse), 1)
+        self.assertEqual(report.undisclosed_reuse, [])
+
+    def test_bare_langchain_brand_mention_alone_would_not_have_sufficed(self):
+        # confirms the marker design choice generalizes correctly here too:
+        # a disclosure text could easily have said "LangChain" without
+        # naming the specific repo, and that must NOT count as disclosed
+        bare_mention = "We used LangChain throughout this project."
+        self.assertFalse(is_disclosed(bare_mention, ["langgraph-101", "langchain-ai"]))
+
+
+class TestFindBinaryReuse(unittest.TestCase):
+    """Images carry no words to fingerprint with find_reuse(), but this
+    round's own investigation found 9 of 11 shared-filename diagram
+    images between two real repos were byte-identical (sha256) -- the
+    fixtures here are small synthetic stand-ins modeling that exact
+    shape (same filename + identical bytes vs. same filename + different
+    bytes vs. a filename only on one side), stated plainly as synthetic
+    rather than committing large real PNGs disproportionate to a test."""
+
+    def setUp(self):
+        self.candidate_dir = os.path.join(HERE, "fixtures", "candidate_images")
+        self.reference_dir = os.path.join(HERE, "fixtures", "reference_images")
+
+    def test_identical_filename_and_bytes_is_flagged(self):
+        matches = find_binary_reuse(self.candidate_dir, {"ref": self.reference_dir})
+        matched_files = {m.filename for m in matches}
+        self.assertIn("architecture.png", matched_files)
+
+    def test_same_filename_different_bytes_is_not_flagged(self):
+        matches = find_binary_reuse(self.candidate_dir, {"ref": self.reference_dir})
+        matched_files = {m.filename for m in matches}
+        self.assertNotIn("single-step.png", matched_files)
+
+    def test_candidate_only_file_is_not_flagged(self):
+        matches = find_binary_reuse(self.candidate_dir, {"ref": self.reference_dir})
+        matched_files = {m.filename for m in matches}
+        self.assertNotIn("my_own_screenshot.png", matched_files)
+
+    def test_exactly_one_match_found(self):
+        matches = find_binary_reuse(self.candidate_dir, {"ref": self.reference_dir})
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0].filename, "architecture.png")
+        self.assertEqual(matches[0].reference_name, "ref")
 
 
 if __name__ == "__main__":
