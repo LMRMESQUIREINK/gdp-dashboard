@@ -17,6 +17,20 @@ As of 2026-11-04, a fourth — Solo Claude Bot Business
 Each section below is scoped to the brand it names; don't cross-apply
 one brand's palette to a build under a different one.
 
+**External design/review skills, and how they relate to this file.**
+As of 2026-11-21, three real external Claude skills are vendored under
+`.claude/skills/` — `impeccable` (pbakaus/impeccable), `emil-design-eng`
+(emilkowalski/skills), and `design-taste-frontend` (Leonxlnx/taste-skill,
+copied partially — see its own `ATTRIBUTION.md`). Each brings its own
+opinionated default aesthetic (`design-taste-frontend`'s own house
+rules target a figma.com/x.ai look, for instance) — when any locked
+brand below already exists for a build, this file's own locked palette/
+type/voice wins over a skill's default, the same way this file already
+states project-specific rules win over its own defaults. These three
+skills are most useful on this project as craft/motion/accessibility
+*reviewers* layered on top of an already-locked brand, not as a second
+source of what the brand should look like.
+
 ---
 
 ## Brand: Solo Claude Bot Business

@@ -5197,6 +5197,53 @@ yourself every time.
   convention as `find_binary_reuse()`); a reuse verdict on
   `accuracy_reward`/`format_reward`/`get_cosine_scaled_reward`, each of
   which shows real independent rewriting.
+- **Three real external Claude skills vendored: Emil Kowalski,
+  Impeccable, Taste Skill.** A direct setup instruction (a repo link
+  to `pbakaus/impeccable`, a blocked YouTube Shorts link, and "3 SKILLS
+  FIRST 'PLUS' 2 CONNECTORS" naming Emil Kowalski/Impeccable/Taste
+  Skill), not an article to audit. Full write-up in
+  `/notes/design-skills-emil-impeccable-taste-analysis.md`. Confirmed
+  via web search (the short itself stayed unreachable, same egress
+  restriction as every other blocked domain here, now extended to
+  youtube.com) that these are three real, independent, actively-
+  maintained repos: `pbakaus/impeccable` (24-command design-polish
+  skill, Rust-compiled detection engine, Apache 2.0),
+  `emilkowalski/skills` (19 animation/UI-craft skills from his work at
+  Vercel/Linear, MIT), `Leonxlnx/taste-skill` (an anti-slop frontend
+  skill targeting a figma.com/x.ai bar, MIT). **Vendored proportionately,
+  not wholesale**, per this project's established "extract the pattern,
+  never clone a vendor's branded instance disproportionately" rule:
+  `.claude/skills/impeccable/` (full, faithful copy, 2.4MB/63 files —
+  confirmed the real repo ships two genuinely different `SKILL.md`
+  variants under `.claude/`/`.agent/` for the same version, by diffing
+  content, not just file paths); `.claude/skills/emil-design-eng/`
+  (the single named skill, not all 19); `.claude/skills/
+  design-taste-frontend/` (`SKILL.md` + its 22 prose `references/`
+  files, 468KB — deliberately excluding the real 40MB asset/script
+  library as disproportionate; its own `Stop` hook degrades gracefully
+  when the un-vendored `gate.mjs` isn't found, confirmed by reading the
+  hook's own shell logic rather than assumed). Each skill's own
+  `ATTRIBUTION.md` states exactly what was/wasn't copied and why.
+  **Verified with this project's own `skill_md_validator.py`**, same
+  discipline as the marketingskills/mattpocock-skills/Scrapling rounds
+  — found and fixed a real false positive (`no-trigger-condition`
+  wrongly flagged on impeccable's real "Use to design, redesign..."
+  description; the heuristic had "use for" but not "use to," fixed by
+  widening it) and confirmed two real, *correct*, expected failures
+  (`design-taste-frontend`/`emil-design-eng` both genuinely
+  cross-reference content that wasn't vendored — not bugs, not forced
+  to pass). Updated five existing tests whose assertions hardcoded "12
+  skills" (now 15). 37/37 tests pass. Added a short precedence note to
+  `design-rules.md`: these skills' own default aesthetics (most
+  visibly `design-taste-frontend`'s figma.com/x.ai house rules) don't
+  override an already-locked brand DNA — they're craft/motion/
+  accessibility reviewers layered on top, not a second source of what
+  a brand should look like. **Left open**: what the instruction's "2
+  CONNECTORS" names — neither the blocked video nor either skill's own
+  docs tie these three skills to any specific pair, and a Claude
+  connector is an account-level OAuth integration where a wrong guess
+  costs real setup effort, so this was left for the user to name
+  rather than guessed at.
 
 ---
 

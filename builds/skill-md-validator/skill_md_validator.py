@@ -80,7 +80,7 @@ NAME_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 TRIGGER_WORDS = (
     "use when", "use this", "use it", "use while", "use during",
     "triggers on", "trigger", "when the user", "use before", "use after",
-    "use for", "before calling",
+    "use for", "use to", "before calling",
 )
 # Matches a path-shaped token: at least one "/" or a recognizable
 # references/scripts/templates/assets/evals prefix, inside backticks or
