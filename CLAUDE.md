@@ -4970,6 +4970,67 @@ yourself every time.
   with a keyword heuristic would misrepresent what the real health
   check does), a live Obsidian/Claude desktop integration, or the
   paywalled weekly-review skill the article teases but never describes.
+- **Deep analysis + new build from a pasted Medium article with a real
+  linked repo: "Building Transportive AI: A Cleaner Way to Code with
+  Agents"** (Fareed Khan, an eighth source from this author). Full
+  write-up in `/notes/transportive-ai-analysis.md`. Cloned
+  `FareedKhan-dev/transportive-ai` directly rather than trusting the
+  article's code samples: every module path the article names actually
+  exists (`spec/`, `index/`, `engine/`, `coord/`, `verify/`, `guard/`,
+  `ledger/`, `loop/`, `eval/`), a real, complete codebase matching the
+  article closely. **The central finding**: unlike earlier Fareed Khan
+  sources this project has analyzed (`agentic-warehouse-analyst`'s real
+  executed 6,679-line notebook with a real 4,005-call cache;
+  `dynamic-workflow-agents`' two real executed notebook editions), this
+  repo's `notebook.ipynb` has zero executed cells (all 16 code cells
+  show `execution_count: null`, confirmed by parsing the notebook JSON
+  directly) and `assets/oracles/` — the 44 hidden test oracles the
+  whole evaluation depends on — contains nothing but a `.gitkeep`. The
+  repo's own README states plainly, under "Not done yet," that the
+  oracles are empty, the fork commits are "stand-ins," and the fold
+  step from raw execution logs to the `results/story.json` shape "is
+  still to write" — and `results/derive.py`'s own docstring says every
+  derived number is marked `{"v": ..., "provisional": true}` "until a
+  full run replaces it." Confirmed directly: all 288 records in the
+  real `results/story.json` (36 tickets × 4 arms × 2 coders, matching
+  the article's own "288 ticket runs" exactly) carry `provisional:
+  true`, including the article's own headline claim ("the full machine
+  passed 33 of 36 tickets with Opus" = `arms.A4.opus.pass`, provisional).
+  The article's narrative never discloses any of this — dozens of
+  confident numbers (Wilson intervals, sha256 patch hashes, minute-level
+  timings, "315.01 credits across 288 ticket runs") print with zero
+  hedge, except one real, honest disclosure at the very end about an
+  unrelated topic (the real Saleor issue's own author calling the bug
+  "unlikely," confirmed by fetching the live issue #19812 — its two
+  acceptance criteria match the article's quotes verbatim). Also
+  confirmed real: Medusa #16012/PR #16097 (the "would pass without the
+  lock too" quote is real, from a PR comment rather than the
+  description — a minor nuance), UCI Online Retail II's exact
+  "1,067,371 lines"/CC BY 4.0/Chen 2012 citation, and the "not rocket
+  science rule" attribution to Graydon Hoare (reasonable, though
+  independent sources credit Ben Elliston with originating the idea).
+  **Built**: checked `/builds/` first — `fingerprinted-ledger-prereg/`,
+  `manifest-drift-guard/`, and `paired-bootstrap-ratchet/` are all
+  adjacent but none track provenance through a derivation pipeline or
+  gate publication against disclosure — a genuinely new mechanism —
+  `/builds/provisional-data-gate/`: a `Leaf`/`combine()` type enforcing
+  derive.py's own stated propagation rule ("provisional if any input
+  is") as code rather than a comment, `load_leaf_tree()` to parse any
+  real results file using that convention, and `publish_check()`, which
+  flags any `Claim` resting on provisional data unless explicitly
+  disclosed. 24/24 tests pass, including the real, unmodified
+  `results/eval.json`/`claims.json` committed as fixtures, and the
+  actual finding reproduced as a test: six of the article's own real
+  headline numbers, checked against the article's own real (but
+  off-topic) disclosure — all six correctly flagged, matching exactly
+  what the published article did. **One real slip caught in this
+  build's own first draft**: `cli.py`'s first version carried a dead,
+  unused `load_claims()` function with a nonsensical placeholder line,
+  caught by re-reading the file before writing tests, removed before
+  any test ran. Deliberately not built: a reimplementation of
+  transportive-ai's own architecture (spec mining, the Z3 solver, the
+  agent team, verification rings) — several of its component ideas
+  already have real builds here from earlier Fareed Khan sources.
 
 ---
 
