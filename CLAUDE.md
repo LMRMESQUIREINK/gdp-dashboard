@@ -4911,6 +4911,65 @@ yourself every time.
   technique (never seen), a live NotebookLM/Gemini Notebook
   integration, or a claim that the expanding-interval schedule is
   proven optimal for all material.
+- **Deep analysis + new build from a pasted Substack article: "Build a
+  second brain that Claude can read, write and keep tidy for you"** —
+  Frank Andrade's own piece this round (Artificial Corner), not a guest
+  post like the prior NotebookLM round. Full write-up in
+  `/notes/obsidian-llm-wiki-analysis.md`. Unlike the two prior rounds
+  from this publication, most of the paid content was actually included
+  in the paste; only the very last section (a weekly-review skill) cut
+  off before describing the skill itself. Verified rather than taken on
+  the article's word: Andrej Karpathy's "LLM wiki" idea is a real
+  GitHub gist (April 2026,
+  `gist.github.com/karpathy/442a6bf555914893e9891c11519de94f`), with
+  the article's own setup steps confirmed as an accurate, concrete
+  walkthrough of a gist multiple sources describe as deliberately
+  abstract; Anthropic really did merge Claude's chat and Cowork modes
+  (announced mid-September 2026), with Claude Code confirmed to stay
+  separate, matching the article's framing exactly (one UI detail — a
+  literal icon toggle in one window — wasn't found described anywhere,
+  reported as unconfirmed, not disputed); Obsidian Sync's "$5/month"
+  and the official Web Clipper extension both check out exactly.
+  Credited: the health-check prompt's own filtering rule ("only report
+  what would mislead me if I followed it today") is a genuinely sharp
+  design choice, the same "turn a checklist into an actual check"
+  instinct this project has credited before (Factory.ai's Autonomy
+  Maturity Model paper). **The real gap**: all three of the health
+  check's named targets (contradictions, stale claims, coverage gaps)
+  plus that filtering rule are given only as a live prompt re-
+  interpreted fresh on every run — no structural property backs any of
+  them, so two runs against the same wiki aren't guaranteed to agree.
+  **Built**: checked `/builds/` first — `agent-memory-layer`'s `STALE`
+  lifecycle state is for *agent* memory records, a different domain
+  from a cross-linked personal topic wiki; `manifest-drift-guard`
+  checks byte-identical file-hash drift, not semantic claim staleness
+  — a genuinely new gap — `/builds/wiki-health-check/`: three checks
+  (`check_contradictions`, `check_staleness`, `check_coverage_gaps`)
+  against a structured `RawSource`/`WikiNote`/`Claim` representation,
+  with every claim tagged `actionable` or `cosmetic` at creation — the
+  article's own filtering rule applied structurally instead of left as
+  a per-run judgment call. 14/14 tests pass, including a clean healthy-
+  wiki case and a deliberately broken wiki modeled directly on the
+  article's own worked scenarios (a budget cap reversed between a March
+  and June meeting — the article's own exact example; two notes citing
+  conflicting client deadlines; "pricing"/"budget" each mentioned
+  across 3+ raw sources with no dedicated note; a cosmetic vault rename
+  correctly triggering nothing) — a real discrimination test across all
+  three checks plus the cosmetic filter together. **A real bug caught
+  in this build's own first draft, not manufactured**: a test fixture's
+  date was accidentally written as a Python string-slice expression
+  instead of a plain date string, caught immediately by the first real
+  test run (`date.fromisoformat` raised) rather than by inspection. A
+  second issue caught by re-reading the logic before the suite ever
+  ran: `check_contradictions`'s first draft skipped an entire subject
+  group the moment any one claim in it was cosmetic, instead of
+  filtering just the cosmetic claims and checking what remained — fixed
+  before execution. Deliberately not built: a claim-extraction step
+  turning freeform prose into the structured `Claim` objects this tool
+  checks (that's the job the article hands to a live LLM; faking it
+  with a keyword heuristic would misrepresent what the real health
+  check does), a live Obsidian/Claude desktop integration, or the
+  paywalled weekly-review skill the article teases but never describes.
 
 ---
 
