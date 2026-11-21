@@ -1,0 +1,11 @@
+{
+  "candidate": "candidate_rag_ecosystem_cell53.txt",
+  "disclosure": "article_prose_langchain_mention.txt",
+  "references": {
+    "langchain-rag-from-scratch": "reference_rag_from_scratch_cell32.txt"
+  },
+  "markers": {
+    "langchain-rag-from-scratch": ["rag-from-scratch", "lance martin", "rlm/rag-prompt"]
+  },
+  "n": 8
+}

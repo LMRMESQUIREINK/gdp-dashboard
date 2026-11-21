@@ -5031,6 +5031,59 @@ yourself every time.
   transportive-ai's own architecture (spec mining, the Z3 solver, the
   agent team, verification rings) — several of its component ideas
   already have real builds here from earlier Fareed Khan sources.
+- **Deep analysis + new build from a pasted Medium article: "Building
+  the Entire RAG Ecosystem and Optimizing Every Component"** (Fareed
+  Khan, a ninth source from this author). Full write-up in
+  `/notes/rag-ecosystem-analysis.md`. Cloned the real linked repo,
+  `FareedKhan-dev/rag-ecosystem`, and found two things before reading
+  a single cell for meaning: its `LICENSE` reads "Copyright (c) 2025
+  LangChain" (not Fareed Khan), and its one commit is titled "MIT
+  LangChain." A legally correct minimum (MIT requires the original
+  copyright notice preserved), credited as such — but the article's
+  own prose never discloses this: written entirely in first person
+  ("My Table of Contents," every diagram "Created by Fareed Khan"),
+  with every "LangChain" mention in the real README about *using* the
+  library, never about the content's own origin (grepped the full
+  README for any disclosure phrase — zero hits beyond generic tool
+  mentions). **Verified directly rather than assumed from the license
+  line alone**: cloned the real, public `langchain-ai/rag-from-scratch`
+  (Lance Martin's own LangChain repo — his Hub handle is `rlm`,
+  matching the article's own `hub.pull("rlm/rag-prompt")` call, itself
+  a specific clue pointing here before the clone even confirmed it).
+  The Step-Back Prompting few-shot examples ("Could the members of The
+  Police perform lawful arrests?," "Jan Sindel's was born in what
+  country?") are character-for-character identical in both repos,
+  confirmed by direct `grep`, not inferred from similarity — and
+  broader term checks (`RAPTOR`, `ColBERT`, `cosine_similarity`,
+  `physics_template`, `TutorialSearch`, `reciprocal_rank_fusion`,
+  `get_unique_union`) confirm the overlap covers roughly two-thirds of
+  the article, not one cherry-picked example. The evaluation chapter's
+  specific examples ("capital of France and Spain," "what is 3+3?")
+  don't appear in `rag-from-scratch`'s five notebooks at all, checked
+  directly — reported as unconfirmed origin, not assumed either way.
+  Credited: the described RAG techniques are accurately explained, and
+  the named libraries (`deepeval`, `grouse`, `RAGAS`, `RAGatouille`)
+  are all real, actively maintained projects. **Built**: checked
+  `/builds/` first — `curriculum-link-auditor/` checks a curated
+  list's factual claims against a repo's real README, a different
+  mechanism from detecting verbatim text/code reuse between two
+  corpora and checking whether it's disclosed — a genuinely new gap —
+  `/builds/content-provenance-check/`: `ngram_fingerprints()` (8-word
+  sliding-window fingerprints), `find_reuse()`, and `is_disclosed()` —
+  the key piece, requiring a disclosure text to name a source
+  *specifically*, never from a bare mention of a generic brand/tool
+  name it also happens to share, closing exactly the false-positive a
+  naive "does it say LangChain anywhere" check would have produced
+  here. 22/22 tests pass, including real short excerpts from both
+  actual repos committed as fixtures, and the actual finding reproduced
+  as a permanent regression test. **One real bug caught by the test
+  suite's own first run**: a first-draft fixture meant to show "low but
+  nonzero overlap" shared only 5 of the required 8 consecutive words,
+  producing zero matches instead — fixed by rebuilding the fixture to
+  genuinely share one full 8-word window. Deliberately not built: a
+  general web-crawling plagiarism detector (this module takes reference
+  texts as explicit input, matching how this round's own investigation
+  worked) and a verdict on the evaluation chapter's unconfirmed source.
 
 ---
 
