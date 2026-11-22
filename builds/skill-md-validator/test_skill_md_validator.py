@@ -231,11 +231,12 @@ class TestAgainstThisRepositorysRealSkills(unittest.TestCase):
     /builds/agent-readiness-scorecard/.
 
     The count below was corrected from a stale 11 to 12 (this project
-    shipped `retro` after this test was first written), then to the
-    real, current 15 -- three real external skills vendored in
-    (`impeccable`, `emil-design-eng`, `design-taste-frontend`; see
-    ATTRIBUTION.md in each) -- found as a side effect of touching this
-    test this round, not chased down separately."""
+    shipped `retro` after this test was first written), then to 15
+    (three real external skills vendored in -- `impeccable`,
+    `emil-design-eng`, `design-taste-frontend`; see ATTRIBUTION.md in
+    each), then to the real, current 16 (`reference-builder`, vendored
+    from the Motion Sites Method guide) -- found as a side effect of
+    touching this test this round, not chased down separately."""
 
     def test_real_skills_directory_exists(self):
         skills_dir = REPO_ROOT / ".claude" / "skills"
@@ -255,7 +256,7 @@ class TestAgainstThisRepositorysRealSkills(unittest.TestCase):
         fail is not a bug to force-fix" case in this project."""
         skills_dir = REPO_ROOT / ".claude" / "skills"
         reports = validate_skills_root(skills_dir, repo_root=REPO_ROOT)
-        self.assertEqual(len(reports), 15, "expected exactly the fifteen real skills this project has shipped")
+        self.assertEqual(len(reports), 16, "expected exactly the sixteen real skills this project has shipped")
         failing = {r.skill_dir.name: codes(r) for r in reports if not r.ok}
         self.assertEqual(set(failing), {"design-taste-frontend", "emil-design-eng"})
         # and only for the expected, documented reason -- nothing else
@@ -322,12 +323,12 @@ class TestPackDescriptionBudget(unittest.TestCase):
 
     def test_real_run_against_this_repos_own_skills_is_nowhere_near_the_budget(self):
         """A real, honest 'no problem found' result, not a manufactured
-        one: this project's own 15 skills (12 written here, plus 3
-        vendored this round) total around 7k characters, far under even
-        the warn threshold."""
+        one: this project's own 16 skills (12 written here, plus 4
+        vendored) total around 7.2k characters, far under even the warn
+        threshold."""
         skills_dir = REPO_ROOT / ".claude" / "skills"
         descriptions = _collect_descriptions(skills_dir)
-        self.assertEqual(len(descriptions), 15)
+        self.assertEqual(len(descriptions), 16)
         total = sum(len(d) for d in descriptions.values())
         self.assertLess(total, 19_000)
         self.assertEqual(check_pack_description_budget(descriptions), [])
@@ -371,10 +372,10 @@ class TestDescriptionOverlap(unittest.TestCase):
         self.assertEqual(len(findings), 1)
 
     def test_real_run_against_this_repos_own_skills_finds_no_overlap(self):
-        """This project's 15 skills cover genuinely distinct domains
+        """This project's 16 skills cover genuinely distinct domains
         (copy, SEO-adjacent pSEO, voice, launch, review process, plus
-        three vendored design/animation/taste skills) -- confirmed by
-        actually running the check, not assumed."""
+        four vendored design/animation/taste/reference skills) --
+        confirmed by actually running the check, not assumed."""
         skills_dir = REPO_ROOT / ".claude" / "skills"
         descriptions = _collect_descriptions(skills_dir)
         findings = check_description_overlap(descriptions, threshold=0.4)
@@ -385,7 +386,7 @@ class TestValidatePack(unittest.TestCase):
     def test_returns_per_skill_reports_and_pack_findings_separately(self):
         skills_dir = REPO_ROOT / ".claude" / "skills"
         reports, pack_findings = validate_pack(skills_dir, repo_root=REPO_ROOT)
-        self.assertEqual(len(reports), 15)
+        self.assertEqual(len(reports), 16)
         self.assertEqual(pack_findings, [])  # real repo is well under budget, no overlap
 
     def test_cli_prints_a_pack_level_section_when_findings_exist(self):

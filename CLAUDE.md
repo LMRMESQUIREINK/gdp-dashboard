@@ -5260,6 +5260,64 @@ yourself every time.
   brand-template generation alongside Figma's design-context pull and
   the three newly-vendored craft/taste skills), rather than guessing a
   second unconnected one.
+- **Deep analysis + new skill from a bare PDF upload: "Make Claude
+  Design From Real References" (the Motion Sites Method)** — a 9-page
+  guide, no accompanying instruction, same bare-upload-is-the-
+  instruction convention as every prior round. Full write-up in
+  `/notes/motion-sites-reference-builder-analysis.md`. Teaches
+  installing Anthropic's real `frontend-design` skill + Microsoft's
+  real Playwright MCP, then adding a self-built "reference library"
+  skill modeled on Motion Sites' own paid product's 4-step method
+  (study references → spec → build → screenshot-and-fix). **The
+  guide runs a real self-correction on itself** ("THE HONEST NUMBERS":
+  Motion Sites' free skill has "40 example designs... 50+ hero videos,
+  30 3D cut-out images and 55+ technique recipes, not 700 designs") —
+  checked directly by cloning the real `Motionsites-AI/claude-skill`
+  rather than trusting the correction itself: 3 of 4 numbers are exact
+  (40 examples, 30 alpha-cut-out images, repo age 27 days matching
+  "under a month old"), the fourth ("55+" recipes) is a correct but
+  3-short understatement of the source's own stated "58 tested
+  recipes" — the most precisely self-verified "honest numbers" callout
+  this project has checked in any source. **The one real flaw found**:
+  the guide's own trust argument ("we only install 5,000+ star
+  projects... frontend-design, 197,000+ stars... Playwright MCP, 39K+
+  stars") overstates both trusted numbers relative to current web-
+  search aggregates (frontend-design ~170k-180k, Playwright MCP
+  ~32k-37k, most recently 35,937 on Nov 6 2026) — the opposite
+  direction from the careful "Honest Numbers" box, though both real
+  figures stay far above the stated 5,000-star bar so the practical
+  conclusion holds. **Credited**: cloned `anthropics/skills` directly
+  and confirmed the guide's two install commands
+  (`/plugin marketplace add anthropics/skills`,
+  `/plugin install example-skills@anthropic-agent-skills`) match the
+  real `.claude-plugin/marketplace.json` exactly — a real, positive
+  contrast with an earlier round's article that got this exact command
+  form wrong (`/notes/mattpocock-skills-analysis.md`). Checked
+  `.claude/skills/` first: none of the three skills vendored two rounds
+  ago implement this guide's core mechanism (a curated multi-reference
+  mood board with a per-item "steal: X" note, picked by brief category/
+  mood before writing a spec) — `impeccable`'s own `new-work-comp.md`
+  explicitly distinguishes its single-approved-comp mechanism from a
+  mood board rather than implementing one — a genuinely new gap.
+  **Built**: `.claude/skills/reference-builder/` — the guide's own
+  given skill file and INDEX.md format, vendored per its own "create
+  with exactly this content" instruction, adapted only with two
+  project-specific precedence notes (`design-rules.md`'s locked brands
+  win over generic guidance; this sandbox's existing direct-Playwright
+  screenshot workflow stands in for the guide's separate MCP-install
+  step). `references/INDEX.md` deliberately left as a template, not
+  populated with fabricated entries — no live browser access to
+  actually collect real reference screenshots, and inventing "steal: X"
+  notes for images that don't exist would violate the method's own
+  first rule. **A real bug found and fixed, copied verbatim from the
+  source**: the guide's own given skill-file payload has invalid YAML
+  frontmatter (a `description:` field wrapped across three lines with
+  no block-scalar indicator), caught immediately by
+  `skill_md_validator.py`'s first real run against the literal copy —
+  fixed by collapsing it onto one line, the only change needed. Updated
+  five existing tests whose assertions hardcoded "15 skills" (now 16).
+  37/37 tests pass, all 16 real skills clean except the two already-
+  documented partial vendor copies from the prior round.
 
 ---
 
