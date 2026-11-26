@@ -5492,6 +5492,79 @@ yourself every time.
   real-world JSON-output volume) aren't independently testable from this
   sandbox, same "nothing narrow enough to extract" call as the Week 25
   newsletter round's REA recheck.
+- **Deep analysis + new build from a bare multi-article PDF bundle**: a
+  64-page PDF with no accompanying instruction turned out, on reading
+  past the first article's own "Final Thoughts" section, to contain
+  **five distinct articles** — "Google's New Open Knowledge Format (OKF)
+  Could Change How We Build RAG Systems for AI Agents" plus four
+  companion production-AI-systems pattern articles by Natarajan
+  Selvaraj (confirmed real via web search): "A Blueprint for Production
+  Agentic AI Systems in the Enterprise," "A Practical Pattern to
+  Implement Secure Enterprise AI Search" (Security-Trimmed Index/STI),
+  "The Unified RAG Evaluation Schema" (URES), and "The Verified
+  Identity Agent Bridge" (VIAB). Full write-up in
+  `/notes/okf-rag-agentic-bundle-analysis.md`. **A real structural
+  PDF-conversion artifact, not a fabrication**: the URES article appears
+  twice in the PDF, byte-for-byte identical — a duplicate full-text
+  embed consistent with a print-to-PDF capture pulling in the same
+  linked article twice, noted plainly rather than "fixed." The OKF
+  article is one of the most rigorously self-verifying sources this
+  project has analyzed: `GoogleCloudPlatform/knowledge-catalog`
+  (Apache 2.0) was cloned directly and its real `okf/SPEC.md` (v0.2)
+  read in full, and essentially every specific technical claim in the
+  article matched the real spec text verbatim — the §5.3 three-tier
+  trust model, the §5.5 absolute-instant `stale_after` semantics, the
+  §6.1 two link forms with explicit broken-link tolerance, the real
+  §10 "Attested Computation" concept type, and the `index.md`
+  progressive-disclosure convention. One precision note, not an error:
+  the cited `okf/` path inside `knowledge-catalog` is now a "frozen
+  snapshot, no longer maintained" per the real repo's own current
+  README, with work continuing at a separate, newer repo — accurate at
+  the time the article and this clone were made. The Blueprint article's
+  stage/confirm/commit write-tier pattern (backend-signed context,
+  immediate/confirm/step_up risk tiers, enforced by a `guard_write()`
+  function outside the model) was credited as the single most
+  load-bearing mechanism across all five articles. STI's in-query ACL
+  filtering (never a post-filter, which would leak facet/count
+  information about documents a caller can't see) and VIAB's
+  verify-then-assert-identity pattern (distinct from its named companion
+  DBO, which forwards a token the downstream service can validate
+  directly) were both read and credited. MCP spec version "2026-07-28,"
+  cited in both the Blueprint and VIAB articles, confirmed real and
+  current via web search. **Built**: checked `/builds/` first across
+  all five articles' mechanisms — the Blueprint/STI/VIAB patterns each
+  have partial adjacent coverage already (`policy-control-plane`,
+  `agent-checkpoint-layer`, `html-ai-sanitizer`), so
+  `/builds/okf-navigator/` was built instead: a standalone, independent
+  reimplementation (not copied from the real reference agent's own
+  Python code in that repo, which was deliberately not read) of OKF's
+  real trust-tier/staleness/link-resolution rules, plus a bounded-depth
+  "progressive disclosure" traversal built from the article's own
+  worked Authentication Service / Token Policy / API Gateway / Customer
+  Login impact-analysis scenario (reconstructed from the article's
+  narrative description, stated plainly as this build's own content).
+  Proven against three real, unmodified sample concept files copied
+  from Google's own repo (Apache 2.0, attributed) as well as the
+  reconstructed scenario. **Found and fixed a real bug**: `load_bundle()`'s
+  first draft called the concept parser unconditionally on every `.md`
+  file under a bundle root, so the real upstream `LICENSE.md` copy
+  sitting alongside the real fixtures (a plain file with no YAML
+  frontmatter) raised a parse error and crashed the whole load on the
+  first real run — fixed so a `.md` file is only parsed as a concept if
+  it actually opens a frontmatter block, while a file that opens one but
+  fails to parse still raises. **A second real finding from the same
+  real fixtures**: the real Google-authored `index.md` sample
+  (`bundles/stackoverflow/references/index.md`) turned out to carry no
+  frontmatter at all — a genuine, checked property of OKF's real
+  progressive-disclosure entry points (lightweight navigational lists,
+  not full concepts with trust/staleness metadata), stated as a real
+  scope boundary in the build's README rather than silently worked
+  around. 41/41 tests pass. Deliberately not built this round: STI's
+  ACL-filtered-query pattern, VIAB/DBO's credential-exchange chain, and
+  the Blueprint's write-tier pattern — each a real candidate next move,
+  sized same-day/within-a-week/2-3-weeks respectively, left unbuilt in
+  favor of one well-tested mechanism rather than three rushed partial
+  ones.
 
 ---
 
