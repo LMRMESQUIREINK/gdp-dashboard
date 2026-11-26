@@ -2,10 +2,13 @@
 
 A small, dependency-free Python toolkit for sanity-checking a bundle of
 vendor/consulting PDFs uploaded together with no accompanying note — the
-exact situation this project hit with three Cloudera/Microsoft PDFs uploaded
-at once. Full write-up: `/notes/cloudera-pdf-bundle-analysis.md`.
+exact situation this project hit twice: first with three Cloudera/Microsoft
+PDFs (`/notes/cloudera-pdf-bundle-analysis.md`), then with three more
+Cloudera ebooks that extended the tool rather than duplicating it
+(`/notes/cloudera-second-pdf-bundle-analysis.md`).
 
-Three independent checks, each built from a real finding in that round:
+Three independent checks, each built from a real finding, and extended by a
+second round's real findings:
 
 ## `vintage_check.py`
 
@@ -55,6 +58,30 @@ Universe" figure found is a 300x growth **from 2005** (not 2006) — a
 different base year and a different multiplier from the same family of IDC
 studies.
 
+**Extended in round two** with `find_cross_document_echoes()`: the exact
+same `$2.01B`/`datascienceassn.org` claim above reappears nearly verbatim in
+a second, separate Cloudera ebook ("7 Elements of a Winning Enterprise Data
+Strategy," 2022) — the same unreachable source backing the same unverified
+number in two documents from the same vendor. That's not independent
+corroboration; it's one unconfirmed source copy-pasted. The function groups
+claims by `source_url` across documents and flags any URL that backs a claim
+in more than one document while never once reaching a `CONFIRMED` status —
+and correctly leaves alone a source reused *within* one document, or a
+source that's confirmed anywhere in its history. The same round also found
+three claims from a different source (NewVantage Partners' real 2022 "Data
+and AI Executive Survey") that check out exactly once actually located
+(92.1% measurable results, 91.9%→92% culture-as-impediment, 26.5%→27%
+data-driven organization) — proof the echo check isn't "vendor numbers are
+always suspect," only that a repeated *unverified* one shouldn't gain
+credibility from repetition.
+
+`breakdown_reconciler.py` also gained `check_claimed_multiple()`: "7
+Elements" states hybrid/multi-cloud adoption is "set to triple (from 12%
+to 36%)" in the next 18 months — a self-contained before/after/multiplier
+claim, recomputed directly (36 / 12 = 3.0 exactly) rather than a weighted
+average. It checked out — included so the mechanism isn't only ever shown
+catching a problem.
+
 ## Checked `/builds/` first
 
 `manifest-drift-guard` checks file-hash drift against a manifest, not PDF
@@ -69,14 +96,15 @@ reconciliation, or a per-claim citation-confidence gradient. Genuinely new.
 
 ## Proven
 
-24/24 tests pass on the real run (`python3 -m unittest test_vintage_check.py
-test_breakdown_reconciler.py test_citation_tracker.py`), all fixtures drawn
-from this round's own real, independently-checked findings (not synthetic
-data alone), plus discrimination tests proving each check stays quiet on
-clean input (PDFs created the same week, a reconciliation that matches
-exactly, an all-confirmed claim set). No bug found in this build's own first
-draft — all 24 passed on the first real run, stated plainly rather than
-manufactured.
+36/36 tests pass on the real run (`python3 -m unittest test_vintage_check.py
+test_breakdown_reconciler.py test_citation_tracker.py`, up from 24), all
+fixtures drawn from real, independently-checked findings across both rounds
+(not synthetic data alone), plus discrimination tests proving each check
+stays quiet on clean input (PDFs created the same week, a reconciliation
+that matches exactly, an all-confirmed claim set, a source reused within one
+document, a source confirmed anywhere in its history). No bug found in
+either round's own first draft — all tests passed on the first real run
+each time, stated plainly rather than manufactured.
 
 ## Deliberately not built
 

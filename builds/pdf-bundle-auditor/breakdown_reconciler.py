@@ -13,6 +13,19 @@ gives 72.7%, matching the press figure almost exactly even though the report's
 own prose never states it directly. The same mechanism also confirms the
 report's two headline figures that ARE stated directly (72% overhaul-needed,
 55% canceled-6+-projects) reconstruct cleanly from their own regional tables.
+
+Extended from a second real finding, in a later round on three more Cloudera
+ebooks: "7 Elements of a Winning Enterprise Data Strategy" (2022) claims "the
+percentage of organizations that will be hybrid and multi-cloud is set to
+triple (from 12% to 36%) in the next 18 months" -- a self-contained,
+recomputable "before/after/claimed-multiple" statement rather than a
+weighted-segment one. `check_claimed_multiple()` generalizes that check: any
+document stating a before value, an after value, and a named multiplier
+("triple," "doubled," "4x") can have that multiplier recomputed directly and
+compared against what's claimed, the same discipline as `reconcile()` but for
+a ratio instead of a weighted average. This one happened to check out exactly
+(36 / 12 = 3.0) -- a credit, not a flag, and included so the mechanism isn't
+only ever shown catching a problem.
 """
 
 from dataclasses import dataclass
@@ -24,6 +37,26 @@ class ReconciliationResult:
     stated: float | None
     delta: float | None
     matches: bool | None  # None when no stated figure was given to compare
+
+
+@dataclass(frozen=True)
+class MultipleCheckResult:
+    computed_multiple: float
+    claimed_multiple: float
+    matches: bool
+
+
+def check_claimed_multiple(
+    before: float, after: float, claimed_multiple: float, tolerance: float = 0.05
+) -> MultipleCheckResult:
+    """Recomputes after/before and compares it to a stated multiplier
+    ("triple" -> 3.0, "doubled" -> 2.0, "4x" -> 4.0). tolerance is a relative
+    fraction (0.05 = within 5% of the claimed multiple)."""
+    if before == 0:
+        raise ValueError("before must be nonzero to compute a multiple")
+    computed = after / before
+    matches = abs(computed - claimed_multiple) <= tolerance * claimed_multiple
+    return MultipleCheckResult(computed, claimed_multiple, matches)
 
 
 def weighted_average(segment_values: dict[str, float], segment_weights: dict[str, int]) -> float:

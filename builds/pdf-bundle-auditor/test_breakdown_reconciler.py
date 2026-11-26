@@ -1,6 +1,6 @@
 import unittest
 
-from breakdown_reconciler import weighted_average, reconcile
+from breakdown_reconciler import weighted_average, reconcile, check_claimed_multiple
 
 
 # Real sample sizes from "The Great AI Re-Architecture"'s own Methodology
@@ -62,7 +62,32 @@ class TestRealFinding_UnstatedGovernanceFigure(unittest.TestCase):
         self.assertIsNone(result.matches)
 
 
+class TestRealFinding_ClaimedMultiple(unittest.TestCase):
+    """"7 Elements of a Winning Enterprise Data Strategy" (2022) claims
+    hybrid/multi-cloud adoption is "set to triple (from 12% to 36%)" --
+    a self-contained before/after/multiplier claim, checked directly."""
+
+    def test_the_real_triple_claim_checks_out_exactly(self):
+        result = check_claimed_multiple(before=12, after=36, claimed_multiple=3.0)
+        self.assertEqual(result.computed_multiple, 3.0)
+        self.assertTrue(result.matches)
+
+
 class TestDiscrimination(unittest.TestCase):
+    def test_claimed_multiple_within_tolerance_matches(self):
+        result = check_claimed_multiple(before=10, after=19, claimed_multiple=2.0, tolerance=0.1)
+        self.assertAlmostEqual(result.computed_multiple, 1.9)
+        self.assertTrue(result.matches)
+
+    def test_claimed_multiple_outside_tolerance_does_not_match(self):
+        result = check_claimed_multiple(before=10, after=15, claimed_multiple=2.0, tolerance=0.1)
+        self.assertAlmostEqual(result.computed_multiple, 1.5)
+        self.assertFalse(result.matches)
+
+    def test_claimed_multiple_rejects_zero_before(self):
+        with self.assertRaises(ValueError):
+            check_claimed_multiple(before=0, after=10, claimed_multiple=2.0)
+
     def test_exact_match_at_zero_tolerance(self):
         values = {"A": 50, "B": 50}
         weights = {"A": 1, "B": 1}

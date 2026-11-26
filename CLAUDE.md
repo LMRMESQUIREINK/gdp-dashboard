@@ -5366,6 +5366,52 @@ yourself every time.
   discrimination tests proving each check stays quiet on clean input.
   24/24 tests pass on the real run — no bug found in this build's own
   first draft, stated plainly rather than manufactured.
+- **A second bare Cloudera PDF bundle (three more ebooks, 2021-2022),
+  extending `/builds/pdf-bundle-auditor/` rather than duplicating it.**
+  Full write-up in `/notes/cloudera-second-pdf-bundle-analysis.md`.
+  Measured first: `pdfinfo` dates span Mar 2021-Nov 2022 (~20 months),
+  under the vintage checker's 2-year default threshold — correctly
+  **not** flagged, a useful negative-case confirmation the tool
+  discriminates rather than always firing. **The round's strongest
+  finding**: "7 Elements of a Winning Enterprise Data Strategy" (2022)
+  footnotes the exact same "$2.01B Fortune 1000 / 10% usability"
+  claim, from the exact same unreachable `datascienceassn.org` URL,
+  that the first PDF-bundle round already flagged `UNCONFIRMED` in a
+  separate Cloudera ebook ("Empowering Innovation") — the same
+  unverified source recycled across two documents from the same
+  vendor, which is not independent corroboration, just one unchecked
+  number copy-pasted twice. Built `find_cross_document_echoes()` into
+  `citation_tracker.py`: groups claims by source URL across documents
+  and flags any URL backing an unconfirmed claim in more than one
+  document, correctly leaving alone same-document reuse and any source
+  that reaches `CONFIRMED` anywhere in its history. That last carve-out
+  matters: the same ebook's NewVantage Partners-sourced claims (92.1%
+  measurable results, 91.9%→92% culture-as-impediment, 26.5%→27%
+  data-driven org, all three in "How to Build a Foundation for
+  Exploratory Data Science with CML on AWS") check out exactly against
+  the real 2022 primary survey once actually located — a first web
+  search was contaminated by an unrelated firm's coincidentally similar
+  92.1% figure for a different question, corrected with a second,
+  targeted search — proving the echo check is about repetition of the
+  *unverified*, not a blanket distrust of vendor numbers. Also found:
+  Globe Telecom's real, well-documented Cloudera relationship carries
+  two specific figures (600PB of data, 66% YoY mobile-data growth) not
+  echoed by any independent source; and "Five Enterprise Public Cloud
+  Use Cases" (2021) — the exact ebook an earlier round's web search had
+  surfaced but never read — turns out to hold a *different*, fully
+  anonymous biopharma case study (2x R&D productivity) plus a *fourth*
+  distinct anonymous life-sciences story (4x patient qualification, 72x
+  data speed, 4x prediction accuracy), neither matching the "Empowering
+  Innovation" ebook's named IQVIA story or its separate Forrester-TEI-
+  quoted pharma CDO — resolving a thread the first round left dangling
+  rather than conflating four different stories into one. Also built
+  `check_claimed_multiple()` into `breakdown_reconciler.py` for "7
+  Elements"'s self-contained "set to triple (from 12% to 36%)" claim —
+  recomputed directly (36/12 = 3.0 exactly) and included as a clean
+  pass, not only ever shown catching a problem. 36/36 tests pass on the
+  real run (up from 24), all new fixtures drawn from this round's own
+  real, independently-checked figures — no bug found in this round's
+  own extension, stated plainly rather than manufactured.
 
 ---
 
