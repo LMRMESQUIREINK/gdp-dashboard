@@ -34,10 +34,26 @@ results, 91.9%->92% culture-as-impediment, 26.5%->27% data-driven
 organization) -- the discipline that makes the echo-detection meaningful:
 some vendor citations really do hold up on inspection, so flagging a repeat
 is about the repetition itself, not a blanket "vendor numbers are suspect."
+
+Extended again from a third real finding, in a later round on three more
+Cloudera ebooks: "How to Build a Foundation for Exploratory Data Science with
+CML on AWS" (2022) and "How to Take AI Applications from Concept to Reality
+with CML on AWS" (2022, created the same day per each PDF's own CreationDate)
+both carry the near-verbatim sentence "Globe Telecom manages 600PB of data
+with CML on AWS, driving [a strategy that supports] 66% year-over-year growth
+in mobile data volume" -- but this is a bare, self-authored customer-metric
+claim with NO footnoted source_url at all, so `find_cross_document_echoes()`
+(which only groups by source_url) cannot catch it. `find_cross_document_text_echoes()`
+closes that gap: it normalizes and groups claims by their own text instead of
+by an external citation, catching the case where a vendor's own case-study
+number is recycled verbatim across its content library with no new
+verification attached either time -- the same underlying problem the
+source_url-based check targets, just without a footnote to key off of.
 """
 
 from dataclasses import dataclass
 from enum import Enum
+import re
 
 
 class CitationStatus(Enum):
@@ -131,6 +147,85 @@ def find_cross_document_echoes(claims: list[Claim]) -> list[EchoFinding]:
         findings.append(
             EchoFinding(
                 source_url=url,
+                claim_texts=tuple(c.text for c in group),
+                documents=tuple(sorted(documents)),
+            )
+        )
+    return findings
+
+
+def _normalize_for_echo(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9%$.]+", " ", text)
+    return " ".join(text.split())
+
+
+@dataclass(frozen=True)
+class TextEchoFinding:
+    normalized_text: str
+    claim_texts: tuple[str, ...]
+    documents: tuple[str, ...]
+
+
+def find_cross_document_text_echoes(
+    claims: list[Claim],
+    min_normalized_length: int = 20,
+    similarity_threshold: float = 0.85,
+) -> list[TextEchoFinding]:
+    """Groups claims by NEAR-verbatim text (not by source_url, and not by
+    exact-string equality) and flags any claim repeated across two or more
+    distinct documents while never reaching CONFIRMED in any of them.
+
+    An earlier draft of this function grouped by exact normalized-text
+    equality and missed its own motivating case on the first real run: two
+    Cloudera ebooks state "Globe Telecom manages 600PB of data with CML on
+    AWS, driving [...] 66% year-over-year growth in mobile data volume" with
+    one extra clause inserted in one of the two ("a strategy that supports")
+    -- real-world repetition is near-verbatim, not byte-identical, so exact
+    matching is the wrong tool and was fixed here (not the test) once the
+    first real run against this round's own fixture failed. Similarity is
+    measured with difflib's SequenceMatcher ratio on normalized text.
+
+    Complements find_cross_document_echoes(): that function can only catch an
+    echo when both appearances cite the same external source_url, so it has
+    nothing to key off of for a bare, self-authored claim (source_url=None)
+    -- exactly the shape of a vendor's own customer case-study metric. Claims
+    shorter than min_normalized_length are skipped (short phrases like
+    "Cloudera" or "CML" would otherwise match everywhere and swamp the result
+    with noise)."""
+    import difflib
+
+    candidates = [
+        c for c in claims if len(_normalize_for_echo(c.text)) >= min_normalized_length
+    ]
+    normalized_texts = [_normalize_for_echo(c.text) for c in candidates]
+
+    findings = []
+    used = set()
+    for i, a in enumerate(candidates):
+        if i in used:
+            continue
+        group_idxs = {i}
+        for j in range(i + 1, len(candidates)):
+            if j in used:
+                continue
+            ratio = difflib.SequenceMatcher(
+                None, normalized_texts[i], normalized_texts[j]
+            ).ratio()
+            if ratio >= similarity_threshold:
+                group_idxs.add(j)
+        if len(group_idxs) < 2:
+            continue
+        group = [candidates[k] for k in sorted(group_idxs)]
+        documents = {c.document for c in group if c.document is not None}
+        if len(documents) < 2:
+            continue
+        if any(c.status in _CONFIRMED for c in group):
+            continue
+        used |= group_idxs
+        findings.append(
+            TextEchoFinding(
+                normalized_text=normalized_texts[i],
                 claim_texts=tuple(c.text for c in group),
                 documents=tuple(sorted(documents)),
             )

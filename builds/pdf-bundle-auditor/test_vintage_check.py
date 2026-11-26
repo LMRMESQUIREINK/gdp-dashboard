@@ -39,6 +39,30 @@ class TestRealBundleFromThisRound(unittest.TestCase):
         self.assertEqual(findings, [])
 
 
+class TestRealBundleFromThirdRound(unittest.TestCase):
+    """A third real bundle (Nov 2021 - Sep 2022, ~10 months) -- a second
+    negative-case confirmation, alongside the second round's ~20-month
+    bundle, that the 2-year default threshold actually discriminates rather
+    than firing on every multi-PDF upload."""
+
+    def test_real_third_bundle_does_not_trip_the_default_spread_threshold(self):
+        pdfs = [
+            PdfRecord("blueprint-continuous-operations-copml", date(2021, 11, 16)),
+            PdfRecord("achieving-a-data-driven-transformation", date(2022, 9, 15)),
+            PdfRecord("concept-to-reality-cml-aws", date(2022, 9, 23)),
+        ]
+        self.assertEqual(check_spread(pdfs), [])
+
+    def test_two_of_the_three_were_created_the_same_day(self):
+        # achieving-a-data-driven-transformation (round 2's companion doc,
+        # exploratory-data-science-cml-aws) and concept-to-reality-cml-aws
+        # were both created 2022-09-23 -- a zero-day spread between those two.
+        a = PdfRecord("exploratory-data-science-cml-aws", date(2022, 9, 23))
+        b = PdfRecord("concept-to-reality-cml-aws", date(2022, 9, 23))
+        self.assertEqual(check_spread([a, b]), [])
+        self.assertEqual((b.creation_date - a.creation_date).days, 0)
+
+
 class TestDiscrimination(unittest.TestCase):
     """A clean bundle -- PDFs created close together, with no lapsed
     forecasts -- must not be flagged."""

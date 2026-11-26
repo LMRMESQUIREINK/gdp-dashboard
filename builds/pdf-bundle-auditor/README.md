@@ -2,13 +2,15 @@
 
 A small, dependency-free Python toolkit for sanity-checking a bundle of
 vendor/consulting PDFs uploaded together with no accompanying note — the
-exact situation this project hit twice: first with three Cloudera/Microsoft
-PDFs (`/notes/cloudera-pdf-bundle-analysis.md`), then with three more
-Cloudera ebooks that extended the tool rather than duplicating it
-(`/notes/cloudera-second-pdf-bundle-analysis.md`).
+exact situation this project hit three times now: first with three
+Cloudera/Microsoft PDFs (`/notes/cloudera-pdf-bundle-analysis.md`), then with
+three more Cloudera ebooks that extended the tool rather than duplicating it
+(`/notes/cloudera-second-pdf-bundle-analysis.md`), then a third bundle of
+three more Cloudera/Kyndryl/AWS ebooks
+(`/notes/cloudera-third-pdf-bundle-analysis.md`).
 
-Three independent checks, each built from a real finding, and extended by a
-second round's real findings:
+Three independent checks, each built from a real finding, and extended by
+two further rounds' real findings:
 
 ## `vintage_check.py`
 
@@ -82,6 +84,45 @@ claim, recomputed directly (36 / 12 = 3.0 exactly) rather than a weighted
 average. It checked out — included so the mechanism isn't only ever shown
 catching a problem.
 
+**Extended in round three** with `find_cross_document_text_echoes()`: a
+third bundle ("Blueprint for Continuous Operations for Production Machine
+Learning," 2021; "Achieving a Data-Driven Transformation," Kyndryl/Cloudera,
+2022; "How to Take AI Applications from Concept to Reality with CML on AWS,"
+2022) turned up a sharper version of round two's echo finding. The
+exploratory-data-science ebook (round two) and the concept-to-reality ebook
+(round three) — created the **same day**, per each PDF's own `CreationDate`
+— both state a near-identical, bare, self-authored Globe Telecom claim
+("manages 600PB of data with CML on AWS, driving [...] 66% year-over-year
+growth in mobile data volume") with **no footnoted source_url at all**.
+`find_cross_document_echoes()` (source_url-keyed) cannot catch this — there's
+no shared URL to group on. `find_cross_document_text_echoes()` closes the
+gap by grouping on the claim text itself instead. **A real bug was found and
+fixed in this new function's own first draft**: it originally grouped by
+exact normalized-string equality and missed its own motivating case on the
+first real run, because the two Globe Telecom sentences aren't byte-identical
+(one inserts "a strategy that supports" mid-sentence) — real-world repetition
+is near-verbatim, not identical. Fixed by switching to a
+`difflib.SequenceMatcher`-based similarity threshold (0.85) instead of exact
+matching, confirmed against both the real catch case and a differently-worded
+Globe Telecom sentence that correctly does *not* match.
+
+This round also checked five more footnoted/cited claims across the three
+new ebooks, landing on five different outcomes: Gartner's "80% ... will
+fail" governance forecast and Algorithmia's "40% take 30+ days to deploy"
+both `CONFIRMED_APPROXIMATE`; BT Group's "200-250% ROI" `SOURCE_LOCATED_
+UNVERIFIED` (a real vendor-deck quote from BT's own chief data architect,
+never independently audited); Western Union's blended case-study sentence
+("29 transactions/second... 100 terabytes... 60X faster data loading")
+split into three claims with three different outcomes, since the first two
+numbers trace to two different, undated sources (Cloudera's own 2014 press
+release; an unrelated InformationWeek estimate) stitched into one sentence,
+and the third has no source found at all; and, the round's sharpest single
+finding, McKinsey's own 2020 "state of AI" report pairs "a clear data
+strategy supports and enables AI" with **44% vs. 31%**, not the ebook's
+claimed **44% vs. 21%** — recorded as `CONTRADICTED`, since the wrong
+comparison figure inflates the apparent gap from a real 13 points to a
+claimed 23, nearly double.
+
 ## Checked `/builds/` first
 
 `manifest-drift-guard` checks file-hash drift against a manifest, not PDF
@@ -96,15 +137,17 @@ reconciliation, or a per-claim citation-confidence gradient. Genuinely new.
 
 ## Proven
 
-36/36 tests pass on the real run (`python3 -m unittest test_vintage_check.py
-test_breakdown_reconciler.py test_citation_tracker.py`, up from 24), all
-fixtures drawn from real, independently-checked findings across both rounds
-(not synthetic data alone), plus discrimination tests proving each check
-stays quiet on clean input (PDFs created the same week, a reconciliation
-that matches exactly, an all-confirmed claim set, a source reused within one
-document, a source confirmed anywhere in its history). No bug found in
-either round's own first draft — all tests passed on the first real run
-each time, stated plainly rather than manufactured.
+49/49 tests pass on the real run (`python3 -m unittest test_vintage_check.py
+test_breakdown_reconciler.py test_citation_tracker.py`, up from 36), all
+fixtures drawn from real, independently-checked findings across all three
+rounds (not synthetic data alone), plus discrimination tests proving each
+check stays quiet on clean input (PDFs created the same week, a
+reconciliation that matches exactly, an all-confirmed claim set, a source
+reused within one document, a source confirmed anywhere in its history, two
+differently-worded claims about the same underlying fact). Round three found
+and fixed one real bug (`find_cross_document_text_echoes()`'s exact-match
+first draft, detailed above); rounds one and two each passed on the first
+real run with no bug found, stated plainly rather than manufactured.
 
 ## Deliberately not built
 
@@ -113,8 +156,13 @@ each time, stated plainly rather than manufactured.
   dependency this toolkit deliberately stays free of, matching the
   dependency-free convention of `manifest-drift-guard` and
   `skill-md-validator`.
-- A live fetcher for the two blocked source domains (datascienceassn.org,
-  de.cloudera.com) — both are blocked by this sandbox's egress proxy, the
-  same restriction class already documented across this project for
-  medium.com, dev.to, nocobase.com, arxiv.org, Hugging Face, Substack, and
-  several others.
+- A live fetcher for the blocked source domains (datascienceassn.org,
+  de.cloudera.com, mckinsey.com) — all three are blocked by this sandbox's
+  egress proxy, the same restriction class already documented across this
+  project for medium.com, dev.to, nocobase.com, arxiv.org, Hugging Face,
+  Substack, and several others.
+- A fourth claim-matching mode generalizing both echo functions into one
+  (source-keyed and text-keyed) — kept as two separate, narrower functions
+  since they catch genuinely different failure shapes (a shared external
+  citation vs. a bare self-authored sentence) and merging them would make
+  the "why did this fire" answer less legible for no real gain.

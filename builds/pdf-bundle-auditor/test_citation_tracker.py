@@ -6,6 +6,7 @@ from citation_tracker import (
     summarize,
     require_minimum_confirmed,
     find_cross_document_echoes,
+    find_cross_document_text_echoes,
 )
 
 
@@ -156,6 +157,233 @@ def real_globe_telecom_claim() -> Claim:
         "specifically -- the broad story checks out, these two numbers don't.",
         document="exploratory-data-science-cml-aws",
     )
+
+
+def real_globe_telecom_claim_round3() -> Claim:
+    """The near-verbatim repeat of real_globe_telecom_claim() above, found in
+    a THIRD round on a different Cloudera ebook ("How to Take AI Applications
+    from Concept to Reality with CML on AWS", 2022-09-23 -- the same day, per
+    each PDF's own CreationDate, as the ebook real_globe_telecom_claim() came
+    from). Worded slightly differently ("driving a strategy that supports 66%
+    year-over-year growth" vs. "driving 66% year-over-year growth") but the
+    same two numbers, same customer, same claim, still with no source_url at
+    all -- exactly the case find_cross_document_echoes() cannot catch,
+    because there is no shared source_url to group on."""
+    return Claim(
+        text="Globe Telecom manages 600PB of data with CML on AWS, driving a "
+        "strategy that supports 66% year-over-year growth in mobile data volume.",
+        source_url=None,
+        status=CitationStatus.UNCONFIRMED,
+        reason="Same unconfirmed 600PB/66% YoY figures as the exploratory-"
+        "data-science ebook's identical claim -- the Globe Telecom/Cloudera "
+        "relationship is real, these two specific numbers still aren't "
+        "independently corroborated anywhere, now seen recycled a second time.",
+        document="concept-to-reality-cml-aws",
+    )
+
+
+def real_mckinsey_data_strategy_claim() -> Claim:
+    """"How to Take AI Applications from Concept to Reality with CML on AWS"
+    (2022) headlines, in large display type: "44% of high AI performers have
+    a clear data strategy that supports and enables AI, compared to 21% of
+    other respondents," footnoted to McKinsey's "The state of AI in 2020."
+    The real 2020 report's own exhibit for this exact item ("a clear data
+    strategy supports and enables AI") pairs 44% (AI high performers) with
+    31% for all other respondents, confirmed by two independent secondary
+    sources quoting the same exhibit -- not 21%. The 44% half is correct; the
+    comparison figure is wrong, and wrong in a direction that inflates the
+    apparent gap (44-21=23 points claimed vs. the real 44-31=13 points)."""
+    return Claim(
+        text="44% of high AI performers have a clear data strategy that "
+        "supports and enables AI, compared to 21% of other respondents.",
+        source_url="https://www.mckinsey.com/~/media/McKinsey/Business%20"
+        "Functions/McKinsey%20Analytics/Our%20Insights/Global%20survey%20"
+        "The%20state%20of%20AI%20in%202020/Global-survey-The-state-of-AI-in-2020",
+        status=CitationStatus.CONTRADICTED,
+        reason="McKinsey's own 2020 report pairs 44% (AI high performers) "
+        "with 31% for all other respondents on this exact item -- confirmed "
+        "via two independent secondary sources quoting the report's exhibit "
+        "directly (mckinsey.com itself is blocked by this sandbox's egress "
+        "proxy). The ebook's '21%' overstates the real 13-point gap as 23 "
+        "points, nearly double.",
+    )
+
+
+def real_gartner_governance_claim() -> Claim:
+    return Claim(
+        text="80% of organizations seeking to scale digital business will "
+        "fail because they do not take a modern approach to data and "
+        "analytics governance.",
+        source_url="https://www.gartner.com/en/newsroom/press-releases/"
+        "2021-01-12-gartner-identifies-top-10-data-and-analytics-technology-trends-for-2021",
+        status=CitationStatus.CONFIRMED_APPROXIMATE,
+        reason="Matches a real Gartner forecast (2021 strategic planning "
+        "assumption, tied to a 2021 Market Guide for Data and Analytics "
+        "Governance Platforms) that 80% of organizations trying to scale "
+        "digital business through 2025 will fail without modern data-and-"
+        "analytics governance -- confirmed via independent secondary "
+        "coverage (a PRNewswire release, Architecture & Governance "
+        "Magazine). A DIFFERENT, later Gartner prediction (2024, for 2027) "
+        "uses the same '80%' figure for a related but distinct claim -- not "
+        "to be conflated with this one.",
+    )
+
+
+def real_algorithmia_deployment_claim() -> Claim:
+    return Claim(
+        text="40% of companies take more than 30 days to deploy a single ML model.",
+        source_url="https://www.coriniumintelligence.com/hubfs/0284%20CDAO%20"
+        "FS/Algorithmia_2020_State_of_Enterprise_ML.pdf?hsLang=en-gb",
+        status=CitationStatus.CONFIRMED_APPROXIMATE,
+        reason="Algorithmia's real 2020 State of Enterprise ML survey (745 "
+        "respondents, Oct 2019) reports that on average 40% of companies "
+        "say it takes more than a month to deploy an ML model into "
+        "production -- 'more than a month' and 'more than 30 days' are the "
+        "same claim, confirmed via the report's own hosted PDF.",
+    )
+
+
+def real_bt_group_roi_claim() -> Claim:
+    return Claim(
+        text="Cloudera provided an enterprise data hub to BT Group, which "
+        "accelerates data velocity and fast-tracks delivery of new offerings "
+        "to customers... seeing 200-250 percent ROI in one year.",
+        source_url="https://www.cloudera.com/about/news-and-blogs/press-releases/"
+        "2015-08-20-british-telecom-calls-cloudera.html",
+        status=CitationStatus.SOURCE_LOCATED_UNVERIFIED,
+        reason="Real, and traced to a specific quote from BT's own chief "
+        "data architect in a 2015 Cloudera press release/slide deck ('Our "
+        "one-year return on investment from Hadoop deployment is in the 200 "
+        "percent to 250 percent range') -- but it's a vendor-channel "
+        "customer quote, not an independently audited figure, and this "
+        "2022 ebook presents a 7-year-old case study with no date given.",
+    )
+
+
+def real_western_union_blended_claims() -> list[Claim]:
+    """"How to Take AI Applications from Concept to Reality with CML on AWS"
+    presents Western Union's case as one seamless story ("processing 29
+    transactions per second, Western Union's data set exceeds 100 terabytes
+    ... 60X faster data loading") -- but the three numbers trace to at least
+    two different, undated sources stitched together, not one unified
+    Cloudera-verified figure set."""
+    return [
+        Claim(
+            text="Western Union processes 29 transactions per second.",
+            source_url="https://www.cloudera.com/about/news-and-blogs/press-releases/"
+            "2014-02-18-western-union-leveraging-cloudera-data-analytics-solutions-to-enhance-the-customer-experience.html",
+            status=CitationStatus.CONFIRMED_APPROXIMATE,
+            reason="Real, from Cloudera's own Feb 2014 press release (29 "
+            "transactions/second average across 200 countries, based on "
+            "2013 data) -- a later 2018 Datanami piece gives 32/second for "
+            "2017, so '29' is itself a 2013-era snapshot presented without "
+            "a date in this 2022 ebook.",
+        ),
+        Claim(
+            text="Western Union's data set exceeds 100 terabytes.",
+            source_url="https://www.informationweek.com/software-services/"
+            "informatica-self-service-platform-spots-sensitive-data",
+            status=CitationStatus.SOURCE_LOCATED_UNVERIFIED,
+            reason="This figure traces to an InformationWeek estimate "
+            "('roughly 100 terabytes of data generated by 700 million "
+            "transactions a year'), not to any Cloudera-published number -- "
+            "a different outlet's figure blended into the same sentence as "
+            "Cloudera's own '29 transactions per second' stat as if both "
+            "came from one unified source.",
+        ),
+        Claim(
+            text="60X faster data loading, enabling predictive analytics on "
+            "structured and unstructured data sets at the time of the transaction.",
+            source_url=None,
+            status=CitationStatus.UNCONFIRMED,
+            reason="No independent source found repeating a '60X faster "
+            "data loading' figure for Western Union/Cloudera anywhere.",
+        ),
+    ]
+
+
+class TestCrossDocumentTextEcho(unittest.TestCase):
+    """This round's central finding: the Globe Telecom claim carries no
+    source_url at all, so find_cross_document_echoes() (source_url-keyed)
+    cannot catch it being recycled verbatim across two documents --
+    find_cross_document_text_echoes() (text-keyed) closes that gap."""
+
+    def test_find_cross_document_echoes_misses_the_globe_telecom_repeat(self):
+        claims = [real_globe_telecom_claim(), real_globe_telecom_claim_round3()]
+        self.assertEqual(find_cross_document_echoes(claims), [])
+
+    def test_find_cross_document_text_echoes_catches_it(self):
+        claims = [real_globe_telecom_claim(), real_globe_telecom_claim_round3()]
+        findings = find_cross_document_text_echoes(claims)
+        self.assertEqual(len(findings), 1)
+        echo = findings[0]
+        self.assertEqual(
+            set(echo.documents), {"exploratory-data-science-cml-aws", "concept-to-reality-cml-aws"}
+        )
+        self.assertEqual(len(echo.claim_texts), 2)
+
+    def test_a_confirmed_claim_is_not_flagged_even_if_text_echoes(self):
+        shared_text = (
+            "This specific sentence is long enough to clear the minimum length."
+        )
+        a = Claim(shared_text, "https://example.com/a", CitationStatus.CONFIRMED_EXACT,
+                   reason="checked directly", document="doc-1")
+        b = Claim(shared_text, None, CitationStatus.UNCONFIRMED,
+                   reason="not checked", document="doc-2")
+        self.assertEqual(find_cross_document_text_echoes([a, b]), [])
+
+    def test_a_within_one_document_repeat_is_not_a_text_echo(self):
+        shared_text = "This specific sentence is long enough to clear the minimum length."
+        a = Claim(shared_text, None, CitationStatus.UNCONFIRMED, reason="r1", document="doc-1")
+        b = Claim(shared_text, None, CitationStatus.UNCONFIRMED, reason="r2", document="doc-1")
+        self.assertEqual(find_cross_document_text_echoes([a, b]), [])
+
+    def test_short_claims_are_skipped_to_avoid_noise(self):
+        a = Claim("CML on AWS", None, CitationStatus.UNCONFIRMED, reason="r1", document="doc-1")
+        b = Claim("CML on AWS", None, CitationStatus.UNCONFIRMED, reason="r2", document="doc-2")
+        self.assertEqual(find_cross_document_text_echoes([a, b]), [])
+
+    def test_differently_worded_claims_about_the_same_fact_are_not_matched(self):
+        a = Claim(
+            "Globe Telecom manages 600PB of data on CML on AWS.", None,
+            CitationStatus.UNCONFIRMED, reason="r1", document="doc-1",
+        )
+        b = Claim(
+            "Globe Telecom is a leading provider in the Philippines using CDP.",
+            None, CitationStatus.UNCONFIRMED, reason="r2", document="doc-2",
+        )
+        self.assertEqual(find_cross_document_text_echoes([a, b]), [])
+
+
+class TestRealFindingsFromThirdRound(unittest.TestCase):
+    """This round's own citation checks -- a genuine mix of outcomes, not a
+    uniform verdict, matching this project's own established discipline."""
+
+    def test_mckinsey_data_strategy_claim_is_contradicted_not_unconfirmed(self):
+        claim = real_mckinsey_data_strategy_claim()
+        self.assertEqual(claim.status, CitationStatus.CONTRADICTED)
+
+    def test_gartner_and_algorithmia_claims_are_confirmed_approximate(self):
+        self.assertEqual(real_gartner_governance_claim().status, CitationStatus.CONFIRMED_APPROXIMATE)
+        self.assertEqual(real_algorithmia_deployment_claim().status, CitationStatus.CONFIRMED_APPROXIMATE)
+
+    def test_bt_group_roi_is_source_located_unverified(self):
+        self.assertEqual(real_bt_group_roi_claim().status, CitationStatus.SOURCE_LOCATED_UNVERIFIED)
+
+    def test_western_union_blended_claims_have_three_distinct_outcomes(self):
+        claims = real_western_union_blended_claims()
+        counts = summarize(claims)
+        self.assertEqual(counts["confirmed_approximate"], 1)
+        self.assertEqual(counts["source_located_unverified"], 1)
+        self.assertEqual(counts["unconfirmed"], 1)
+
+    def test_third_round_claims_as_a_whole_clear_the_minimum_confirmed_bar(self):
+        claims = (
+            [real_mckinsey_data_strategy_claim(), real_gartner_governance_claim(),
+             real_algorithmia_deployment_claim(), real_bt_group_roi_claim()]
+            + real_western_union_blended_claims()
+        )
+        self.assertTrue(require_minimum_confirmed(claims, minimum=2))
 
 
 class TestCrossDocumentEcho(unittest.TestCase):

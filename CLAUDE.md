@@ -5412,6 +5412,55 @@ yourself every time.
   real run (up from 24), all new fixtures drawn from this round's own
   real, independently-checked figures — no bug found in this round's
   own extension, stated plainly rather than manufactured.
+- **A third bare Cloudera/Kyndryl/AWS PDF bundle, extending
+  `/builds/pdf-bundle-auditor/` a second time.** Three more PDFs
+  uploaded with no accompanying text: "Blueprint for Continuous
+  Operations for Production Machine Learning" (Cloudera, 2021),
+  "Achieving a Data-Driven Transformation" (Kyndryl/Cloudera, 2022),
+  "How to Take AI Applications from Concept to Reality with CML on AWS"
+  (Cloudera/AWS, 2022). Full write-up in
+  `/notes/cloudera-third-pdf-bundle-analysis.md`. Vintage spread ~10
+  months — correctly unflagged, a second negative-case confirmation
+  after round two's ~20-month bundle. Credited the Blueprint ebook's
+  accurate reproduction of the real "Hidden Technical Debt of Machine
+  Learning Systems" (Sculley et al., 2015) diagram and its correct,
+  internally consistent base-rate worked example for imbalanced
+  classification. Checked five more footnoted claims across the other
+  two ebooks: Gartner's "80% will fail... data and analytics
+  governance" and Algorithmia's "40% take 30+ days to deploy" both
+  `CONFIRMED_APPROXIMATE` (with a precision note not to conflate
+  Gartner's 2021-for-2025 forecast with a different, later 2024-for-2027
+  one using the same "80%"); BT Group's "200-250% ROI" traced to a real
+  but vendor-channel-only 2015 quote from BT's own chief data architect,
+  `SOURCE_LOCATED_UNVERIFIED`, presented in this 2022 ebook with no date
+  attached; Western Union's blended case-study sentence ("29
+  transactions/second... 100 terabytes... 60X faster data loading")
+  split into three claims with three different outcomes, since the
+  first two numbers trace to two different undated sources (Cloudera's
+  own 2014 press release; an unrelated InformationWeek estimate)
+  stitched into one sentence, and the third has no source found at all.
+  **The round's sharpest finding**: McKinsey's own real 2020 "state of
+  AI" report pairs "a clear data strategy supports and enables AI" with
+  44% (high performers) vs. **31%** (others) — not the ebook's claimed
+  44% vs. **21%** — recorded `CONTRADICTED`, since the wrong comparison
+  figure inflates the real 13-point gap to a claimed 23, nearly double.
+  **The round's structural finding**: this ebook and round two's
+  "Exploratory Data Science with CML on AWS" — created the **same day**
+  per their own `CreationDate` metadata — both state a near-identical,
+  bare, self-authored Globe Telecom claim ("600PB... 66% YoY growth")
+  with **no footnoted source_url at all**, which the existing
+  `find_cross_document_echoes()` (source_url-keyed) is structurally
+  unable to catch — confirmed directly by running it against both
+  claims and getting zero findings. **Built**
+  `find_cross_document_text_echoes()`, grouping claims by their own
+  normalized text instead of an external citation. **Found and fixed a
+  real bug in this new function's own first draft**: it originally
+  grouped by exact normalized-string equality and failed its own
+  motivating test case on the first real run, since the two Globe
+  Telecom sentences are near-verbatim, not byte-identical (one inserts
+  "a strategy that supports" mid-sentence) — fixed by switching to a
+  `difflib.SequenceMatcher` similarity threshold (0.85) instead of exact
+  matching. 49/49 tests pass on the real run (up from 36).
 
 ---
 
