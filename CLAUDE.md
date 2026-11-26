@@ -5318,6 +5318,54 @@ yourself every time.
   five existing tests whose assertions hardcoded "15 skills" (now 16).
   37/37 tests pass, all 16 real skills clean except the two already-
   documented partial vendor copies from the prior round.
+- **Deep analysis + new build from three bare Cloudera/Microsoft PDFs
+  uploaded together**, no accompanying instruction. Full write-up in
+  `/notes/cloudera-pdf-bundle-analysis.md`. Measured first via `pdfinfo`
+  rather than assumed: the three PDFs' own `CreationDate` metadata spans
+  **2019, 2022, and 2026** — a 7-year gap, with no note anywhere that two
+  of the three are years stale. "The Great AI Re-Architecture" (2026) is
+  real, current, and independently corroborated against Cloudera's own
+  August 2026 press release and multiple trade outlets. "Insights from
+  the Edge" (2019, Cloudera + Microsoft Azure) hides its own age (no
+  visible date in its text) and its "440x more data than 2006" claim
+  doesn't match the closest real IDC figure found (a 300x growth from
+  2005, not 2006) — recorded as contradicted, not just unconfirmed, since
+  a specific conflicting figure exists. "Empowering Innovation" (2022)
+  honestly states its own vintage, by contrast. **The round's strongest
+  finding**: recomputing a weighted average from "The Great AI
+  Re-Architecture"'s own regional breakdown and its own stated sample
+  sizes (AMER n=800, EMEA n=400, APAC n=300) not only reconstructs its two
+  directly-stated headline figures almost exactly (72% overhaul-needed →
+  72.53% computed; 55% canceled-6+-projects → 54.8% computed), it also
+  recovers a **73%** governance-complexity figure that independent press
+  (Campus Technology) reported for one question, which the report's own
+  prose never states directly — it states only a narrower "29% strongly
+  agree" figure for that same question, and recomputing against that
+  instead correctly fails to reconcile (43.7-point gap), proving the tool
+  tells the two questions apart rather than forcing a match. Checked the
+  four footnoted claims in "Empowering Innovation" individually: two
+  confirmed (17.9% DataIQ revenue-uptick survey, correctly hedged by the
+  ebook's own "could lead to" phrasing; 87% ThoughtSpot/HBR frontline-
+  staff figure), one with a real, locatable primary source but
+  unreachable from this sandbox (a Forrester TEI study for CDP Public
+  Cloud, quoted anonymously), and one fully unconfirmed ($2.01B Fortune
+  1000 revenue-usability figure, its named source datascienceassn.org
+  also blocked here) — a genuine, checkable gradient of citation
+  reliability across one document's own footnotes. **Built**: checked
+  `/builds/` first (`manifest-drift-guard` checks file-hash drift, not
+  PDF vintage; `content-provenance-check` checks textual reuse, not
+  citation reliability; `curriculum-link-auditor`/`readme-link-auditor`
+  check a list's claims against a repo's README, not a vendor PDF's
+  footnotes or a regional-breakdown recomputation — a genuinely new gap)
+  — `/builds/pdf-bundle-auditor/`: `vintage_check.py` (PDF-bundle date-
+  spread and lapsed-forecast detection), `breakdown_reconciler.py`
+  (weighted-average reconciliation against a stated headline),
+  `citation_tracker.py` (a `Claim` type that refuses a confirmed status
+  without a reason and a source URL). All fixtures are this round's own
+  real, independently-checked figures, not synthetic data alone, plus
+  discrimination tests proving each check stays quiet on clean input.
+  24/24 tests pass on the real run — no bug found in this build's own
+  first draft, stated plainly rather than manufactured.
 
 ---
 
