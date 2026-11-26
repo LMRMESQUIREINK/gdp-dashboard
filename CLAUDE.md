@@ -5461,6 +5461,37 @@ yourself every time.
   "a strategy that supports" mid-sentence) — fixed by switching to a
   `difflib.SequenceMatcher` similarity threshold (0.85) instead of exact
   matching. 49/49 tests pass on the real run (up from 36).
+- **Analysis-only round: a pasted Medium article, "Forget Claude Code:
+  Reverse Engineer Anything 10x Better (Full Guide)"** (GaoDalie_AI) —
+  the fourth engagement this project has had with `morluto/rea`, and
+  the first from a third-party reviewer's hands-on angle rather than a
+  direct repo audit. Full write-up in
+  `/notes/rea-vibe-coding-guide-analysis.md`. Verified rather than
+  repeated: `rea-agents` is a real, currently-published npm package
+  (v6.10.1, matching a fresh clone's own `package.json` at today's
+  commit exactly); the article's exact CLI debugging story (`--client
+  claude-code` failing, `--client claude_code` being correct) matches
+  the real repo's own current docs precisely; the DX-Ball sound-pan
+  "63 bytes of machine code matched exactly" claim checks out byte-for-
+  byte against the repo's own evidence file (`0x406400`-`0x40643e`
+  inclusive = 63 bytes exactly); and the "fewer than 10,000 stars on
+  Oct 6... surpassed 472,600... as of this writing" claim is plausible
+  and consistent with independently-corroborated growth (477-479K by
+  Nov 25, per multiple independent trackers) rather than inflated. The
+  article's own real hands-on test (a custom Electron note-taking app,
+  `rea analyze-javascript-application --json`, reporting correct IPC-
+  channel/handler/column-range/`contextIsolation` detection in a
+  557KB JSON result) was **not** independently re-run here — this
+  sandbox's classifier has previously denied executing REA's own
+  cloned/installed code outright, confirmed consistent with REA's real
+  evidence format seen directly in the DX-Ball file but not
+  independently reproduced. **No build this round** — checked
+  `/builds/` first: `go-buildinfo-extractor`/its Rust sibling and
+  `rea-gate` already extract REA's static-analysis mechanisms and audit
+  the repo itself; this article's two new threads (Electron IPC tracing,
+  real-world JSON-output volume) aren't independently testable from this
+  sandbox, same "nothing narrow enough to extract" call as the Week 25
+  newsletter round's REA recheck.
 
 ---
 
