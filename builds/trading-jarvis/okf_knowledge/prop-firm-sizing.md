@@ -20,3 +20,7 @@ starting balance — the key insight the source playbook under-explains
   `PropFirmAccount`/`TPT_TIERS` directly.
 - [jarvis_orchestrator.py](./jarvis-orchestrator.md) — all three
   `prop_firm_*` tools construct a `PropFirmAccount` directly.
+- `run_strategy.py` — the `--prop-*` CLI flags import `PropFirmAccount`/
+  `SessionState`/`TPT_TIERS`/`CONTRACT_SPECS` at module load. Named as
+  plain text, not a link: not modeled as its own concept in this bundle.
+  Found by `/builds/okf-navigator/drift_check.py`.

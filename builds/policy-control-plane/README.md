@@ -263,6 +263,56 @@ custom-runner suites, `test_policy.py`/`test_clarification.py`, still
 pass cleanly when run directly — confirmed no regression from this
 round's changes, since neither existing module was touched).
 
+## Extended: okf-navigator's check_module_impact, adapted (not forced)
+
+`/builds/okf-navigator/`'s OKF-format module-dependency-impact mechanism
+is wired in a third time (first `/builds/trading-jarvis/`, then
+`/builds/interface-lift-toolkit/`), but this build has no LLM
+tool-dispatch loop to register it as a tool against — it's a plain
+governance library, not an agent harness. Stated plainly rather than
+forced into a pattern that doesn't fit: `okf_impact.py`'s
+`check_module_impact(module, max_hops=2)` is a directly-importable
+Python function plus a small CLI, the same way every other function in
+this build is exposed.
+
+```bash
+python3 okf_impact.py policy/evaluator.py
+python3 okf_impact.py policy/write_tiers.py --max-hops 1
+```
+
+`okf_knowledge/` is a new, 13-concept bundle (not shared with
+trading-jarvis's or interface-lift-toolkit's), built by grepping this
+build's own real imports first. Two real, honestly-reported findings
+from that grep: `policy/__init__.py` re-exports most of this package but
+is itself never imported anywhere in this repo (confirmed zero hits for
+a bare `import policy`/`from policy import`) — AND, separately,
+`policy/__init__.py`'s own re-export list predates three later modules
+(`policy/clarification.py`, `policy/identity_bridge.py`,
+`policy/write_tiers.py`), none of which it imports at all; and
+`policy/clarification.py` is itself a real, shipped, test-covered module
+with zero real consumers among this build's own shipped modules. Neither
+is a bug — nothing in this repo relies on the package-level surface
+either way — both are stated because the real import graph makes them
+directly checkable rather than assumed. `test_okf_impact.py` (20/20)
+proves the real hop structure, including a genuine 2-hop-only chain
+(`policy/approval_store.py` → `policy/write_tiers.py` →
+`demo_write_tiers.py`) confirmed by hand against the real grep, and a
+permanent regression test for the exact negated-reference-markdown-link
+bug class found and fixed in interface-lift-toolkit's bundle last round
+— this bundle's own negative statements were written as plain code text
+from the start, specifically to avoid it, and the test confirms they
+didn't recreate it.
+
+Also ran `/builds/okf-navigator/drift_check.py` (a new tool, built the
+same round, generalizing a real before/after staleness demonstration
+into a reusable AST-based re-grep against any `okf_knowledge/` bundle)
+against this build's own bundle: **zero drift found on the very first
+real run** — the only one of the four bundles checked that round to
+come back clean immediately, confirming this one was built completely
+the first time. Trading-jarvis's and interface-lift-toolkit's bundles
+each had real, previously-undocumented drift the same tool found and
+fixed — see `/builds/okf-navigator/README.md` for what.
+
 ## What's cut from this round's three articles, and why
 
 Checked against all five bundle articles' mechanisms before building:

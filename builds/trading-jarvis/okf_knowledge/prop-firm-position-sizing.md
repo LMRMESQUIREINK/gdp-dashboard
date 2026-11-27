@@ -17,4 +17,9 @@ the two by building an `AccountRules` from a `PropFirmAccount`'s fields.
 ## Consumers
 
 - [jarvis_orchestrator.py](./jarvis-orchestrator.md) — the
-  `prop_firm_size_check` tool only.
+  `prop_firm_size_check` tool.
+- `run_strategy.py` — the `--prop-size-check` CLI flag imports
+  `AccountRules`/`evaluate_size` directly at module load, reusing the
+  same classes rather than reimplementing. Named as plain text, not a
+  link: not modeled as its own concept in this bundle. Found by
+  `/builds/okf-navigator/drift_check.py`.

@@ -18,3 +18,7 @@ code-level governance gate, not a system-prompt instruction.
 - [jarvis_orchestrator.py](./jarvis-orchestrator.md) — the
   `swamp_decompose` tool, which the system prompt instructs Claude to
   call FIRST for any per-symbol question.
+- `run_strategy.py` — the `--swamp` CLI flag imports `route_through_bus`
+  directly (lazily, inside the flag's own branch). Named as plain text,
+  not a link: not modeled as its own concept in this bundle. Found by
+  `/builds/okf-navigator/drift_check.py`.

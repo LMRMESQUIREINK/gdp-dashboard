@@ -17,6 +17,15 @@ documented throughout this project.
 
 ## Consumers
 
-None modeled in this bundle — `run_strategy.py` and `live_monitor.py`
-are separate entry points onto some of the same underlying modules, not
-callers of this orchestrator itself.
+- `run_strategy.py` — the `--ask` CLI flag imports `ask_jarvis` directly
+  (lazily, inside the flag's own branch). Named as plain text, not a
+  link: not modeled as its own concept in this bundle. Found by
+  `/builds/okf-navigator/drift_check.py`'s AST re-grep, which walks
+  into function bodies, not just module-level imports — this really is
+  a real, if conditional, consumer, not a phantom edge.
+
+`live_monitor.py` is a separate entry point onto some of the same
+underlying modules (`data_pipeline.py`/`signal_generator.py`/
+`risk_manager.py`/`positions_store.py` — see each of their own
+Consumers sections), but confirmed directly via grep: it never imports
+`jarvis_orchestrator.py` itself, so it isn't listed here.

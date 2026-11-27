@@ -16,5 +16,9 @@ Imports `PropFirmAccount`/`TPT_TIERS` from
 ## Consumers
 
 - [jarvis_orchestrator.py](./jarvis-orchestrator.md) — the
-  `prop_firm_pass_probability` tool only. Never invent
-  `avg_daily_pnl`/`daily_pnl_std` — the tool refuses to estimate them.
+  `prop_firm_pass_probability` tool. Never invent `avg_daily_pnl`/
+  `daily_pnl_std` — the tool refuses to estimate them.
+- `run_strategy.py` — the `--prop-pass-prob`/`--prop-compare` CLI flags
+  import `PassSimulator`/`compare_sizing_strategies` directly. Named as
+  plain text, not a link: not modeled as its own concept in this bundle.
+  Found by `/builds/okf-navigator/drift_check.py`.

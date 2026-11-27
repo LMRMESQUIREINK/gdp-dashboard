@@ -48,8 +48,11 @@ check("jarvis-orchestrator.md" in result["report"], "risk_manager.py's real, gre
 
 result_md = jarvis_okf.check_module_impact("signal-generator.md", max_hops=1)
 check(result_md["module"] == "signal-generator.md", "a bare concept-file name (not a .py filename) also resolves correctly")
-check("risk-manager.md" in result_md["report"] and "jarvis-orchestrator.md" in result_md["report"],
-      "signal_generator.py's two real, grepped consumers (risk_manager.py AND jarvis_orchestrator.py) both appear at exactly 1 hop",
+check("jarvis-swamp-bridge.md" in result_md["report"] and "jarvis-orchestrator.md" in result_md["report"],
+      "signal_generator.py's two real, grepped, modeled consumers (jarvis_swamp_bridge.py AND jarvis_orchestrator.py) "
+      "both appear at exactly 1 hop -- corrected this round by /builds/okf-navigator/drift_check.py's real AST re-grep, "
+      "which found risk_manager.py never actually imports signal_generator.py at all (the bundle's prior claim was "
+      "wrong) and that jarvis_swamp_bridge.py does, undocumented until now",
       result_md["report"])
 
 # Leaf module with no outgoing links in this bundle -- must not crash, and

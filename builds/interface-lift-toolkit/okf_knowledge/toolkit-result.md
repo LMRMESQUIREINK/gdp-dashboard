@@ -19,3 +19,7 @@ failed, because `ok` is computed from `checks`, not passed in.
 - [binary-metadata-tools.md](./binary-metadata-tools.md) — every tool
   function builds its return value with `result()`.
 - [tools-demo.md](./tools-demo.md) — same, for all three demo tools.
+- `okf_impact_tool.py` — same, for `check_module_impact`. A real
+  omission from the round that added this file, caught by
+  `/builds/okf-navigator/drift_check.py`; named as plain text, not a
+  link, since this file isn't modeled as its own concept in this bundle.

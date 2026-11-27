@@ -375,3 +375,69 @@ content directly and failed on the very first run, since
 JSON and comparing the whole result dict instead of string-matching it,
 which is also a strictly stronger check. All pre-existing tests in both
 files re-run to confirm zero regression.
+
+## Addendum 4: all three suggested next-moves on `okf-navigator`, done in one round
+
+(1) **`check_module_impact` wired into a fourth build without one,
+`/builds/policy-control-plane/`.** No LLM tool-dispatch loop exists
+there (it's a plain governance library), so `okf_impact.py` exposes the
+function directly plus a small CLI instead of forcing it into a tool
+registry that doesn't apply. A new, 13-concept bundle built the same
+way as every other one — grep the real imports first. Two real,
+honestly-reported findings: `policy/__init__.py` is never imported
+anywhere in this repo at all, and separately its own re-export list
+predates three later real modules it doesn't import
+(`policy/clarification.py`, `policy/identity_bridge.py`,
+`policy/write_tiers.py`); `policy/clarification.py` itself has zero real
+consumers among this build's shipped modules. `test_okf_impact.py`
+(20/20) includes a permanent regression test confirming this bundle's
+own negated-reference sentences (written as plain code text from the
+start) didn't recreate the exact phantom-edge bug found in
+interface-lift-toolkit's bundle last round.
+
+(2) **A real test proving `stale_after` actually catches drift, not just
+ticks down harmlessly** (`/builds/okf-navigator/test_staleness_value.py`).
+A real two-file module pair with one documented edge; a genuinely new
+third file is added (in a temp copy) that imports the target module
+without the bundle being told; before `stale_after`, `impact_report()`
+still reports `fresh` despite real drift already existing on disk — the
+risk window the mechanism exists to bound, demonstrated rather than
+asserted; after `stale_after`, the same unmodified bundle reports
+`stale`, and a real re-check performed at that trigger catches the exact
+drift, with a control run against unchanged code confirming the check
+doesn't always fire. 10/10 checks pass on the first run.
+
+(3) **A real, reusable drift-check CLI**
+(`/builds/okf-navigator/drift_check.py`), generalizing (2)'s comparison
+into an AST-based re-grep diffed against any `okf_knowledge/` bundle's
+own "## Consumers" sections (both markdown-linked and bare
+backtick-quoted forms). **Run for real against all three pre-existing
+bundles, it found real, previously-undocumented drift, not a synthetic
+demo** — two real bugs in the tool's own first draft were found and
+fixed along the way (excluding every non-modeled importer hid genuine
+findings, fixed to exclude only test files; reading the whole
+"## Consumers" section's prose instead of just its bullet lines swept
+up unrelated explanatory paragraphs as false consumer claims).
+**The real finding this surfaced and fixed in place**:
+trading-jarvis's `risk-manager.md` called `check_risk` "the only
+caller" of `evaluate_trade` — wrong even when it was written, since
+`live_monitor.py`, `run_strategy.py`, and `jarvis_swamp_bridge.py` (the
+last via a real, try/except-guarded import inside `route_through_bus()`)
+all call it too; the same three missing callers were found in
+`data-pipeline.md` and `signal-generator.md`. A separate,
+opposite-direction error was also found and removed:
+`signal-generator.md` had wrongly listed `risk_manager.py` as a
+consumer, when `risk_manager.py`'s only top-level import is `pandas` —
+the real relationship is a call-ORDER dependency inside
+`jarvis_orchestrator.py`, not an import, and the two had been
+conflated. `interface-lift-toolkit/okf_knowledge/`'s
+`toolkit-registry.md`/`toolkit-result.md` were missing
+`okf_impact_tool.py` as a consumer — a genuine omission from the very
+round that added that file, caught within the same session.
+`policy-control-plane`'s brand-new bundle came back clean on the first
+real run. All fixes are real edits to each bundle's own concept files;
+`test_drift_check.py` (20/20) re-checks all three bundles clean as a
+permanent regression test, and `test_jarvis_okf.py`'s own assertion
+about `signal_generator.py`'s consumers was corrected to match the
+real, fixed graph (19/19, no change in count — one assertion rewritten,
+not just added).

@@ -19,3 +19,7 @@ own fixed `subject_id`).
   `positions` for the Task Tree's own position awareness.
 - [jarvis_orchestrator.py](./jarvis-orchestrator.md) — `check_risk`
   reads real recorded positions before computing portfolio heat.
+- `live_monitor.py` / `run_strategy.py` — both import `positions_store`
+  (as `positions`) at module load. Named as plain text, not a link:
+  neither is modeled as its own concept in this bundle. Found by
+  `/builds/okf-navigator/drift_check.py`.

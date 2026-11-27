@@ -28,3 +28,8 @@ come out in Anthropic's native tool-use shape, matching
   `ToolRegistry` to register `go_buildinfo_check`/`rust_cargo_auditable_check`.
 - [tools-demo.md](./tools-demo.md) — imports `ToolRegistry` to register
   the three demo tools.
+- `okf_impact_tool.py` — imports `ToolRegistry` to register
+  `check_module_impact`. A real omission from the round that added this
+  file, caught by `/builds/okf-navigator/drift_check.py`'s AST re-grep
+  rather than left in place: this file itself isn't modeled as its own
+  concept in this bundle, so it's named here as plain text, not a link.
