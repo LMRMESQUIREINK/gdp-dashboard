@@ -5704,6 +5704,64 @@ yourself every time.
   decoding the fed-back JSON and comparing the whole result dict instead,
   a strictly stronger check. All pre-existing tests in both files re-run
   to confirm zero regression.
+- **Deep analysis + new build from a pasted listicle: "Anthropic's
+  Latest Study Reveals How the Top 1% Use AI"** — a rare source for
+  this project: no code, no repo, but a real, checkable primary source
+  behind nearly every number. Full write-up in
+  `/notes/anthropic-claude-usage-habits-analysis.md`. Fetched
+  Anthropic's own real report, "Agentic coding and persistent returns
+  to expertise" (2026-06-16, ~400,000 Claude Code sessions, ~235,000
+  people), directly rather than trusting the listicle's paraphrase:
+  its 15% novice / 28–33% intermediate-or-up verified-success figures
+  and 19%-vs-5–7% troubled-session abandonment figures are exact
+  matches; its real three-signal expertise classifier ("how precisely
+  the user frames their directions, what they ask Claude to verify,
+  and whether the user tends to correct Claude or Claude tends to
+  correct the user") is closely and accurately paraphrased by the
+  listicle's own three framing questions. **The strongest finding**:
+  the piece frames every habit as coming from "Anthropic's Latest
+  Study" plus one internal report (two sources), but tracing each
+  number individually surfaces four distinct real sources never named
+  as such — the June 2026 400K-session study, a separate August 2025
+  132-person employee survey (the real source of the "27% of work
+  wouldn't have happened" figure, Habit 4), a third, later October
+  2026 internal workforce report (the real source of "6x hours"/"~80%
+  waiting," Habit 3), and uncredited individual staff social posts
+  (Boris Cherny's real, verbatim-matched verification quote; Alex
+  Albert's real, verbatim-matched "not worth my time"/screenshot-
+  renaming example). Every individual number checked out real; only
+  the one-or-two-sources framing is a compression, the same genre of
+  finding this project has made before when independently-written
+  sources get narrated as a single artifact. One claim flagged
+  `source-is-silent` rather than repeated as fact: an Amanda Askell
+  habit (asking Claude to explain its reasoning when surprised) could
+  not be located anywhere in the sources checked. Also noted: the
+  title's "200,000+" undercounts the real ~235,000-person sample by
+  about 35,000 — an understatement, the less common direction. **Built**:
+  checked `/builds/` first (nothing checks a single agent-directed
+  brief's text against real predictive signals; `winston-talk-checker`
+  checks a deck, `wiki-health-check` checks a wiki) —
+  `/builds/agent-brief-grader/` — a real, dependency-free Python
+  checker implementing the two of the real classifier's three signals
+  that are checkable from a single brief's text with no transcript:
+  `why`, `constraints`, and `done_criteria` (further scored
+  `done_criteria_concrete` against the report's own "hard verifiable
+  signal" definition — git activity, tests passing, explicit
+  affirmation — vs. a subjective "looks good"), every result carrying
+  its matched evidence text. The classifier's third signal (who
+  corrects whom) needs a transcript and isn't attempted; the
+  outcome-vs-step-recipe distinction is left as an informational-only
+  flag, never scored, since a reliable general version needs semantic
+  judgment this tool doesn't have. 20/20 tests pass, including a real
+  discrimination pair (a well-formed brief scores 4/4; a bare
+  five-step recipe scores 0/3 and trips the informational flag) and a
+  real CLI subprocess round trip. **One real bug found and fixed on
+  the first run**: the concrete-done-criteria pattern required
+  "test(s)" directly adjacent to "pass(es/ing)," which failed on
+  completely ordinary real phrasing ("the existing test suite still
+  passes") — caught immediately by the good fixture scoring 3/4
+  instead of 4/4, fixed by widening the pattern to tolerate words in
+  between, bounded by sentence punctuation.
 
 ---
 
