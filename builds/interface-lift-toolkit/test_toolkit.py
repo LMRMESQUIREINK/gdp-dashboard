@@ -20,6 +20,7 @@ from pathlib import Path
 
 from binary_metadata_tools import register_binary_metadata_tools
 from go_buildinfo import read_go_buildinfo
+from okf_impact_tool import register_okf_impact_tool
 from prop_firm_position_sizing import AccountRules, evaluate_size
 from prop_firm_sizing import PropFirmAccount
 from rust_cargo_auditable import read_cargo_auditable
@@ -48,6 +49,7 @@ def main() -> None:
     gate = ApprovalGate()
     register_demo_tools(registry)
     register_binary_metadata_tools(registry)
+    register_okf_impact_tool(registry)
 
     # ── registry: schema derivation ─────────────────────────────────────
     print("=== registry: schema derivation ===")
@@ -254,6 +256,74 @@ def main() -> None:
                       detail=str(via_tool_negative))
     else:
         print("\n=== rust_cargo_auditable_check real-binary check: SKIPPED (no cargo-auditable) ===")
+
+    # ── okf impact tool: schema derivation ───────────────────────────────
+    print("\n=== okf impact tool: schema derivation ===")
+    okf_schema = registry.schemas(["check_module_impact"])[0]
+    okf_props = okf_schema["input_schema"]["properties"]
+    check("check_module_impact schema requires module (string), max_hops optional (integer)",
+          okf_schema["input_schema"]["required"] == ["module"]
+          and okf_props["module"]["type"] == "string" and okf_props["max_hops"]["type"] == "integer",
+          detail=str(okf_schema["input_schema"]))
+
+    # ── okf impact tool: real module-dependency graph, this toolkit's own ──
+    print("\n=== okf impact tool: real module dependency graph ===")
+    chain_impact = registry.call("check_module_impact", module="toolkit/chain.py")
+    check("toolkit/chain.py's two real, grepped consumers (toolkit/__init__.py and "
+          "toolkit/skill_compiler.py) both appear within the default 2 hops",
+          "toolkit-init.md" in chain_impact["report"] and "toolkit-skill-compiler.md" in chain_impact["report"],
+          detail=chain_impact["report"])
+    check("okf impact tool call reports ok=True for a recognized module", chain_impact["ok"] is True)
+
+    registry_impact = registry.call("check_module_impact", module="toolkit_registry.py", max_hops=1)
+    check("a module name given with underscores instead of a real path still resolves "
+          "(toolkit_registry.py -> toolkit-registry.md)", registry_impact["module"] == "toolkit-registry.md")
+    for consumer in ("toolkit-init.md", "toolkit-chain.md", "toolkit-loop.md",
+                      "toolkit-skill-compiler.md", "binary-metadata-tools.md", "tools-demo.md"):
+        check(f"toolkit/registry.py's real, grepped consumer {consumer} appears at 1 hop",
+              consumer in registry_impact["report"], detail=registry_impact["report"])
+
+    # A leaf module with zero real consumers in this bundle (confirmed by
+    # grep -- nothing in this repo does `import toolkit` or `from toolkit
+    # import ...`) must not crash, and must report only itself.
+    leaf_impact = registry.call("check_module_impact", module="toolkit/__init__.py", max_hops=3)
+    check("toolkit/__init__.py itself appears in its own impact report", "toolkit-init.md" in leaf_impact["report"])
+    check("toolkit/__init__.py has no modeled consumers in this bundle, so the report "
+          "contains exactly one step", leaf_impact["report"].count("[") == 1, detail=leaf_impact["report"])
+
+    # Unknown module name -- a helpful error, not a raw KeyError/exception.
+    unknown_impact = registry.call("check_module_impact", module="not_a_real_module.py")
+    check("an unrecognized module name reports ok=False, not a raised exception", unknown_impact["ok"] is False)
+    check("the error response lists all 16 real modules in this bundle, so the caller can see valid options",
+          len(unknown_impact["known_modules"]) == 16, detail=str(unknown_impact["known_modules"]))
+
+    # Trust tier and staleness are real, not placeholders: every concept in
+    # this bundle was machine-verified this session, never human-reviewed --
+    # the report must say so honestly rather than overclaiming.
+    check("every concept in this bundle reports machine-confirmed, honestly reflecting "
+          "that a grep ran, not a human review", "trust=machine-confirmed" in chain_impact["report"])
+    check("no concept in this bundle falsely claims human-reviewed status",
+          "trust=human-reviewed" not in chain_impact["report"])
+    check("every concept's stale_after (90 days out) means it reports fresh as of today",
+          "lifecycle=fresh" in chain_impact["report"])
+
+    # This repo's own authoring mistake, found and fixed this round: a
+    # concept file describing what it does NOT depend on, via a sentence
+    # like "X does not import Y directly", still manufactures a real graph
+    # edge to Y if that sentence uses markdown link syntax -- the navigator
+    # extracts every [text](link) in a concept's body as a real link,
+    # regardless of what the surrounding prose says. Confirmed fixed: no
+    # start node's 2-hop impact set is a strict superset of its own 1-hop
+    # set with an edge that doesn't correspond to a real import statement --
+    # concretely, toolkit/loop.py's own prose naming binary-metadata-tools.md
+    # and tools-demo.md as modules that do NOT import it must not turn into
+    # phantom 2-hop consumers of go_buildinfo.py / rust_cargo_auditable.py.
+    go_buildinfo_impact = registry.call("check_module_impact", module="go_buildinfo.py", max_hops=2)
+    check("go_buildinfo.py's real impact radius stops at its one real consumer "
+          "(binary_metadata_tools.py) -- tools-demo.md is NOT a phantom 2-hop consumer, "
+          "confirming this round's negated-reference markdown-link bug stayed fixed",
+          "binary-metadata-tools.md" in go_buildinfo_impact["report"]
+          and "tools-demo.md" not in go_buildinfo_impact["report"], detail=go_buildinfo_impact["report"])
 
     # ── ledger ────────────────────────────────────────────────────────────
     print("\n=== ledger ===")

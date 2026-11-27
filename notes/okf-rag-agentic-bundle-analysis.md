@@ -291,3 +291,87 @@ pre-existing `trading-jarvis` test suites re-run (`test_jarvis_memory.py`,
 16/16; `test_policy.py`/`test_clarification.py` not applicable here) to
 confirm zero regression from this round's edits to
 `jarvis_orchestrator.py`.
+
+## Addendum 3: `okf-navigator` wired into `interface-lift-toolkit` too, as a third tool category
+
+Per request, the same mechanism as Addendum 2, applied to
+`/builds/interface-lift-toolkit/` instead of `trading-jarvis`. That
+toolkit's own `ToolRegistry`/`@registry.tool(effect=...)` convention is
+different from `jarvis_orchestrator.py`'s `TOOLS`-list dispatch, so the
+wiring is a new `okf_impact_tool.py` (`register_okf_impact_tool(registry)`,
+following `binary_metadata_tools.py`'s own `register_*_tools(registry)`
+shape exactly) rather than a direct port of `jarvis_okf.py`. `okf_navigator.py`
+is copied in unmodified a third time (first `/builds/okf-navigator/`
+itself, then `trading-jarvis`, now here).
+
+A new, genuinely different `okf_knowledge/` bundle — 16 concept files,
+not 13, reflecting this toolkit's own real module count — was built by
+directly grepping every real `import`/`from` statement across this
+repo's own `.py` files (every `toolkit/*.py` submodule including
+`toolkit/__init__.py`, `binary_metadata_tools.py`, `go_buildinfo.py`,
+`rust_cargo_auditable.py`, and the three `prop_firm_*.py`/
+`tools_demo.py` files) before writing a single concept file, same
+discipline as Addendum 2. Two real, checked properties of this
+toolkit's own graph, distinct from `trading-jarvis`'s: `toolkit/__init__.py`
+re-exports every other submodule but is itself never imported anywhere
+in this repo (confirmed: grepping for a bare `import toolkit`/`from
+toolkit import` returns zero hits, including in this README's own usage
+example, which always imports a specific submodule directly) — so it's
+a real, machine-confirmed leaf with zero modeled consumers, a different
+shape of "leaf" than `trading-jarvis`'s own `jarvis_orchestrator.py` (a
+leaf because it's the top of the call stack, not because nothing
+imports it); and both tool-registration entry points
+(`binary_metadata_tools.py`, `tools_demo.py`) are similarly sinks within
+this repo's own shipped modules, consumed only by test files (which,
+matching `trading-jarvis`'s convention, aren't modeled as concepts at
+all).
+
+**A real bug found and fixed while building this bundle, caught by
+testing, not by inspection**: three of the 16 concept files used a
+sentence naming a *sibling* module, in two cases to say "the same role
+X plays..." and in one case to explicitly state that two named modules
+do **not** import `run_agent` — but all three wrote that module name as
+a markdown link (`[tools-demo.md](./tools-demo.md)`), and
+`okf_navigator.py`'s link extraction is a plain regex over the whole
+concept body with no awareness of what the surrounding prose means.
+Found by writing a standalone script comparing every concept's 1-hop
+vs. 2-hop reachable set across the whole bundle and checking each
+newly-reachable node against the real import graph: `go_buildinfo.py`'s
+and `rust_cargo_auditable.py`'s 2-hop impact reports both wrongly
+included `tools-demo.md` as a phantom consumer, reachable only through
+`toolkit-loop.md`'s own negated sentence, not any real import
+statement. Fixed by rewriting those three sentences as plain
+code-formatted text (no link syntax) rather than special-casing the
+navigator or weakening the test — the same "fix the value, not the
+detector" rule this project's `ruthless-gate` skill states for exactly
+this situation. Re-ran the comparison script after the fix: zero
+hop1-vs-hop2 discrepancies anywhere in the 16-concept bundle. A
+permanent regression test for this exact case
+(`go-buildinfo.md`'s impact report must include its one real consumer
+and must NOT include the phantom one) now lives in `test_toolkit.py`.
+
+Stated honestly rather than manufactured: unlike `trading-jarvis`'s
+bundle (which has a genuine, isolated `persistence.py` → `jarvis_memory.py`
+→ `jarvis_orchestrator.py` hop-1-vs-hop-2 chain), this toolkit's real
+module graph has no clean hop-1-vs-hop-2-only case to test against once
+the bug above was fixed — `toolkit/__init__.py` re-exports nearly
+everything at hop 1 from most starting points, and both
+tool-registration modules are sinks. The test suite instead proves
+`max_hops` is honored a different real way: `toolkit/registry.py`'s six
+real, grepped direct consumers all appear at `max_hops=1`, and a leaf
+module (`toolkit/__init__.py`) reports exactly one step at `max_hops=3`.
+
+`test_toolkit.py` gained 17 new assertions (schema derivation, the real
+6-consumer fan-out from `toolkit/registry.py`, the leaf-module case, the
+unrecognized-module error naming all 16 known modules, the honest
+machine-confirmed/never-human-reviewed/fresh trust-and-staleness
+checks, and the phantom-edge regression check above).
+`test_agent_loop.py` gained one new scripted turn (`check_module_impact`
+against `toolkit/registry.py`, dispatched through the real, mocked-
+Anthropic `run_agent` loop) — a first draft of its assertion compared
+the raw multi-line report string against the JSON-encoded tool-result
+content directly and failed on the very first run, since
+`json.dumps()` escapes embedded newlines; fixed by decoding the fed-back
+JSON and comparing the whole result dict instead of string-matching it,
+which is also a strictly stronger check. All pre-existing tests in both
+files re-run to confirm zero regression.

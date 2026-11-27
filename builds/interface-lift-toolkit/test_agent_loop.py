@@ -15,6 +15,7 @@ Run with:
 """
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from binary_metadata_tools import register_binary_metadata_tools
+from okf_impact_tool import register_okf_impact_tool
 from tools_demo import register_demo_tools
 
 from toolkit.approval import ApprovalGate
@@ -76,6 +78,7 @@ def main() -> None:
     gate = ApprovalGate()
     register_demo_tools(registry)
     register_binary_metadata_tools(registry)
+    register_okf_impact_tool(registry)
 
     # ── scripted turn 1: Claude asks for prop_firm_size_check ───────────
     print("=== run_agent: a local tool call, then a final answer ===")
@@ -167,6 +170,41 @@ def main() -> None:
                   detail=tool_result_content3)
     else:
         print("\n=== run_agent: binary-metadata tool call check: SKIPPED (no go toolchain) ===")
+
+    # ── scripted turn: Claude asks for check_module_impact ───────────────
+    print("\n=== run_agent: a local check_module_impact call, against this toolkit's own real graph ===")
+    client4 = MockAnthropicClient([
+        FakeResponse(stop_reason="tool_use", content=[
+            FakeBlock(type="tool_use", name="check_module_impact",
+                      input={"module": "toolkit/registry.py", "max_hops": 1}, id="toolu_4"),
+        ]),
+        FakeResponse(stop_reason="end_turn", content=[
+            FakeBlock(type="text", text="If you change toolkit/registry.py, re-check every tool-registration "
+                                         "module and toolkit/chain.py, toolkit/loop.py, toolkit/skill_compiler.py."),
+        ]),
+    ])
+    counters4 = TaskCounters()
+    answer4 = run_agent("what depends on toolkit/registry.py in this toolkit's own code?", client4, "claude-opus-5",
+                         registry, gate, system="test system prompt", counters=counters4)
+    check("final answer is the scripted text",
+          answer4 == "If you change toolkit/registry.py, re-check every tool-registration "
+                     "module and toolkit/chain.py, toolkit/loop.py, toolkit/skill_compiler.py.")
+    check("exactly 1 real tool call was made", counters4.tool_calls == 1)
+
+    direct4 = registry.call("check_module_impact", module="toolkit/registry.py", max_hops=1)
+    second_call_messages4 = client4.calls[1]["messages"]
+    tool_result_msg4 = next(
+        m for m in second_call_messages4 if m["role"] == "user" and isinstance(m["content"], list)
+    )
+    tool_result_content4 = tool_result_msg4["content"][0]["content"]
+    # json.dumps escapes the report's embedded newlines, so a raw substring
+    # check against direct4["report"] would wrongly fail -- decode the fed-
+    # back JSON instead of string-matching it, which is also a stronger
+    # check than substring matching: the WHOLE result dict must round-trip,
+    # not just a couple of names inside it.
+    check("the real check_module_impact result (this toolkit's own real, grepped consumers of "
+          "toolkit/registry.py, not a stub) was fed back to the model",
+          json.loads(tool_result_content4) == direct4, detail=tool_result_content4)
 
     print(f"\n{'='*60}")
     if FAILURES:
