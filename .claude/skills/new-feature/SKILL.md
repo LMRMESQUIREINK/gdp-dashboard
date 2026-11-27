@@ -17,6 +17,11 @@ Before starting any feature, fix, or build that touches more than a
 trivial one-line change — especially when you know or suspect another
 agent/session might be working on this repo at the same time.
 
+If the brief you were just given reads thin (no stated reason, no
+named boundary, no way to tell when it's done), run
+`agent-brief-grader` first and ask back the one or two things it finds
+missing before isolating a branch for work built on a shaky brief.
+
 ## Steps
 
 1. **Sync with the base first.**

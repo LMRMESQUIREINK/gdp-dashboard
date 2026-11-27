@@ -11,11 +11,12 @@ signals:
   whether the user tends to correct Claude or Claude tends to correct
   the user."
 
-Only the first two are checkable from a single brief's text alone (the
-third needs a multi-turn transcript, which this module never has) --
-stated honestly rather than faked. This module checks three concrete,
-evidenced components of a brief, plus one informational-only flag it
-can't fully verify:
+Only the first two are checkable from a single brief's text alone --
+the third needs a multi-turn transcript, which THIS module never has
+(see `conversation_grader.py`, added later in this same build, for the
+real correction-balance check once a transcript exists). This module
+checks three concrete, evidenced components of a brief, plus one
+informational-only flag it can't fully verify:
 
   - WHY        a stated reason, so Claude has something to steer small
                judgment calls by.

@@ -167,3 +167,45 @@ by the test fixture itself scoring 3/4 instead of the expected 4/4;
 fixed by widening the pattern to tolerate up to 30 characters between
 the two words, bounded by sentence-ending punctuation so it can't leak
 across an unrelated later sentence.
+
+## Addendum: all three suggested next-moves done in one round
+
+(1) **Wired into `.claude/skills/agent-brief-grader/`**, pointed at
+from `new-feature`'s own "When to use this" section as an optional
+pre-check when a brief reads thin. Passes `skill_md_validator.py`
+cleanly (the description was trimmed from 642 to 395 chars to stay
+under the 500-char recommendation the `marketingskills` round already
+found, rather than adding this project's sixth skill to that growing
+list). (2) **`conversation_grader.py`** closes the real classifier's
+third signal ("whether the user tends to correct Claude or Claude
+tends to correct the user") once a short transcript exists —
+`check_correction_balance()` counts real, evidenced corrective-language
+occurrences per role and reports the real balance (`user`/`assistant`/
+`even`), making no claim about which direction is "better," since the
+report never states one. 15/15 tests pass. **One real bug found and
+fixed**: the `correction:` pattern's trailing `\b`
+(`r"\bcorrection[:,]\b"`) could never match when followed by whitespace
+— a colon and a space are both non-word characters, so `\b` has no
+`\w`/`\W` transition to anchor on there — silently dropping a real
+fixture's second match; fixed by dropping the trailing `\b`.
+(3) **`reply_format_checker.py`**, the "session habit" companion
+checking an AGENT's own reply (not the human's brief) against Habit
+3's fixed order (needs-from-you → done? → summary → what-went-wrong),
+traced in the original analysis to a real October 2026 Anthropic
+internal workforce report (interactive sessions spend ~80% of their
+time waiting on a human). Checked via the `claude-code-guide` agent
+before building anything: Claude Code does support a dedicated,
+file-based output-style mechanism, but its own recommendation for one
+project's fixed convention is a plain `CLAUDE.md` instruction instead
+(to avoid two mechanisms silently contradicting each other) — added as
+a new "Reply format for multi-step or long-running work" section under
+`CLAUDE.md`'s COMMUNICATION STYLE. **Tested against a real transcript,
+not only synthetic fixtures**: this session's own actual, verbatim
+prior sign-off (the end-of-turn message right after shipping
+`agent-brief-grader`, before this rule existed) — and the honest
+finding is that it doesn't follow the new format: it opens directly
+with `**Summary:**`, with no explicit done/finished marker and no
+separate what-went-wrong framing, correctly not penalized for never
+needing anything from the user at that point. That real gap is the
+concrete reason the new rule was worth adding. 14/14 tests pass on the
+first run, no bug found, stated plainly rather than manufactured.

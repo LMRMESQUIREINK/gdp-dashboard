@@ -145,3 +145,108 @@ score concrete; fixed by widening the pattern to allow up to 30
 non-sentence-ending characters between the two words
 (`r"\btests?\b[^.!?\n]{0,30}\bpass(es|ing)?\b"`), bounded by sentence
 punctuation so it can't cross into an unrelated later sentence.
+
+## Extended: the real third classifier signal, once a transcript exists
+
+`brief_grader.py` only ever sees one message, so it can't check the real
+classifier's third signal — "whether the user tends to correct Claude or
+Claude tends to correct the user" — honestly stated as out of scope in
+its own docstring. `conversation_grader.py` closes that gap for the one
+case where it's actually checkable: a short, already-captured transcript
+(a JSON list of `{role, text}` turns).
+
+`check_correction_balance(turns)` counts real, evidenced corrective-
+language occurrences per role (`"that's wrong"`, `"I meant"`,
+`"correction:"`, `"my mistake"`, etc.) and reports which role's
+corrective language appeared more — `"user"`, `"assistant"`, or the real
+`"even"` tie case, including a genuine 0-0 transcript (even, not an
+error). Deliberately makes no claim about which balance is "better" —
+the real report states this is one of three signals its classifier
+uses, never that either direction is itself good or bad.
+`grade_conversation(turns)` combines this with `grade_brief()` run
+against the transcript's first user turn.
+
+```bash
+python3 conversation_grader.py turns.json
+python3 conversation_grader.py --json < turns.json
+```
+
+```
+Brief grade: 4/4
+  [PASS] why -- "..."
+  [PASS] constraints -- "..."
+  [PASS] done_criteria -- "..."
+  [PASS] done_criteria_concrete -- "..."
+
+Correction balance (across the whole transcript):
+  user corrections: 2, assistant corrections: 0 (balance: user)
+    [user correction] "No, that's wrong — I asked for the login page, not signu…"
+    [user correction] "Actually it should use the new auth library, not the old…"
+```
+
+15/15 tests pass (`test_conversation_grader.py`), including three real
+transcript scenarios (user-heavy, assistant-heavy, and a clean 0-0
+transcript) plus a real CLI JSON round trip. **One real bug found and
+fixed on the first run**: the `correction:` pattern's trailing `\b`
+(`r"\bcorrection[:,]\b"`) can never match when the punctuation is
+followed by whitespace — a colon and a space are both non-word
+characters, so there's no `\w`/`\W` transition for `\b` to anchor on —
+silently dropping the one real "Correction: ..." fixture to one match
+instead of the expected two. Fixed by dropping the trailing `\b`
+(`r"\bcorrection[:,]"`).
+
+## Extended: the "session habit" side — checking the AGENT's own reply
+
+Habit 3 in the source listicle (traced to a real October 2026 Anthropic
+internal workforce report: interactive sessions spend ~80% of their time
+waiting on a human) prescribes a fixed reply order: anything needed from
+the human first, then whether the task is done, then a short summary,
+then what went wrong. `reply_format_checker.py` grades an AGENT's own
+reply text against that order — the other side of the conversation from
+`brief_grader.py`/`conversation_grader.py`, which only ever grade the
+human's side.
+
+Checks real relative ORDER, not just presence: a section genuinely
+absent (nothing was needed from the human; nothing went wrong) isn't
+penalized — `follows_order` is about whether the sections that DO
+appear are in the right sequence.
+
+```bash
+python3 reply_format_checker.py path/to/reply.txt
+python3 reply_format_checker.py --json < reply.txt
+```
+
+```
+Reply format: FOLLOWS the fixed order
+  [PRESENT @ 0] needs_from_you -- "Before I continue: can you confirm you want..."
+  [absent]  done_status
+  [PRESENT @ 98] summary -- "...Summary: isolated the feature branch..."
+  [PRESENT @ 210] what_went_wrong -- "...What went wrong: couldn't reach the..."
+```
+
+**Tested against a real transcript, not just synthetic fixtures**: the
+test fixture is this session's own actual, verbatim prior sign-off (the
+end-of-turn message right after shipping this build, before this
+format rule existed in `CLAUDE.md`) — and the real, honest finding is
+that it **doesn't** follow the new format: it opens with `**Summary:**`
+directly, with no explicit done/finished marker and no separate
+"what went wrong" framing (even though it did report a real bug
+inline), and never needed anything from the user at that point, which
+is correctly not penalized. That real gap is exactly why the rule in
+`CLAUDE.md`'s new "Reply format for multi-step or long-running work"
+section was worth adding, not a hypothetical one. 14/14 tests pass,
+including a deliberately well-formed reply (follows the order, scores
+clean), a deliberately out-of-order one (sections present, wrong
+sequence, correctly flagged), and a genuinely clean reply with nothing
+needed and nothing wrong (correctly not penalized for the two absent
+sections). No bug found in this module's own first draft, stated
+plainly rather than manufactured.
+
+**Where the actual rule lives**: checked via the `claude-code-guide`
+agent before building anything — Claude Code does support a dedicated,
+file-based output-style mechanism (`.claude/output-styles/*.md`,
+selected with `/output-style`), but its own guidance for a single
+project's own fixed convention is a plain `CLAUDE.md` instruction
+instead, since running both at once risks the two silently
+contradicting each other. Added to `CLAUDE.md`'s "COMMUNICATION STYLE"
+section rather than as a separate style file, per that recommendation.

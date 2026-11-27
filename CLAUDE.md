@@ -5817,6 +5817,42 @@ yourself every time.
   permanent regression test; `test_jarvis_okf.py`'s own assertion
   about `signal_generator.py`'s consumers was corrected to match the
   real, fixed graph.
+- **All three suggested next-moves on `agent-brief-grader` done in one
+  round, not a subset.** Addendum in
+  `/notes/anthropic-claude-usage-habits-analysis.md`. (1) **Same-day —
+  wired into `.claude/skills/agent-brief-grader/`**, pointed at from
+  `new-feature`'s own "When to use this" section as an optional
+  pre-check when a brief reads thin; the description was trimmed from
+  642 to 395 chars to stay under the `marketingskills` round's own
+  500-char recommendation rather than adding a sixth over-length skill
+  to that list. (2) **Within a week — `conversation_grader.py`**,
+  closing the real classifier's third signal ("whether the user tends
+  to correct Claude or Claude tends to correct the user") once a short
+  transcript exists: `check_correction_balance()` counts real,
+  evidenced corrective-language occurrences per role, reporting the
+  real balance without claiming either direction is "better," since
+  the report never states one. 15/15 tests pass. **One real bug found
+  and fixed**: the `correction:` pattern's trailing `\b` could never
+  match when followed by whitespace (a colon and a space are both
+  non-word characters, so `\b` has no transition to anchor on there),
+  silently dropping a real fixture's second match. (3) **2-3 weeks —
+  `reply_format_checker.py`**, the "session habit" companion checking
+  an AGENT's own reply against Habit 3's fixed order (needs-from-you →
+  done? → summary → what-went-wrong), traced to a real October 2026
+  Anthropic internal workforce report. Checked via the
+  `claude-code-guide` agent before building anything: Claude Code does
+  support a dedicated output-style file mechanism, but its own
+  recommendation for one project's fixed convention is a plain
+  `CLAUDE.md` instruction instead — added as a new "Reply format for
+  multi-step or long-running work" section under COMMUNICATION STYLE.
+  **Tested against a real transcript, not only synthetic fixtures**:
+  this session's own actual, verbatim prior sign-off (right after
+  shipping `agent-brief-grader`, before this rule existed) — the
+  honest finding is that it doesn't follow the new format at all (no
+  explicit done/finished marker, no separate what-went-wrong framing),
+  correctly not penalized for never needing anything from the user at
+  that point. That real gap is the concrete reason the new rule was
+  worth adding. 14/14 tests pass on the first run, no bug found.
 
 ---
 
@@ -6037,6 +6073,36 @@ reading every prior status-log entry.
 - **Judgment calls:** No fixed pet-peeve list was given — default to
   good judgment: don't ramble, don't ignore explicit instructions, don't
   guess when a quick check would settle it, don't over-hedge.
+
+### Reply format for multi-step or long-running work
+
+For a build with several moving parts (not a quick one-line answer),
+open the reply in this fixed order, not buried at the end — real
+Anthropic research (an internal workforce report, cited in
+`/notes/anthropic-claude-usage-habits-analysis.md`) found interactive
+sessions spend roughly 80% of their time waiting on a human to
+respond, so whatever the human actually needs to act on should be the
+first thing they hit, not the last:
+
+1. **Anything needed from you** — a decision, an approval, a missing
+   piece of information — if there's nothing blocking, skip this line
+   entirely rather than writing "nothing needed."
+2. **Whether the task is actually finished** — done, or not yet, stated
+   plainly.
+3. **A short summary** of what was done.
+4. **What went wrong**, if anything did — a page that couldn't be
+   reached, a step that was skipped, a check still unproven. Skip this
+   line too when nothing did.
+
+This doesn't replace the "brief explain-as-you-go" style above — it's
+the order within a reply, not a request for more words. A section with
+genuinely nothing to report is omitted, never padded out to "nothing
+needed"/"nothing went wrong" just to keep a fixed four-line shape.
+
+Checkable, not just a guideline: `/builds/agent-brief-grader/
+reply_format_checker.py` grades a reply's actual text for whether the
+sections that ARE present appear in this order — real, evidenced
+findings, not a vibe check.
 
 ---
 
