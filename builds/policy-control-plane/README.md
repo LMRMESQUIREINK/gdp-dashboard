@@ -174,3 +174,106 @@ real and credited as a plausible future gap, but materially bigger scope
 than this round's one addition, and none of them has the same direct,
 narrow "this project clearly doesn't have this specific thing" signal
 `ask_human()` did.
+
+## Extended: VIAB/DBO verified-identity token-exchange chain
+
+Added from the OKF/production-AI-systems article bundle — "The Verified
+Identity Agent Bridge" (Natarajan Selvaraj), one of five articles
+analyzed in `/notes/okf-rag-agentic-bundle-analysis.md`. That round's
+named "within a week" next move. `policy/identity_bridge.py`:
+
+- **`SimulatedIdP`** — a stand-in for a real enterprise IdP (no live one
+  reachable from this sandbox, same standing restriction as every build
+  here needing a live external service), implementing only the two
+  steps VIAB actually depends on: a user directory (the IdP's own
+  source of truth) and PKCE-bound authorization-code issuance/exchange.
+- **`IdentityBridge` (VIAB)** — verifies a human via delegated OAuth
+  Authorization Code + PKCE, resolves canonical identity from the IdP's
+  directory, and `assert_downstream()` returns an explicit per-request
+  context dict — never a token of any kind. For when the downstream
+  surface (the article's own example: a low-code agent platform) cannot
+  validate a user-audience token directly.
+- **`DelegatedBoundaryToken` (DBO)** — the article's own named companion
+  pattern, for the opposite case: downstream CAN validate a token
+  directly, so the bridge mints one scoped to that specific audience
+  (a minimal HMAC-signed claim set, not a full JWT library, since no
+  live IdP signing keys exist here to fetch) and forwards that instead.
+
+Kept as two structurally distinct mechanisms rather than one function
+with a flag — `test_identity_bridge.py`'s `TestViabAndDboStayDistinct`
+proves it directly: VIAB's context dict never contains a token-shaped
+string, DBO never returns a bare context dict. 15/15 checks pass,
+including single-use authorization codes, PKCE-verifier mismatch
+rejection, expired-code rejection, token audience/expiry/signature
+rejection, and a wrong-signing-key check (a downstream service that was
+never given the real shared key can't validate a token forged for it).
+
+## Extended: the Blueprint article's stage/confirm/commit write-tier pattern
+
+Added from the same bundle's "A Blueprint for Production Agentic AI
+Systems in the Enterprise" — credited in the analysis note as "the
+single most load-bearing mechanism across all five articles." That
+round's named "2-3 week" next move, extending this build rather than
+starting a new one. `policy/write_tiers.py`:
+
+- **Three risk tiers** (`RiskTier`): `immediate` (commits on request, no
+  staging), `confirm` (staged, then committed only against the exact
+  pinned payload), `step_up` (confirm, plus a FRESHLY re-verified
+  identity at commit time).
+- **`classify_tier()`** reuses `policy/conditions.py`'s safe nested-dict
+  evaluator — the same non-`eval()` discipline as `PolicyEvaluator` —
+  and fails toward MORE friction, not less: an unmatched write defaults
+  to `step_up`, never `immediate`.
+- **`guard_write()`** — the article's own named enforcement function.
+  **`WriteStager`** is the "backend-signed context pinning exactly what
+  will be written," reusing `approval_store.py`'s `canonical_hash()`
+  directly so the two modules' notion of "the same payload" can never
+  drift apart.
+- **The `step_up` tie-in to VIAB**: committing a `step_up` write requires
+  a `VerifiedIdentity` from `identity_bridge.py` verified within a
+  configurable freshness window (default 60s) — a stale identity, even a
+  genuinely-verified one from earlier in the session, is refused. This
+  operationalizes "step_up" literally (re-authentication), not as a
+  bigger rubber stamp on an identity the agent already had lying around.
+
+How this differs from `governed_call`'s existing `REQUIRES_APPROVAL`,
+deliberately: that answers "is a human allowed to approve this at all,"
+gated by an org-written policy; this answers "how much friction does
+*committing* it need," a classification independent of whether a
+separate approval workflow exists. `demo_write_tiers.py` reuses
+`demo_policies.py`'s real `size_check_tool()` unmodified, with tier
+rules set at the same 1/5-contract thresholds — so a large position-size
+write is both routed to Risk Desk (via the existing policy) AND requires
+step-up re-authentication to commit (via the new tier).
+
+16/16 checks pass in `test_write_tiers.py`, including the full real
+stage→commit cycle executing `size_check_tool()` for real, a tampered
+commit payload rejected with the real tool proven (via a call counter)
+never reached, double-commit rejection, and the step_up path exercised
+three ways: no identity at all (refused), a stale identity (refused),
+and a genuinely fresh one from a real `IdentityBridge.verify()` call
+(succeeds). **One real test-fixture bug found on the first run, not in
+the module itself**: the test payloads used `"TPT50K"` as the tier
+string, but `PropFirmAccount`'s real valid tiers are `"25K"/"50K"/
+"75K"/"100K"/"150K"` — caught immediately by the first real run against
+the real class, fixed in the test fixtures (the module needed no
+change). `python3 -m unittest discover -p "test_*.py"` across the whole
+build: 31/31 (the two newer unittest-based suites; the two earlier
+custom-runner suites, `test_policy.py`/`test_clarification.py`, still
+pass cleanly when run directly — confirmed no regression from this
+round's changes, since neither existing module was touched).
+
+## What's cut from this round's three articles, and why
+
+Checked against all five bundle articles' mechanisms before building:
+`SecurityTrimmedIndex`'s ACL-filtered-query pattern (the bundle's third
+named next move) got its own standalone build,
+`/builds/security-trimmed-index/`, rather than extending this one — it's
+a search-ranking boundary, not a governance-decision boundary, and
+forcing it in here would blur what each module is actually for. Not
+built in `write_tiers.py`: the article's own full HR/workplace/
+procurement/travel multi-domain leave-request example — the
+generalizable tier mechanism it depends on is what's proven here,
+against this project's own real prop-firm domain, rather than
+re-narrating a four-department example this sandbox has no systems-of-
+record for.

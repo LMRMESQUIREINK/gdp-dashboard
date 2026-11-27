@@ -186,3 +186,66 @@ see the build's README for the full account). 41/41 tests pass.
   a natural, concrete follow-up once the module itself is proven, matching
   this project's established pattern of standalone-mechanism-then-wire-in
   (the prop-firm tools, `agent-memory-layer` into `jarvis_orchestrator.py`).
+
+## Addendum 1: all three suggested next-moves, done in one follow-up round
+
+All three — same-day, within-a-week, and 2-3-week — built in the
+immediate next round, not a subset.
+
+**STI (same-day)**: `/builds/security-trimmed-index/` — a new,
+standalone build (zero existing `/builds/` coverage of access-controlled
+search ranking/counting/faceting). The article states the correct
+architecture (filter by `allowedGroupIds` *inside* the query, before
+ranking/counting/faceting) but never spells out the concrete failure
+mode of getting it backwards, so `naive_post_filter_search()` makes that
+failure mode real and testable against the correct `SecurityTrimmedIndex`
+path, on the same documents and the same caller. Three leaks proven on
+one shared fixture (a "finance" caller whose only relevant, authorized
+document scores lower than two "engineering"-only documents): a
+`total_count` that includes documents the caller can't see, facet
+buckets drawn from documents the caller can't see, and — the sharpest
+one — a genuinely **missing** result: with `top_k=2`, naive ranking
+truncates to the two unauthorized documents *before* the ACL filter
+runs, so the caller's one authorized match is dropped entirely, not
+merely ranked lower. 12/12 tests pass; no bug found in this build's own
+first draft, stated plainly.
+
+**VIAB/DBO (within a week)**: extended `/builds/policy-control-plane/`
+with `policy/identity_bridge.py` rather than starting a new build
+(checked `/builds/` first — this is the same governance domain
+`governed_call`/`approval_store.py` already live in). `SimulatedIdP`
+stands in for a real enterprise IdP (no live one reachable here);
+`IdentityBridge` implements VIAB (delegated OAuth Authorization Code +
+PKCE, resolves identity from the IdP's directory, asserts it downstream
+as an explicit context dict — never a token); `DelegatedBoundaryToken`
+implements the article's own named companion pattern DBO (mints a token
+scoped to one specific downstream audience, for when the downstream CAN
+validate a token directly). Kept as two structurally distinct
+mechanisms rather than one function with a flag, proven directly:
+VIAB's context dict never contains a token-shaped string; DBO never
+returns a bare context dict. 15/15 tests pass, including single-use
+authorization-code enforcement, PKCE-mismatch rejection, and a
+wrong-signing-key check.
+
+**The Blueprint's stage/confirm/commit write-tier pattern (2-3 weeks)**:
+also extended `/builds/policy-control-plane/`, with `policy/
+write_tiers.py` — `immediate`/`confirm`/`step_up` risk tiers,
+`classify_tier()` reusing the existing safe condition evaluator,
+`guard_write()` (the article's own named function) and a `WriteStager`
+reusing `approval_store.py`'s `canonical_hash()` directly. The `step_up`
+tier ties directly into VIAB from the same round: committing a
+`step_up` write requires a `VerifiedIdentity` re-verified within a
+60-second freshness window, refusing even a genuinely-verified but
+stale identity — "step_up" implemented as literal re-authentication,
+not a bigger rubber stamp on whatever identity the agent's session
+already had. Demonstrated against this project's own real prop-firm
+domain (`demo_write_tiers.py` reuses `demo_policies.py`'s real
+`size_check_tool()` unmodified) rather than the article's own
+HR/workplace/procurement/travel example, which needs systems-of-record
+this sandbox doesn't have. 16/16 tests pass — including a real
+test-fixture bug caught on the first run (the test payloads used an
+invalid tier string, `"TPT50K"`, against the real `PropFirmAccount`'s
+actual valid tiers; fixed in the test, the module needed no change) —
+and all 31 of this round's own new unittest-based tests plus the two
+pre-existing custom-runner suites (`test_policy.py`,
+`test_clarification.py`) re-run to confirm zero regression.

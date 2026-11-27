@@ -5565,6 +5565,54 @@ yourself every time.
   sized same-day/within-a-week/2-3-weeks respectively, left unbuilt in
   favor of one well-tested mechanism rather than three rushed partial
   ones.
+- **All three suggested next-moves on the OKF/agentic-systems bundle
+  done in one follow-up round, not a subset.** Addendum 1 in
+  `/notes/okf-rag-agentic-bundle-analysis.md`. (1) **Same-day — STI**:
+  `/builds/security-trimmed-index/`, a new standalone build implementing
+  the Security-Trimmed Index article's real pattern (ACL filtering
+  applied inside the query, before ranking/counting/faceting) against
+  its own named anti-pattern (`naive_post_filter_search()`), proving
+  three distinct leaks on one shared fixture — a leaked total count, a
+  leaked facet bucket, and, most sharply, a genuinely missing result
+  (pagination truncating to unauthorized documents before the ACL
+  filter runs, dropping the caller's one authorized match entirely).
+  12/12 tests pass; no bug found, stated plainly. (2) **Within a week —
+  VIAB/DBO**: extended `/builds/policy-control-plane/` with
+  `policy/identity_bridge.py` — `SimulatedIdP` standing in for a real
+  enterprise IdP, `IdentityBridge` implementing VIAB (delegated OAuth
+  Authorization Code + PKCE, identity resolved from the IdP's own
+  directory, asserted downstream as an explicit context dict, never a
+  token), and `DelegatedBoundaryToken` implementing the article's own
+  named companion pattern DBO (a token minted for one specific
+  downstream audience, for when the downstream CAN validate a token
+  directly). Proven structurally distinct, not just described that
+  way: VIAB's context dict never contains a token-shaped string, DBO
+  never returns a bare context dict. 15/15 tests pass, including
+  single-use authorization-code enforcement, PKCE-mismatch rejection,
+  and a wrong-signing-key rejection. (3) **2-3 weeks — the Blueprint's
+  stage/confirm/commit write-tier pattern**: also extended
+  `/builds/policy-control-plane/`, with `policy/write_tiers.py` —
+  `immediate`/`confirm`/`step_up` risk tiers via `classify_tier()`
+  (reusing the existing safe condition evaluator, failing toward MORE
+  friction on an unmatched write), `guard_write()` (the article's own
+  named function), and a `WriteStager` reusing `approval_store.py`'s
+  `canonical_hash()` directly. The `step_up` tier ties directly into
+  VIAB from the same round: committing a `step_up` write requires a
+  `VerifiedIdentity` re-verified within a 60-second freshness window —
+  a stale-but-genuine identity is refused, operationalizing "step_up"
+  as literal re-authentication rather than a bigger rubber stamp.
+  Demonstrated against this project's own real prop-firm domain
+  (`demo_write_tiers.py` reuses `demo_policies.py`'s real
+  `size_check_tool()` unmodified, at the same 1/5-contract thresholds
+  the existing REQUIRES_APPROVAL policy already uses) rather than the
+  article's own HR/workplace/procurement/travel example, which needs
+  systems-of-record this sandbox doesn't have. 16/16 tests pass,
+  including one real test-fixture bug caught on the first run (an
+  invalid tier string, `"TPT50K"`, against `PropFirmAccount`'s real
+  valid tiers — fixed in the test, no module change needed). All 31 of
+  this round's new unittest-based tests plus the two pre-existing
+  custom-runner suites re-run to confirm zero regression from either
+  extension.
 
 ---
 
