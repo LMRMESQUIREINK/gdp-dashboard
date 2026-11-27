@@ -5918,6 +5918,46 @@ yourself every time.
   run — one straightforward docstring typo (four closing quote
   characters instead of three) was caught immediately by `ast.parse()`
   before any test ran.
+- **All three suggested next-moves on `dsh-thread-mandate` done in one
+  round, not a subset.** Addendum in
+  `/notes/dsh-superagent-analysis.md`. (1) **Same-day — a minimal,
+  gate-only Eval**: `eval_gate.py` wires a real `Decision` onto a
+  Trigger batch, closing the one domain concept the original round left
+  unbuilt — `run_gate_eval()` implements only the real repo's
+  deterministic *gate* layer (no model call, the *assessment* layer
+  stays out of scope), producing `ACCEPT` (with a real `Mandate`,
+  always `EXPLICIT` strength), `STOP`, `IGNORE`, or `UNAVAILABLE` (the
+  real repo's two-retry-then-unavailable rule), with `accept_ticket()`/
+  `apply_stop()` closing the loop end to end — an `ACCEPT` creates a
+  real, subscribed `Ticket` that then perceives later Thread activity
+  through the exact same fan-out the first round built. 22/22 tests
+  pass, including STOP correctly taking priority over ACCEPT in a mixed
+  batch. No bug found. (2) **Within a week — resolved the "20.4
+  minutes" discrepancy**: retried the three previously DNS-blocked
+  mirrors directly (all three failed again, confirming the restriction
+  is persistent, not transient, and extending to two more attempted
+  mirrors in the same search, also blocked), then resolved it via a
+  targeted web search instead: **20.4 minutes is the real traditional-
+  approach baseline's own median (p50)**, with **29.5 minutes that same
+  baseline's p95** — two different percentiles of the same condition,
+  not a conflict; the pasted article excerpt had simply omitted that
+  baseline's median while giving both percentiles for the Super-agent
+  side. (3) **2-3 weeks — Mandate-revalidation-on-resume in
+  `/builds/policy-control-plane/`**: `policy/mandate_store.py` gives
+  that build the one property it was missing — a grant that survives a
+  unit of work ending and resuming, revalidated against the real
+  `PolicyEvaluator` only at resume, never retroactively while still
+  running, with a person's explicit withdrawal kept structurally
+  distinct from a policy-driven revocation. Proven against the build's
+  own real `demo_policies.py`/`size_check_tool()`: a Mandate granted
+  under a permissive policy is correctly revoked on resume once a
+  stricter policy is introduced, never the moment the policy changes.
+  18/18 tests pass, including a real SQLite close/reopen persistence
+  round trip. The new module's `okf_knowledge/policy-mandate-store.md`
+  concept file was added to that build's existing OKF bundle;
+  `/builds/okf-navigator/drift_check.py` correctly flagged the real,
+  undocumented new consumer edges before the bundle was updated, then
+  came back clean once they were added.
 
 ---
 

@@ -204,3 +204,57 @@ logic on the first real run — one straightforward docstring-quoting typo
 (four closing quote characters instead of three, in several places) was
 caught immediately by `ast.parse()` before any test ran, and fixed before
 the suite was ever executed.
+
+
+## Addendum: all three suggested next-moves done in one round
+
+**(1) Same-day — a minimal, gate-only Eval.** `eval_gate.py` wires a
+real `Decision` onto a Trigger batch taken off a Thread, closing the one
+domain concept the original round left unbuilt: `run_gate_eval()`
+implements just the real repo's deterministic *gate* layer (no model
+call — the real *assessment* layer needs a live model and stays out of
+scope, same standing restriction as every model-dependent build here),
+matching a batch of Triggers against named originator/stopper actor
+lists per scope and producing `ACCEPT` (with a real `Mandate`, always at
+`EXPLICIT` strength, since only the model's judgement could ever grant
+`INFERRED`), `STOP`, `IGNORE`, or `UNAVAILABLE` (after the real repo's
+own stated two-retry rule: "the third expiry records unavailable,"
+regardless of what the batch contains). `accept_ticket()`/`apply_stop()`
+close the loop end to end: an `ACCEPT` creates a real `Ticket` holding
+the granted `Mandate`, subscribed to the Thread it was decided on, which
+then perceives later Thread activity through the exact same
+no-admission-check fan-out the first round built — no special-casing for
+a freshly-accepted Ticket. 22/22 tests pass, including STOP correctly
+taking priority over ACCEPT in a mixed batch (the real repo rejects
+leaving half-finished work running past an explicit stop) and a gate
+rule whose scope the current Policy no longer grants being treated as
+nonexistent rather than reinterpreted. No bug found.
+
+**(2) Within a week — resolved the "20.4 minutes" discrepancy.** Retried
+the three previously DNS-blocked mirrors (levelup.gitconnected.com,
+hackernoon.com, chaincatcher.com) directly — all three failed again with
+the identical `getaddrinfo ENOTFOUND` error, confirming the restriction
+is persistent, not transient, and extending to two more attempted
+mirrors in the same search (i-scoop.eu, xenospectrum.com), also blocked.
+But a targeted, extended web search (not a direct page fetch) resolved
+the figure cleanly: **20.4 minutes is the real traditional-approach
+baseline's own median (p50)**, with **29.5 minutes that same baseline's
+p95** — two different percentiles of the *same* neutral-prompt
+single-session condition, not a conflicting or competing claim. The
+pasted article text available to this project simply omitted that
+baseline's median while giving both percentiles for the Super-agent side
+(12.4 min p50 / 15.7 min p95) — the search results explicitly confirm
+this split exists across different write-ups ("one says the baseline
+median was not disclosed"), consistent with the original finding that
+the pasted excerpt was asymmetric rather than that any number was wrong.
+
+**(3) 2-3 weeks — Mandate-revalidation-on-resume in `policy-control-
+plane`.** See `/builds/policy-control-plane/README.md`'s new section:
+`policy/mandate_store.py` gives that build the one property
+`/builds/dsh-thread-mandate/` has but it didn't — a grant that survives
+a unit of work ending and resuming, revalidated against the real
+`PolicyEvaluator` only at resume, never retroactively while still
+running. 18/18 tests pass, including a real SQLite persistence round
+trip and a direct proof that a person's withdrawal and a policy-driven
+revocation are two structurally distinct mechanisms, matching the exact
+distinction `dsh-thread-mandate` found in the original source repo.

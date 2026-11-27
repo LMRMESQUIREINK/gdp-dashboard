@@ -327,3 +327,48 @@ generalizable tier mechanism it depends on is what's proven here,
 against this project's own real prop-firm domain, rather than
 re-narrating a four-department example this sandbox has no systems-of-
 record for.
+
+## Extended: Mandate-revalidation-on-resume (`policy/mandate_store.py`)
+
+Closes a gap this build's own README previously left open, named
+directly by `/builds/dsh-thread-mandate/`'s own write-up (that build's
+standalone reimplementation of `deepseek-ai/dsh-superagent-prototype`'s
+domain model): this package already had `ApprovalStore`'s single-use
+approvals (pending → approved → consumed, spent the moment it's used),
+but no concept of a grant that outlives one execution and gets
+revalidated only at resume.
+
+`MandateStore` carries the three governing rules over directly rather
+than re-deriving them: ending a unit of work (`end_unit_of_work()`)
+never revokes its Mandate and never consults the evaluator at all; only
+an explicit `withdraw()`, or a failed revalidation **at an actual
+resume**, revokes it; and revalidation reuses this package's own real
+`PolicyEvaluator` against the Mandate's original `(agent, tool,
+operation, context)` selector, so "the current policy set no longer
+grants this" means exactly the same ALLOW/DENY/REQUIRES_APPROVAL
+resolution every other call in this build already goes through — not a
+second, disconnected rule.
+
+Proven against this build's own real `demo_policies.py`/
+`size_check_tool()` (the same classes every other interface in this
+project calls, not a toy example): a Mandate granted for a 5-contract
+size check under the baseline policy (ALLOW up to 5 contracts) ends its
+unit of work cleanly, then is correctly revoked on resume once a
+stricter policy set (REQUIRES_APPROVAL above 3 contracts) is introduced
+— the exact same context, re-evaluated fresh at resume time, not
+re-checked the moment the stricter policy appeared. 18/18 tests pass on
+the real run (`test_mandate_store.py`), including a real SQLite close/
+reopen round trip proving the revoked/withdrawn status is durable, not
+in-memory only, and a direct proof that withdrawal and policy-driven
+revocation are structurally distinct (resuming a withdrawn Mandate
+fails on the withdrawal check even when the evaluator would still say
+ALLOW). No bug found in this module's own first draft, stated plainly
+rather than manufactured.
+
+The new module's own `okf_knowledge/policy-mandate-store.md` concept
+file was added to this build's existing OKF bundle, and
+`/builds/okf-navigator/drift_check.py` was re-run afterward — it
+correctly flagged the real, undocumented new consumer edges onto
+`policy/evaluator.py` and `policy/model.py` before the bundle was
+updated, then came back clean once they were added, the same real
+drift-detection discipline that bundle's own build round established.

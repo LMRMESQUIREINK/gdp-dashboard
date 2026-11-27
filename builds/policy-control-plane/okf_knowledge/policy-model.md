@@ -21,3 +21,5 @@ internal dependency of its own in this repo.
 - [policy-evaluator.md](./policy-evaluator.md) -- imports `Effect`/
   `Policy`/`_EFFECT_PRECEDENCE` directly.
 - [policy-init.md](./policy-init.md) -- re-exports `Effect`/`Policy`.
+- [policy-mandate-store.md](./policy-mandate-store.md) -- imports
+  `Effect` to check `resume_unit_of_work()`'s revalidation outcome.

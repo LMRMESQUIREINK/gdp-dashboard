@@ -14,9 +14,10 @@ A real, checked finding, not an assumption: grepping this whole repo
 for a bare `import policy` or `from policy import` finds zero hits --
 every real caller imports a specific submodule directly
 (`from policy.model import Effect, Policy`, etc.). A second, separate
-finding: this file's own re-export list predates three later modules
+finding: this file's own re-export list predates four later modules
 in this package -- `policy/clarification.py`, `policy/identity_bridge.py`,
-and `policy/write_tiers.py` are all real, shipped, imported-elsewhere
+`policy/write_tiers.py`, and `policy/mandate_store.py` are all real,
+shipped, imported-elsewhere (or, for `mandate_store.py`, test-exercised)
 modules that `policy/__init__.py` itself never imports or re-exports at
 all. Neither finding is a bug (nothing in this repo relies on the
 package-level surface either way); both are stated here because the

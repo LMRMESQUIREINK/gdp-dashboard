@@ -19,3 +19,6 @@ ALLOW/DENY/REQUIRES_APPROVAL with priority+effect precedence.
   `PolicyEvaluator` directly.
 - [policy-init.md](./policy-init.md) -- re-exports `Decision`/
   `PolicyEvaluator`.
+- [policy-mandate-store.md](./policy-mandate-store.md) --
+  `resume_unit_of_work()` calls `PolicyEvaluator.evaluate()` to
+  revalidate a Mandate at resume time.
