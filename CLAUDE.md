@@ -5853,6 +5853,71 @@ yourself every time.
   correctly not penalized for never needing anything from the user at
   that point. That real gap is the concrete reason the new rule was
   worth adding. 14/14 tests pass on the first run, no bug found.
+- **Deep analysis + new build from a pasted Medium article: "Forget PI
+  Agent. DeepSeek Super Agent Harness 10x Better"** — plus the linked
+  real repo, `deepseek-ai/dsh-superagent-prototype`. Full write-up in
+  `/notes/dsh-superagent-analysis.md`. Cloned the real repo (single
+  squashed commit, 2026-10-31, MIT) and read it in full: a careful,
+  substantial codebase whose own README immediately qualifies the
+  Medium article's framing — "not identical to our internal version or
+  the implementation described in *Exploring Super-agent Design*...
+  some designs discussed in the article... are not implemented in this
+  prototype." Confirmed real: the DeepSeek article itself (via
+  independent secondary coverage), the "3 to 5 active sessions"
+  human-attention claim, and Claude Duet (a real Oct 21 2026 research
+  preview on Opus 5.5, matching the article's description closely).
+  Router/Worker terminology turned out real but layered: the repo's own
+  domain-model glossary (`docs/001-domain.md`) names the formal concepts
+  "Main Session"/`orchestrator` and "Executor Session"/`worker`, while
+  `dsh-superagent-router`/`dsh-superagent-worker` are the real preset
+  names at the deployment-config layer — both real, neither invented by
+  the Medium piece. **A real, checkable error found**: the cited
+  Anthropic article, "Constructing Agents," doesn't exist under that
+  name — fetched and confirmed the real title is "Building agents: When
+  to fold subagents into your main agent loop" (claude.com, Oct 22 2026,
+  Diane Sarkis), whose actual claim is one customer's own 2x-faster
+  single-loop case study, not the sweeping "sub-agents are never as
+  efficient" law the Medium piece attributes to it. **None of the
+  article's specific benchmark numbers (12.4/15.7/29.5 min; 23.23M→
+  31.77M cache-read tokens; 1/min→40/min throughput; 2.5s→3.9s latency)
+  appear anywhere in the open-source repo itself** — grepped the whole
+  codebase, zero hits, consistent with the repo's own disclaimer that
+  it isn't the implementation the article describes. One of the three
+  completion-time figures came back only partially corroborated: a
+  search-engine synthesis reported "12.4 minutes versus 20.4 minutes,"
+  a traditional-approach median that never appears in the pasted article
+  text (which states only that approach's p95, 29.5 min) — flagged as
+  unreconciled, not resolved, after three direct-fetch attempts
+  (levelup.gitconnected.com, hackernoon.com, chaincatcher.com) all failed
+  with DNS errors, extending this project's existing blocked-domain list.
+  **Built**: `/builds/dsh-thread-mandate/` — checked `/builds/` first
+  (`fingerprinted-ledger-prereg`, `policy-control-plane`,
+  `agent-checkpoint-layer`, `orchestration-decision-engine` all cover
+  adjacent but distinct ground) — a standalone reimplementation, read
+  directly from `docs/001-domain.md`'s concept table and its "Rejected
+  concepts" table rather than copied from the real TypeScript source, of
+  the one mechanism that's both genuinely new here and fully specified
+  without needing a live model or GitHub App: Subscription fan-out with
+  **zero admission check** on who sent the triggering message, and the
+  Policy/Mandate split that makes that safe — Subscription delivers
+  context only and never implies authority, per the real repo's own
+  explicit rejection of "Admission checks on Subscriptions" ("A
+  Subscription covers the whole Thread; the Mandate separates
+  authorization from context"). 16/16 tests pass on the real run, each
+  one a direct, named reproduction of a specific real-repo rule: fan-out
+  with no admission check; two independently-subscribed Tickets
+  perceiving the same Trigger with no central coordinator (the literal
+  "perceive conflicts by subscribing to the same Thread" mechanism); an
+  ended Ticket resuming under its *original* Mandate on a person's
+  message while a same-subscription bot/CI message does not resume it at
+  all; a Policy no longer granting a Mandate's scope revoking it only on
+  revalidation (kept structurally distinct from a person's explicit
+  stop); a Policy change never retroactively touching a still-running
+  Ticket; and Eval's at-most-one-per-Thread/merge-into-next-batch
+  semantics. No bug found in the module's own logic on the first real
+  run — one straightforward docstring typo (four closing quote
+  characters instead of three) was caught immediately by `ast.parse()`
+  before any test ran.
 
 ---
 
