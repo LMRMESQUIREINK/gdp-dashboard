@@ -20,6 +20,12 @@
 #  standing trading preferences that persist across sessions
 #  (jarvis_memory.sqlite3), independent of both the symbol-trading
 #  and prop-firm flows above. See jarvis_memory.py.
+#  PATCHED (5): wired in /builds/okf-navigator/ as a fourth tool
+#  category — check_module_impact — over a real OKF-formatted
+#  knowledge bundle (okf_knowledge/) describing THIS BUILD's own
+#  actual module dependency graph, for a developer asking "what
+#  depends on X" about this codebase, not a trading question. See
+#  jarvis_okf.py and /notes/okf-rag-agentic-bundle-analysis.md.
 #  Data Layer: EODHD+FMP (via data_pipeline.py)
 #  Generated: 2026-07-18 | Patched: 2026-08-03 | Patched again: 2026-08-04
 #  | Patched again: 2026-09-21 | Pro fixes applied: see README.md
@@ -117,6 +123,17 @@ SESSION MEMORY — remember_preference / recall_preferences / supersede_preferen
     jarvis_memory.sqlite3 across process restarts — the same real,
     cross-process-tested durability agent-memory-layer's own round-3
     next-move build gave it.
+
+CODEBASE-IMPACT TOOL — check_module_impact
+    A fourth, independent tool category, wrapping /builds/okf-navigator/'s
+    real trust-tier/staleness/link-resolution rules over okf_knowledge/, an
+    OKF-formatted knowledge bundle describing THIS BUILD's own actual module
+    dependency graph (every link written after directly grepping this
+    repo's real import statements — see jarvis_okf.py's own docstring and
+    /notes/okf-rag-agentic-bundle-analysis.md Addendum 2). For a developer
+    asking "what depends on risk_manager.py" about this codebase, never a
+    trading question. okf_navigator.py is copied in unmodified, same
+    convention memory_layer.py/persistence.py already follow here.
 """
 
 import os
@@ -136,6 +153,7 @@ from prop_firm_position_sizing import AccountRules, evaluate_size
 from prop_pass_simulator import PassSimulator
 
 import jarvis_memory
+import jarvis_okf
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_KEY"))
 MODEL = os.getenv("JARVIS_MODEL", "claude-opus-5")
@@ -351,6 +369,29 @@ TOOLS = [
             "required": ["old_memory_id", "new_content"],
         },
     },
+    {
+        "name": "check_module_impact",
+        "description": (
+            "For a question about CHANGING THIS CODEBASE ITSELF (not a "
+            "trading question) -- 'what depends on risk_manager.py', "
+            "'what would break if I change signal_generator.py' -- look "
+            "up this build's own real, documented module dependency "
+            "graph (an OKF-formatted knowledge bundle, not trading data) "
+            "and report the real impact radius plus how fresh/trusted "
+            "that documentation is. Never use this for a symbol, "
+            "prop-firm, or preference question."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "module": {"type": "string",
+                            "description": "A module filename, e.g. 'risk_manager.py' or 'signal_generator.py'"},
+                "max_hops": {"type": "integer", "default": 2,
+                              "description": "How many dependency hops out to report"},
+            },
+            "required": ["module"],
+        },
+    },
 ]
 
 
@@ -505,6 +546,12 @@ def _run_tool(name: str, tool_input: dict) -> dict:
             importance=tool_input.get("importance", 5.0),
         )
 
+    if name == "check_module_impact":
+        return jarvis_okf.check_module_impact(
+            module=tool_input["module"],
+            max_hops=tool_input.get("max_hops", 2),
+        )
+
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -574,6 +621,15 @@ repeat it this time).
    trader just said.
 4. Don't call remember_preference for routine one-off requests ("check
    AAPL for me") — only for things stated as standing/general.
+
+CODEBASE-IMPACT TOOL (check_module_impact) is a FOURTH, separate flow —
+this is for a developer asking about CHANGING THIS PROJECT'S OWN CODE
+(e.g. "what depends on risk_manager.py," "what would I need to re-check
+if I touch signal_generator.py"), never for a trading question. Don't
+run the symbol-trading/prop-firm/memory tools for this, and don't run
+this for a trading question. Report the trust tier and freshness it
+returns plainly — "machine-confirmed" means this session's own grep
+verified it, not a human, and say so if asked.
 """
 
 

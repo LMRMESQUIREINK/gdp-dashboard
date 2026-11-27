@@ -5613,6 +5613,40 @@ yourself every time.
   this round's new unittest-based tests plus the two pre-existing
   custom-runner suites re-run to confirm zero regression from either
   extension.
+- **`okf-navigator` wired into `trading-jarvis` as a fourth tool
+  category**, per direct request. Addendum 2 in
+  `/notes/okf-rag-agentic-bundle-analysis.md`.
+  `jarvis_orchestrator.py` gains `check_module_impact`, independent of
+  the existing symbol-trading/prop-firm/memory flows — for a developer
+  asking "what depends on `risk_manager.py`" about this codebase
+  itself, never a trading question, with the system prompt enforcing
+  that separation the same way the other three flows already are kept
+  apart from each other. `okf_navigator.py` copied in unmodified (same
+  convention `memory_layer.py`/`persistence.py` already follow in that
+  directory), paired with a genuinely new `okf_knowledge/` bundle — 13
+  real OKF concept files describing **this build's own actual module
+  dependency graph**, not fictional data: every link was written only
+  after directly grepping every real `import` statement in
+  `trading-jarvis/`. Every concept honestly reports the
+  `machine-confirmed` trust tier per OKF's real spec, never
+  `human-reviewed` — this session's own grep verified the graph, no
+  human has reviewed it, and the system prompt tells Claude to say so
+  plainly if asked rather than overclaiming. `jarvis_okf.py` resolves
+  either a real filename or the bundle's own concept-file name, and
+  returns a plain error naming all 13 known modules on an unrecognized
+  one rather than a raw `KeyError`. `test_jarvis_okf.py` (19/19
+  assertions) proves the real import graph's actual hop structure, not
+  an assumed one. **One real test-assumption bug caught and fixed on
+  the first run, not a module bug**: a first draft expected
+  `persistence.py`'s own real consumer `jarvis_memory.py` to be a
+  2-hop relationship, but the real grep shows `jarvis_memory.py`
+  imports directly from *both* `memory_layer.py` and `persistence.py`
+  — a genuine 1-hop edge — so the wrong test assumption was corrected
+  to match the real graph, with a second, deliberately-chosen real
+  2-hop case added alongside it to keep the hop-boundary behavior
+  covered. The pre-existing `test_jarvis_memory.py` suite (16/16)
+  re-run to confirm zero regression from this round's edits to
+  `jarvis_orchestrator.py`.
 
 ---
 

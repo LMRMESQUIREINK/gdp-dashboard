@@ -249,3 +249,45 @@ actual valid tiers; fixed in the test, the module needed no change) —
 and all 31 of this round's own new unittest-based tests plus the two
 pre-existing custom-runner suites (`test_policy.py`,
 `test_clarification.py`) re-run to confirm zero regression.
+
+## Addendum 2: `okf-navigator` wired into `trading-jarvis` as a fourth tool category
+
+Per request, after the three next-moves above. `/builds/trading-jarvis/
+jarvis_orchestrator.py` gains `check_module_impact`, independent of the
+existing symbol-trading/prop-firm/memory flows. `okf_navigator.py` is
+copied in unmodified (same convention `memory_layer.py`/`persistence.py`
+already follow there), paired with a genuinely new OKF-formatted
+knowledge bundle, `okf_knowledge/` (13 concept files) — not fictional
+data: describes *this build's own actual module dependency graph*,
+written only after directly grepping every real `import` statement in
+`trading-jarvis/` (`data_pipeline.py`, `signal_generator.py`,
+`risk_manager.py`, `positions_store.py`, `swamp_intelligence.py`,
+`jarvis_swamp_bridge.py`, `prop_firm_sizing.py`,
+`prop_firm_position_sizing.py`, `prop_pass_simulator.py`,
+`memory_layer.py`, `persistence.py`, `jarvis_memory.py`,
+`jarvis_orchestrator.py`). Every concept honestly reports the
+`machine-confirmed` trust tier (never `human-reviewed`) per OKF's real
+§5.3 model — this session's own grep verified the graph, no human has
+reviewed it, and the system prompt instructs Claude to say so plainly
+if asked rather than overclaiming the stronger tier.
+
+`jarvis_okf.py`'s `check_module_impact()` resolves either a real
+filename (`"risk_manager.py"`) or the bundle's own concept-file name
+and returns a plain error naming all 13 known modules on an
+unrecognized one, rather than a raw `KeyError`. `test_jarvis_okf.py`
+(19/19 assertions) proves the real import graph's actual hop structure,
+not an assumed one: direct calls at varying `max_hops`, dispatch-through-
+`_run_tool()` parity, and the full `ask_jarvis()` mocked-Anthropic
+dispatch loop. **One real test-assumption bug caught and fixed on the
+first run, not a module bug**: a first draft expected
+`memory_layer.py`'s own real consumer `jarvis_memory.py` to be a 2-hop
+relationship, but the real grep shows `jarvis_memory.py` imports
+directly from *both* `memory_layer.py` and `persistence.py` — a genuine
+1-hop edge — so the test's wrong assumption was corrected to match the
+real graph (a second, deliberately-chosen real 2-hop case —
+`persistence.py` → `jarvis_memory.py` → `jarvis_orchestrator.py` — was
+added alongside it to keep the hop-boundary behavior covered). Both
+pre-existing `trading-jarvis` test suites re-run (`test_jarvis_memory.py`,
+16/16; `test_policy.py`/`test_clarification.py` not applicable here) to
+confirm zero regression from this round's edits to
+`jarvis_orchestrator.py`.
