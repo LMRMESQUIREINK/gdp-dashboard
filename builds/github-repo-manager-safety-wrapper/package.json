@@ -1,0 +1,14 @@
+{
+  "name": "github-repo-manager-safety-wrapper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dry-run, typed confirmation, full-wipe guard, and retry/backoff for vijaydeepak-vd/github-repo-manager's mutating scripts.",
+  "main": "safety-core.js",
+  "scripts": {
+    "test": "node test-safety-core.js"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "dotenv": "^17.4.2"
+  }
+}

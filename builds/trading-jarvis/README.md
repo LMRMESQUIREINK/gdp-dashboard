@@ -37,6 +37,11 @@ Full writeup, all three rounds: `/notes/trading-jarvis-analysis.md`.
 | `jarvis_orchestrator.py` | Claude API tool-calling front end — now includes a `swamp_decompose` tool plus the three prop-firm tools below |
 | `run_strategy.py` | CLI entry point — one-shot check, `--swamp` reasoning mode, live monitor, NL query, or position tracking |
 | `prop_firm_sizing.py`, `prop_firm_position_sizing.py`, `prop_pass_simulator.py` | Copied in from `/builds/prop-firm-sizing/` (same files, unmodified) — TPT funded-account sizing, wired into `jarvis_orchestrator.py` as three separate tools, see below |
+| `memory_layer.py`, `persistence.py` | Copied in from `/builds/agent-memory-layer/` (same files, unmodified) — real lifecycle/supersession/persistence mechanics, see below |
+| `jarvis_memory.py` | Thin single-trader wrapper giving `jarvis_orchestrator.py` a persistent standing-preference store (`jarvis_memory.sqlite3`) |
+| `okf_navigator.py` | Copied in from `/builds/okf-navigator/` (same file, unmodified) — real trust-tier/staleness/link-resolution rules |
+| `okf_knowledge/` | 13 real OKF concept files describing this build's own actual module dependency graph (not fictional data — built from grepping this repo's own imports) |
+| `jarvis_okf.py` | `check_module_impact` — a fourth tool category for "what depends on X" questions about this codebase itself, see below |
 
 ## What changed, across all three rounds
 
@@ -144,6 +149,111 @@ plain-English error (valid tiers/symbols listed, or the expected
 
 Full source-document analysis these were built and cross-checked
 against: `/notes/prop-firm-sizing-analysis.md`.
+
+## Session memory
+
+Three more tools — `remember_preference`, `recall_preferences`,
+`supersede_preference` — wire `/builds/agent-memory-layer/`'s real,
+already-tested `MemoryStore`/`SQLiteMemoryStore` into Jarvis as a third,
+separate flow from both the symbol-trading and prop-firm tools above. A
+trader who says "always size conservatively for NQ" or "I prefer EMA
+crossover signals" once has that persist in `jarvis_memory.sqlite3`
+across sessions, instead of needing to restate it on every query.
+
+- **`remember_preference`** — stores a new standing preference. Always
+  creates a new record; never auto-updates an existing one.
+- **`recall_preferences`** — lists every live standing preference, each
+  with its `memory_id`, ranked by `score_candidates()` (real min-max-
+  normalized recency+importance; relevance is a wash since this module
+  never computes embeddings — nothing in `trading-jarvis` calls an
+  embedding model).
+- **`supersede_preference`** — replaces one *named* prior preference
+  (by `memory_id`) with a new one. The old record is marked
+  `SUPERSEDED`, never deleted or silently merged.
+
+**Why there's no auto-supersede on topic match.** A new preference never
+automatically replaces an existing one just because they look related —
+there's no embedding or keyword-matching layer in this codebase to judge
+"same topic" honestly, and faking that judgment with a regex would be
+exactly the kind of fabricated-intelligence shortcut this project avoids
+elsewhere. Instead, `recall_preferences` surfaces every live preference
+with its `memory_id`, and the system prompt instructs Claude — which can
+actually read and compare the text — to call `supersede_preference`
+naming a *specific* `memory_id` when the trader's new statement clearly
+updates or contradicts something already on file.
+
+**Single-trader scope, by design.** Every memory is scoped to a fixed
+`subject_id`, matching `positions_store.py`'s own stated single-trader
+convention exactly — this codebase has no auth or per-user identity
+layer, so faking multi-tenancy on top of it would be worse than not
+having it.
+
+**What's proven, and what isn't re-proven.** `/builds/agent-memory-layer/`'s
+own test suite (57 assertions across `test_memory_layer.py` and
+`test_persistence.py`, including a real cross-process restart proof) is
+what proves the underlying lifecycle/supersession/persistence mechanics.
+This build's own `test_jarvis_memory.py` (16 assertions) proves only
+that *this wiring* calls those real functions correctly — including a
+real `ask_jarvis()` tool-dispatch-loop round trip against a mocked
+Anthropic client (same established convention as every other dispatch-
+loop test in this project), confirming a preference the mocked model
+asks to remember is actually, durably persisted, not just echoed back by
+the mock.
+
+## Codebase impact (OKF navigator)
+
+A fourth, independent tool — `check_module_impact` — wires
+`/builds/okf-navigator/`'s real trust-tier/staleness/link-resolution
+rules into Jarvis, over `okf_knowledge/`: an OKF-formatted knowledge
+bundle (13 concept files) describing **this build's own actual module
+dependency graph**. This is for a developer asking "what depends on
+`risk_manager.py`" about *this codebase*, never a trading question —
+the system prompt tells Claude not to mix the two, same separation
+already enforced between the symbol-trading/prop-firm/memory flows
+above.
+
+**Not fictional data.** Every concept file's links were written after
+directly grepping this repo's own real import statements (see
+`/notes/okf-rag-agentic-bundle-analysis.md` Addendum 2 for the full
+account) — e.g. `signal-generator.md` really does link to both
+`risk-manager.md` (which re-verifies the signal before sizing) and
+`jarvis-orchestrator.md` (the `check_signal` tool), because that's
+what the actual `import` lines in `risk_manager.py`/
+`jarvis_orchestrator.py` show. Every concept honestly reports the
+`machine-confirmed` trust tier, never `human-reviewed` — this
+session's own grep verified the graph; no human has reviewed it yet,
+and the system prompt tells Claude to say so plainly if asked.
+
+```python
+jarvis_okf.check_module_impact("risk_manager.py")
+# {"module": "risk-manager.md", "max_hops": 2, "report":
+#   "Impact report from 'risk-manager.md' (max 2 hop(s)):\n"
+#   "  [0] risk-manager.md -- type=Module trust=machine-confirmed lifecycle=fresh\n"
+#   "  [1] jarvis-orchestrator.md -- type=Module trust=machine-confirmed lifecycle=fresh (via risk-manager.md)"}
+```
+
+`okf_navigator.py` is copied in unmodified — same convention
+`memory_layer.py`/`persistence.py` already follow here. `jarvis_okf.py`
+resolves either a real filename (`"risk_manager.py"`) or the bundle's
+own concept-file name (`"risk-manager.md"`), and an unrecognized module
+returns a plain error dict naming all 13 known modules rather than
+raising a raw `KeyError`.
+
+**Proven**: `test_jarvis_okf.py` (19/19 assertions) — direct
+`check_module_impact()` calls reproducing the real import graph at
+different `max_hops` (including a genuinely 1-hop-vs-2-hop distinction:
+`persistence.py`'s own real consumer `jarvis_memory.py` is 1 hop,
+while `jarvis_orchestrator.py` is a real 2-hop consumer, only appearing
+once `max_hops` widens), dispatched-through-`_run_tool()` parity with a
+direct call, and the full `ask_jarvis()` mocked-Anthropic dispatch loop
+confirming a real `check_module_impact` result (not a stub) reaches the
+model. **One real test-assumption bug caught and fixed on the first
+run**: a first draft expected `memory_layer.py`'s consumer
+`jarvis_memory.py` to be 2 hops away, but the real, grepped import
+graph has `jarvis_memory.py` importing directly from *both*
+`memory_layer.py` and `persistence.py` — a genuine 1-hop relationship —
+so the test's wrong assumption was corrected to match the real graph,
+not the other way around.
 
 ## What's deliberately out of scope, and why
 
@@ -278,6 +388,32 @@ Proven in this build environment, without live EODHD/FMP/Anthropic keys
   `CONTRACTS:AVG_PNL:PNL_STD` format rather than a raw parse exception.
 - `data_pipeline.fetch_eod()` fails fast and locally on a missing/
   placeholder API key, before any request goes out.
+- The three session-memory tools (`remember_preference`,
+  `recall_preferences`, `supersede_preference`) proven directly via
+  `_run_tool()` against a real, isolated `SQLiteMemoryStore` (16/16
+  assertions in `test_jarvis_memory.py`): a stored preference round-
+  trips exactly, a second preference gets a genuinely new `memory_id`,
+  recall ranks the higher-importance preference first (real
+  `score_candidates()` logic, not insertion order), supersede correctly
+  removes the old preference from recall and persists the new one, and
+  superseding a `memory_id` never actually seen from `recall_preferences`
+  raises `KeyError` rather than silently creating a dangling link —
+  then proven again through the full `ask_jarvis()` tool-dispatch loop
+  with a mocked Anthropic client, confirming a preference the mocked
+  model asks to remember is actually, durably persisted via the real
+  store, not just echoed back by the mock.
+- The fourth tool, `check_module_impact` (19/19 assertions in
+  `test_jarvis_okf.py`), proven directly against the real
+  `okf_knowledge/` bundle: a real `.py` filename and the bundle's own
+  concept-file name both resolve correctly, the real 1-hop-vs-2-hop
+  distinction in this codebase's own import graph holds exactly
+  (`persistence.py`'s real consumer `jarvis_memory.py` is 1 hop,
+  `jarvis_orchestrator.py` a real 2 hops, only surfacing once `max_hops`
+  widens), an unrecognized module returns a plain error naming all 13
+  known modules rather than raising, and every concept honestly reports
+  `machine-confirmed` trust (never `human-reviewed`) — then proven
+  again through the full `ask_jarvis()` tool-dispatch loop with a mocked
+  Anthropic client.
 
 **Not yet run against live EODHD/FMP/Anthropic APIs from this
 environment** — that needs a real API key and a network path this sandbox

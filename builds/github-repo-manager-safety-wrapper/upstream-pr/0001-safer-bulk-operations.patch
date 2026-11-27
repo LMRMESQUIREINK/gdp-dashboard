@@ -1,0 +1,1165 @@
+From 6dfcb029d9083da18f8dcdb58ef4c16e8dbdb3dd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 17 Oct 2026 15:01:43 +0000
+Subject: [PATCH] Add dry-run, confirmation, full-wipe guard, retry, and
+ owner/repo support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+All four mutating scripts (transfer, visibility, delete, archive) now
+share a small safety-core module that adds:
+
+- --dry-run: preview exactly what would happen, with zero API calls.
+- Typed confirmation before delete/transfer/visibility changes (not
+  archive, which is reversible), with the repo count baked into the
+  required phrase.
+- A full-wipe guard: refuses to run when the target list exactly
+  matches all_repos.txt's full contents, unless --force-full is passed.
+  This is the sharpest version of a gap the README already names (no
+  confirmation/dry-run) — a copy-paste mistake between list files could
+  previously act on every repository the token can reach.
+- Retry with exponential backoff, but only for errors that look
+  transient (5xx, secondary rate limit, connection resets); a
+  definitive 404 still fails immediately.
+- --owner-repo: list-file lines can be "owner/repo" instead of always
+  assuming the configured owner, closing the "owner/repository values
+  are not supported" limitation the README already names. Bare lines
+  still work unchanged.
+- --public / --unarchive flags replace the previous "edit the source
+  file to toggle this" pattern for visibility and archive status.
+- A real pass/fail summary line at the end of each run.
+
+package.json's test script now runs a real test suite
+(test-safety-core.js) against a mocked Octokit-shaped client instead of
+the placeholder "no test specified" stub.
+
+README updated throughout to document the new flags.
+---
+ 2-transfer-repos.js        | 117 ++++++++--------
+ 3-change-visibility.js     | 109 ++++++++-------
+ 4-delete-repos.js          |  66 +++++----
+ 5-change-archive-status.js |  88 ++++++------
+ README.MD                  |  62 ++++-----
+ package.json               |   2 +-
+ safety-core.js             | 227 +++++++++++++++++++++++++++++++
+ test-safety-core.js        | 269 +++++++++++++++++++++++++++++++++++++
+ 8 files changed, 714 insertions(+), 226 deletions(-)
+ create mode 100644 safety-core.js
+ create mode 100644 test-safety-core.js
+
+diff --git a/2-transfer-repos.js b/2-transfer-repos.js
+index 553911b..d3ea0bc 100644
+--- a/2-transfer-repos.js
++++ b/2-transfer-repos.js
+@@ -1,79 +1,70 @@
+ const { Octokit } = require("@octokit/rest");
+-const fs = require("fs");
+ require("dotenv").config();
+ 
+-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
++const { loadRepoList, parseEntries, runSafely } = require("./safety-core");
+ 
+-// Helper function to pause execution and let GitHub process background jobs
++const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+ 
++async function transferOne(entry, targetOrg) {
++  const { owner, repo } = entry;
++
++  // 1. Check current status of the repository
++  const { data: repoInfo } = await octokit.rest.repos.get({ owner, repo });
++
++  // 2. Unarchive if necessary
++  if (repoInfo.archived) {
++    await octokit.rest.repos.update({ owner, repo, archived: false });
++    await sleep(3000); // Wait 3 seconds for GitHub to process the unarchive
++  }
++
++  // 3. Set to private
++  if (!repoInfo.private) {
++    await octokit.rest.repos.update({ owner, repo, private: true });
++    await sleep(3000); // Wait 3 seconds for the privacy change to propagate
++  }
++
++  // 4. Execute Transfer
++  await octokit.rest.repos.transfer({ owner, repo, new_owner: targetOrg });
++}
++
+ async function transferRepos() {
+-  const owner = process.env.GITHUB_USER;
++  const args = process.argv.slice(2);
++  const dryRun = args.includes("--dry-run");
++  const allowFullMatch = args.includes("--force-full");
++  // Each line's owner is the repo's *current* (source) owner — lets you
++  // collect repos from several source accounts into one TARGET_ORG in
++  // a single run.
++  const ownerRepoMode = args.includes("--owner-repo");
++
++  const defaultOwner = process.env.GITHUB_USER;
+   const targetOrg = process.env.TARGET_ORG;
+-  
+-  if (!fs.existsSync("move.txt")) {
++
++  const rawLines = loadRepoList("move.txt");
++  if (!rawLines) {
+     console.log("❌ move.txt not found. Please create it and add the repo names to transfer.");
+     return;
+   }
++  if (rawLines.length === 0) {
++    console.log("move.txt is empty — nothing to do.");
++    return;
++  }
+ 
+-  const reposToMove = fs.readFileSync("move.txt", "utf-8")
+-    .split("\n")
+-    .map(name => name.trim())
+-    .filter(name => name.length > 0);
+-    
+-  console.log(`Found ${reposToMove.length} repositories to transfer to ${targetOrg}.`);
+-
+-  for (const repo of reposToMove) {
+-    try {
+-      console.log(`\nProcessing: ${repo}...`);
+-      
+-      // 1. Check current status of the repository
+-      const { data: repoInfo } = await octokit.rest.repos.get({
+-        owner: owner,
+-        repo: repo
+-      });
+-
+-      // 2. Unarchive if necessary
+-      if (repoInfo.archived) {
+-        console.log(`  - 📦 Repository is archived. Unarchiving first...`);
+-        await octokit.rest.repos.update({
+-          owner: owner,
+-          repo: repo,
+-          archived: false
+-        });
+-        await sleep(3000); // Wait 3 seconds for GitHub to process the unarchive
+-      }
+-
+-      // 3. Set to private
+-      if (!repoInfo.private) {
+-        console.log(`  - 🔒 Setting visibility to private...`);
+-        await octokit.rest.repos.update({
+-          owner: owner,
+-          repo: repo,
+-          private: true
+-        });
+-        await sleep(3000); // Wait 3 seconds for the privacy change to propagate
+-      }
++  const entries = parseEntries(rawLines, defaultOwner, ownerRepoMode);
+ 
+-      // 4. Execute Transfer
+-      console.log(`  - 🚚 Transferring to ${targetOrg}...`);
+-      await octokit.rest.repos.transfer({
+-        owner: owner,
+-        repo: repo,
+-        new_owner: targetOrg
+-      });
+-      
+-      console.log(`  ✅ Successfully transferred ${repo}`);
+-      
+-      // Final pause before moving to the next repository in the list
+-      await sleep(2000); 
++  const result = await runSafely({
++    operationName: "TRANSFER",
++    entries,
++    allReposFile: "all_repos.txt",
++    defaultOwner,
++    allowFullMatch,
++    dryRun,
++    destructive: true,
++    confirmPhrase: (count) => `TRANSFER ${count} REPOS TO ${targetOrg}`,
++    execute: (entry) => transferOne(entry, targetOrg),
++  });
+ 
+-    } catch (error) {
+-      console.error(`  ❌ Failed on ${repo}:`, error.message);
+-    }
+-  }
+-  
+-  console.log("\n🎉 Transfer complete! Check your target organization.");
++  if (result.aborted) process.exitCode = 1;
+ }
+ 
+-transferRepos();
+\ No newline at end of file
++transferRepos();
+diff --git a/3-change-visibility.js b/3-change-visibility.js
+index 0073ef0..d30b2bb 100644
+--- a/3-change-visibility.js
++++ b/3-change-visibility.js
+@@ -1,71 +1,68 @@
+ const { Octokit } = require("@octokit/rest");
+-const fs = require("fs");
+ require("dotenv").config();
+ 
++const { loadRepoList, parseEntries, runSafely } = require("./safety-core");
++
+ const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+ 
+-async function changeVisibility() {
+-  const owner = process.env.GITHUB_USER;
+-  const makePrivate = true; // Set to false to make public
+-  
+-  if (!fs.existsSync("visibility.txt")) {
+-    console.log("❌ visibility.txt not found. Please create it and add the repo names.");
+-    return;
+-  }
++async function changeVisibilityOne(entry, makePrivate) {
++  const { owner, repo } = entry;
++  const { data: repoInfo } = await octokit.rest.repos.get({ owner, repo });
++  const wasArchived = repoInfo.archived;
+ 
+-  const reposToUpdate = fs.readFileSync("visibility.txt", "utf-8")
+-    .split("\n")
+-    .map(name => name.trim())
+-    .filter(name => name.length > 0);
+-    
+-  console.log(`Found ${reposToUpdate.length} repositories to update.`);
++  if (wasArchived) {
++    await octokit.rest.repos.update({ owner, repo, archived: false });
++    await sleep(3000);
++  }
+ 
+-  for (const repo of reposToUpdate) {
+-    try {
+-      console.log(`\nProcessing: ${repo}...`);
+-      
+-      const { data: repoInfo } = await octokit.rest.repos.get({
+-        owner: owner,
+-        repo: repo
+-      });
++  await octokit.rest.repos.update({ owner, repo, private: makePrivate });
++  await sleep(3000);
+ 
+-      const wasArchived = repoInfo.archived;
++  // Restore archived status if it was archived initially
++  if (wasArchived) {
++    await octokit.rest.repos.update({ owner, repo, archived: true });
++    await sleep(3000);
++  }
++}
+ 
+-      if (wasArchived) {
+-        console.log(`  - 📦 Repository is archived. Unarchiving first...`);
+-        await octokit.rest.repos.update({
+-          owner: owner,
+-          repo: repo,
+-          archived: false
+-        });
+-        await sleep(3000);
+-      }
++async function changeVisibility() {
++  const args = process.argv.slice(2);
++  const dryRun = args.includes("--dry-run");
++  const allowFullMatch = args.includes("--force-full");
++  const ownerRepoMode = args.includes("--owner-repo");
++  // Set to false to make public — was previously a source-edited
++  // const; still the default, now also toggleable with --public so a
++  // one-off visibility change doesn't require editing this file.
++  const makePrivate = !args.includes("--public");
+ 
+-      console.log(`  - 🔒 Changing visibility to ${makePrivate ? 'private' : 'public'}...`);
+-      await octokit.rest.repos.update({
+-        owner: owner,
+-        repo: repo,
+-        private: makePrivate
+-      });
+-      await sleep(3000);
++  const defaultOwner = process.env.GITHUB_USER;
+ 
+-      // Restore archived status if it was archived initially
+-      if (wasArchived) {
+-        console.log(`  - 📦 Restoring archived status...`);
+-        await octokit.rest.repos.update({
+-          owner: owner,
+-          repo: repo,
+-          archived: true
+-        });
+-        await sleep(3000);
+-      }
+-      
+-      console.log(`  ✅ Successfully updated ${repo}`);
+-    } catch (error) {
+-      console.error(`  ❌ Failed on ${repo}:`, error.message);
+-    }
++  const rawLines = loadRepoList("visibility.txt");
++  if (!rawLines) {
++    console.log("❌ visibility.txt not found. Please create it and add the repo names.");
++    return;
++  }
++  if (rawLines.length === 0) {
++    console.log("visibility.txt is empty — nothing to do.");
++    return;
+   }
++
++  const entries = parseEntries(rawLines, defaultOwner, ownerRepoMode);
++
++  const result = await runSafely({
++    operationName: makePrivate ? "MAKE PRIVATE" : "MAKE PUBLIC",
++    entries,
++    allReposFile: "all_repos.txt",
++    defaultOwner,
++    allowFullMatch,
++    dryRun,
++    destructive: true,
++    confirmPhrase: (count) => `${makePrivate ? "PRIVATE" : "PUBLIC"} ${count} REPOS`,
++    execute: (entry) => changeVisibilityOne(entry, makePrivate),
++  });
++
++  if (result.aborted) process.exitCode = 1;
+ }
+ 
+-changeVisibility();
+\ No newline at end of file
++changeVisibility();
+diff --git a/4-delete-repos.js b/4-delete-repos.js
+index 0917997..a3abd5b 100644
+--- a/4-delete-repos.js
++++ b/4-delete-repos.js
+@@ -1,48 +1,44 @@
+ const { Octokit } = require("@octokit/rest");
+-const fs = require("fs");
+ require("dotenv").config();
+ 
++const { loadRepoList, parseEntries, runSafely } = require("./safety-core");
++
+ const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+ 
+ async function deleteRepos() {
++  const args = process.argv.slice(2);
++  const dryRun = args.includes("--dry-run");
++  const allowFullMatch = args.includes("--force-full");
++  const ownerRepoMode = args.includes("--owner-repo");
++
+   // If deleting from the archive org, change this to process.env.TARGET_ORG
+-  const targetOwner = process.env.GITHUB_USER; 
+-  
+-  if (!fs.existsSync("delete.txt")) {
++  const defaultOwner = process.env.GITHUB_USER;
++
++  const rawLines = loadRepoList("delete.txt");
++  if (!rawLines) {
+     console.log("❌ delete.txt not found. Please create it and add the repo names to DELETE.");
+     return;
+   }
+-
+-  const reposToDelete = fs.readFileSync("delete.txt", "utf-8")
+-    .split("\n")
+-    .map(name => name.trim())
+-    .filter(name => name.length > 0);
+-    
+-  console.log(`⚠️ WARNING: Attempting to permanently delete ${reposToDelete.length} repositories from ${targetOwner}.`);
+-  console.log("Starting in 5 seconds... Press Ctrl+C to abort.");
+-  
+-  await sleep(5000); // 5-second buffer to change your mind
+-
+-  for (const repo of reposToDelete) {
+-    try {
+-      console.log(`Deleting ${repo}...`);
+-      
+-      await octokit.rest.repos.delete({
+-        owner: targetOwner,
+-        repo: repo
+-      });
+-      
+-      console.log(`  ✅ Successfully deleted ${repo}`);
+-      
+-      // Prevent hitting secondary rate limits
+-      await sleep(2000); 
+-    } catch (error) {
+-      console.error(`  ❌ Failed to delete ${repo}:`, error.message);
+-    }
++  if (rawLines.length === 0) {
++    console.log("delete.txt is empty — nothing to do.");
++    return;
+   }
+-  
+-  console.log("\n🗑️ Cleanup complete.");
++
++  const entries = parseEntries(rawLines, defaultOwner, ownerRepoMode);
++
++  const result = await runSafely({
++    operationName: "DELETE",
++    entries,
++    allReposFile: "all_repos.txt",
++    defaultOwner,
++    allowFullMatch,
++    dryRun,
++    destructive: true,
++    confirmPhrase: (count) => `DELETE ${count} REPOS`,
++    execute: (entry) => octokit.rest.repos.delete({ owner: entry.owner, repo: entry.repo }),
++  });
++
++  if (result.aborted) process.exitCode = 1;
+ }
+ 
+-deleteRepos();
+\ No newline at end of file
++deleteRepos();
+diff --git a/5-change-archive-status.js b/5-change-archive-status.js
+index da9b584..f54b6af 100644
+--- a/5-change-archive-status.js
++++ b/5-change-archive-status.js
+@@ -1,53 +1,59 @@
+ const { Octokit } = require("@octokit/rest");
+-const fs = require("fs");
+ require("dotenv").config();
+ 
++const { loadRepoList, parseEntries, runSafely } = require("./safety-core");
++
+ const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+ 
+-async function changeArchiveStatus() {
+-  const owner = process.env.GITHUB_USER;
+-  const archiveRepos = true; // Set to false to unarchive
++async function changeArchiveStatusOne(entry, archiveRepos) {
++  const { owner, repo } = entry;
++  const { data: repoInfo } = await octokit.rest.repos.get({ owner, repo });
++
++  if (repoInfo.archived === archiveRepos) {
++    return; // already in the requested state
++  }
++
++  await octokit.rest.repos.update({ owner, repo, archived: archiveRepos });
++}
+ 
+-  if (!fs.existsSync("archive.txt")) {
++async function changeArchiveStatus() {
++  const args = process.argv.slice(2);
++  const dryRun = args.includes("--dry-run");
++  const allowFullMatch = args.includes("--force-full");
++  const ownerRepoMode = args.includes("--owner-repo");
++  // Set to false to unarchive — was previously a source-edited const;
++  // still the default, now also toggleable with --unarchive.
++  const archiveRepos = !args.includes("--unarchive");
++
++  const defaultOwner = process.env.GITHUB_USER;
++
++  const rawLines = loadRepoList("archive.txt");
++  if (!rawLines) {
+     console.log("❌ archive.txt not found. Please create it and add the repo names.");
+     return;
+   }
+-
+-  const reposToUpdate = fs.readFileSync("archive.txt", "utf-8")
+-    .split("\n")
+-    .map(name => name.trim())
+-    .filter(name => name.length > 0);
+-
+-  console.log(`Found ${reposToUpdate.length} repositories to ${archiveRepos ? "archive" : "unarchive"}.`);
+-
+-  for (const repo of reposToUpdate) {
+-    try {
+-      console.log(`\nProcessing: ${repo}...`);
+-
+-      const { data: repoInfo } = await octokit.rest.repos.get({
+-        owner: owner,
+-        repo: repo
+-      });
+-
+-      if (repoInfo.archived === archiveRepos) {
+-        console.log(`  - Repository is already ${archiveRepos ? "archived" : "unarchived"}. Skipping.`);
+-        continue;
+-      }
+-
+-      console.log(`  - 📦 ${archiveRepos ? "Archiving" : "Unarchiving"} repository...`);
+-      await octokit.rest.repos.update({
+-        owner: owner,
+-        repo: repo,
+-        archived: archiveRepos
+-      });
+-      await sleep(3000);
+-
+-      console.log(`  ✅ Successfully ${archiveRepos ? "archived" : "unarchived"} ${repo}`);
+-    } catch (error) {
+-      console.error(`  ❌ Failed on ${repo}:`, error.message);
+-    }
++  if (rawLines.length === 0) {
++    console.log("archive.txt is empty — nothing to do.");
++    return;
+   }
++
++  const entries = parseEntries(rawLines, defaultOwner, ownerRepoMode);
++
++  // Archiving is reversible, so this intentionally skips typed
++  // confirmation (destructive: false) — --dry-run and the full-wipe
++  // guard still apply.
++  const result = await runSafely({
++    operationName: archiveRepos ? "ARCHIVE" : "UNARCHIVE",
++    entries,
++    allReposFile: "all_repos.txt",
++    defaultOwner,
++    allowFullMatch,
++    dryRun,
++    destructive: false,
++    execute: (entry) => changeArchiveStatusOne(entry, archiveRepos),
++  });
++
++  if (result.aborted) process.exitCode = 1;
+ }
+ 
+-changeArchiveStatus();
+\ No newline at end of file
++changeArchiveStatus();
+diff --git a/README.MD b/README.MD
+index 26a9cc1..50248c1 100644
+--- a/README.MD
++++ b/README.MD
+@@ -9,7 +9,7 @@ A small set of Node.js scripts for bulk-managing repositories owned by a GitHub
+ - Archive or unarchive selected repositories.
+ 
+ > [!WARNING]
+-> The transfer, visibility, and deletion scripts modify live GitHub repositories. Repository deletion is permanent. Review every list file before running a script and test with a non-critical repository first.
++> The transfer, visibility, and deletion scripts modify live GitHub repositories. Repository deletion is permanent. Review every list file before running a script and test with a non-critical repository first. Every mutating script supports `--dry-run` — use it first.
+ 
+ ## Requirements
+ 
+@@ -46,14 +46,14 @@ repository-two
+ repository-three
+ ```
+ 
+-Use names only, without the owner or GitHub URL.
++Use names only, without the owner or GitHub URL — unless you pass `--owner-repo` to the script, in which case a line may be `owner/repository` instead (see [Safety Flags](#safety-flags)).
+ 
+ | File | Used by | Purpose |
+ | --- | --- | --- |
+ | `all_repos.txt` | `1-fetch-repos.js` | Generated inventory of repositories owned by the authenticated user |
+ | `move.txt` | `2-transfer-repos.js` | Repositories to unarchive if needed, make private, and transfer |
+ | `visibility.txt` | `3-change-visibility.js` | Repositories whose visibility should change while preserving archived status |
+-| `delete.txt` | `4-delete-repos.js` | Repositories to permanently delete after a cancellation window |
++| `delete.txt` | `4-delete-repos.js` | Repositories to permanently delete, after typed confirmation |
+ | `archive.txt` | `5-change-archive-status.js` | Repositories to archive or unarchive |
+ 
+ ## Usage
+@@ -73,10 +73,11 @@ This fetches every repository where the authenticated account is the owner and w
+ Add repository names to `move.txt`, verify `GITHUB_USER` and `TARGET_ORG`, then run:
+ 
+ ```bash
+-node 2-transfer-repos.js
++node 2-transfer-repos.js --dry-run   # see what would transfer, calls nothing
++node 2-transfer-repos.js             # real run — requires typed confirmation
+ ```
+ 
+-For each listed repository, the script checks its current state, unarchives it if necessary, makes it private if necessary, and then requests a transfer from `GITHUB_USER` to `TARGET_ORG`. Brief pauses allow GitHub to process state changes before the next operation. GitHub may require the target organization to accept the transfer, depending on its settings.
++For each listed repository, the script checks its current state, unarchives it if necessary, makes it private if necessary, and then requests a transfer from `GITHUB_USER` (or each entry's own owner, with `--owner-repo`) to `TARGET_ORG`. Brief pauses allow GitHub to process state changes before the next operation. GitHub may require the target organization to accept the transfer, depending on its settings.
+ 
+ Transferred repositories are not automatically archived again in the target organization.
+ 
+@@ -85,60 +86,61 @@ Transferred repositories are not automatically archived again in the target orga
+ Add repository names to `visibility.txt`, then run:
+ 
+ ```bash
+-node 3-change-visibility.js
++node 3-change-visibility.js             # makes repositories private (default)
++node 3-change-visibility.js --public    # makes repositories public instead
++node 3-change-visibility.js --dry-run   # preview either direction
+ ```
+ 
+-By default, the script makes repositories private. To make them public, change this line in `3-change-visibility.js` before running it:
+-
+-```js
+-const makePrivate = false;
+-```
+-
+-For each repository, the script checks whether it is archived. Archived repositories are temporarily unarchived, updated, and archived again. Brief pauses allow each state change to propagate.
++For each repository, the script checks whether it is archived. Archived repositories are temporarily unarchived, updated, and archived again. Brief pauses allow each state change to propagate. Requires typed confirmation before making any change, same as delete and transfer (see [Safety Flags](#safety-flags)).
+ 
+ Changing visibility can affect forks, GitHub Pages, Actions, security settings, and access. Review GitHub's visibility-change warnings before proceeding.
+ 
+ ### 4. Delete Repositories
+ 
+-Add repository names to `delete.txt`, confirm the owner selected by `targetOwner` in `4-delete-repos.js`, then run:
++Add repository names to `delete.txt`, then run:
+ 
+ ```bash
+-node 4-delete-repos.js
++node 4-delete-repos.js --dry-run   # see what would be deleted, calls nothing
++node 4-delete-repos.js             # real run — requires typed confirmation
+ ```
+ 
+-The script currently deletes from `GITHUB_USER`. To delete repositories from `TARGET_ORG`, update the owner assignment in `4-delete-repos.js`:
+-
+-```js
+-const targetOwner = process.env.TARGET_ORG;
+-```
++The script deletes from `GITHUB_USER` by default; use `--owner-repo` to target other owners per line instead (see [Safety Flags](#safety-flags)).
+ 
+ > [!CAUTION]
+-> There is no confirmation prompt or dry-run mode. After displaying the target owner and repository count, the script waits five seconds before deletion begins. Press Ctrl+C during this window to abort. Otherwise, every non-empty line in `delete.txt` is submitted to GitHub for permanent deletion.
++> Deletion is permanent. The script will not proceed without you typing the exact confirmation phrase it prints (which includes the repository count), and it refuses to run at all if `delete.txt` happens to exactly match your full repository inventory (`all_repos.txt`) unless you pass `--force-full` — the most common way to turn "delete a few repos" into "delete everything" by accident.
+ 
+-The script pauses briefly after each successful deletion to reduce the risk of hitting GitHub's secondary rate limits.
++The script pauses briefly after each successful deletion to reduce the risk of hitting GitHub's secondary rate limits, and retries a failed request automatically if the failure looks transient (rate limiting, timeouts) rather than permanent (e.g. repository not found).
+ 
+ ### 5. Archive or Unarchive Repositories
+ 
+ Add repository names to `archive.txt`, then run:
+ 
+ ```bash
+-node 5-change-archive-status.js
++node 5-change-archive-status.js             # archive
++node 5-change-archive-status.js --unarchive # unarchive
++node 5-change-archive-status.js --dry-run   # preview either direction
+ ```
+ 
+-By default, the script archives repositories. To unarchive them, change this line in `5-change-archive-status.js` before running it:
++The script checks each repository's current status and skips repositories already in the requested state. After each update, it pauses briefly to allow the change to propagate. Archiving is reversible, so — unlike delete/transfer/visibility — this script does not require typed confirmation; `--dry-run` and the full-inventory guard still apply.
+ 
+-```js
+-const archiveRepos = false;
+-```
++## Safety Flags
++
++All four mutating scripts (transfer, visibility, delete, archive) support the same flags:
++
++| Flag | Effect |
++| --- | --- |
++| `--dry-run` | Prints what each script *would* do, per repository, without calling any mutating GitHub API. |
++| `--force-full` | Required to proceed when the target list exactly matches every name in `all_repos.txt` — otherwise that run is refused, since it's far more often an accidental copy-paste than an intentional "act on everything" request. |
++| `--owner-repo` | Interprets a list-file line containing `/` as an explicit `owner/repo` pair instead of assuming the configured owner for every line. A bare line still defaults to the configured owner, so existing list files work unchanged. Useful for managing repositories across more than one account or org from a single list file. |
+ 
+-The script checks each repository's current status and skips repositories already in the requested state. After each update, it pauses briefly to allow the change to propagate.
++Delete, transfer, and visibility additionally require typed confirmation before making any change (e.g. `Type "DELETE 7 REPOS" to confirm...`) — the exact repository count is baked into the required phrase. Archive/unarchive does not, since it's fully reversible.
+ 
+ ## Behavior and Limitations
+ 
+ - Repositories are processed sequentially.
+ - A failure is logged and processing continues with the next repository.
+-- List entries are interpreted relative to the configured owner; `owner/repository` values are not supported.
+-- The scripts do not retry failed API requests or poll transfer status.
++- List entries default to the configured owner; pass `--owner-repo` to specify `owner/repository` per line instead.
++- Failed requests are retried with backoff when they look transient (HTTP 5xx, secondary rate limiting, connection resets); a definitive error such as 404 fails immediately instead of retrying. The scripts still do not poll transfer status.
+ - The transfer script may remove GitHub's archived status because archived repositories must be unarchived before transfer. It does not restore that status after transfer.
+ - The visibility script restores archived status only after a successful visibility update. An API failure after unarchiving may leave a repository unarchived.
+ - Archived repositories are read-only until they are unarchived.
+diff --git a/package.json b/package.json
+index 7a9ebc3..3559bed 100644
+--- a/package.json
++++ b/package.json
+@@ -3,7 +3,7 @@
+   "version": "1.0.0",
+   "main": "index.js",
+   "scripts": {
+-    "test": "echo \"Error: no test specified\" && exit 1"
++    "test": "node test-safety-core.js"
+   },
+   "keywords": [],
+   "author": "",
+diff --git a/safety-core.js b/safety-core.js
+new file mode 100644
+index 0000000..d0ac05a
+--- /dev/null
++++ b/safety-core.js
+@@ -0,0 +1,227 @@
++"use strict";
++
++const fs = require("fs");
++const readline = require("readline");
++
++const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
++
++/**
++ * Reads a plain-text repo-list file the same way the original
++ * github-repo-manager scripts do: one name per line, blanks stripped.
++ * Returns raw lines — use parseEntries() to resolve them against an
++ * owner.
++ */
++function loadRepoList(filePath) {
++  if (!fs.existsSync(filePath)) return null;
++  return fs
++    .readFileSync(filePath, "utf-8")
++    .split("\n")
++    .map((name) => name.trim())
++    .filter((name) => name.length > 0);
++}
++
++/**
++ * Resolves raw list-file lines into {owner, repo, display} entries.
++ *
++ * The original scripts hardcode a single owner (GITHUB_USER or
++ * TARGET_ORG) for every line in every list file — the README names
++ * this explicitly as unsupported ("owner/repository values are not
++ * supported"). With ownerRepoMode on, a line containing a "/" is
++ * parsed as an explicit owner/repo pair (for managing repos across
++ * more than one account/org from one list file); a bare line still
++ * falls back to defaultOwner either way, so existing single-owner list
++ * files keep working unchanged.
++ */
++function parseEntries(rawLines, defaultOwner, ownerRepoMode) {
++  return rawLines.map((line) => {
++    if (ownerRepoMode && line.includes("/")) {
++      const slash = line.indexOf("/");
++      const owner = line.slice(0, slash).trim();
++      const repo = line.slice(slash + 1).trim();
++      if (owner && repo) {
++        return { owner, repo, display: `${owner}/${repo}` };
++      }
++    }
++    return {
++      owner: defaultOwner,
++      repo: line,
++      display: ownerRepoMode ? `${defaultOwner}/${line}` : line,
++    };
++  });
++}
++
++/**
++ * Guards against the failure mode the real repo's README doesn't name:
++ * a target list accidentally containing every name that was ever
++ * written to all_repos.txt — the natural result of a copy-paste
++ * workflow across two unrelated files. If the target entries exactly
++ * match the full inventory, that is far more likely to be a mistake
++ * than an intentional "act on everything" request, so it's refused
++ * unless the caller explicitly opts in with allowFullMatch.
++ *
++ * all_repos.txt (written by the original 1-fetch-repos.js) only ever
++ * lists one owner's repos, so its entries are always normalized against
++ * defaultOwner here — a cross-owner target list can only match it if
++ * every entry actually resolves to defaultOwner.
++ */
++function checkFullWipeGuard(entries, allReposFile, defaultOwner, allowFullMatch) {
++  const allRepos = loadRepoList(allReposFile);
++  if (!allRepos || allRepos.length === 0) return { blocked: false };
++
++  const allSet = new Set(allRepos.map((r) => `${defaultOwner}/${r}`.toLowerCase()));
++  const targetSet = new Set(entries.map((e) => `${e.owner}/${e.repo}`.toLowerCase()));
++
++  const isFullMatch =
++    targetSet.size === allSet.size && [...targetSet].every((key) => allSet.has(key));
++
++  if (isFullMatch && !allowFullMatch) {
++    return {
++      blocked: true,
++      reason:
++        `The target list exactly matches all ${allRepos.length} repositories ` +
++        `owned by ${defaultOwner}. This is refused by default because it is the ` +
++        `signature of an accidental full-inventory copy-paste, not an ` +
++        `intentional request to act on every repository you own. Re-run ` +
++        `with --force-full if that really is what you want.`,
++    };
++  }
++  return { blocked: false };
++}
++
++/**
++ * Prompts on stdin for an exact confirmation phrase. Injectable for
++ * tests via the `prompt` option — production code never has to touch
++ * this directly.
++ */
++function realPrompt(question) {
++  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
++  return new Promise((resolve) => {
++    rl.question(question, (answer) => {
++      rl.close();
++      resolve(answer);
++    });
++  });
++}
++
++const RETRYABLE_PATTERN = /secondary rate limit|rate limit exceeded|ETIMEDOUT|ECONNRESET|socket hang up/i;
++
++function isRetryable(error) {
++  const status = error && error.status;
++  if (typeof status === "number" && status >= 500) return true;
++  const message = (error && error.message) || "";
++  return RETRYABLE_PATTERN.test(message);
++}
++
++/**
++ * Calls fn(), retrying with exponential backoff only on errors that
++ * look transient (5xx, secondary rate limit, network resets). A 404
++ * or other definitive 4xx fails immediately instead of burning retries
++ * on something that will never succeed.
++ */
++async function withRetry(fn, { attempts = 3, baseDelayMs = 500, sleepFn = sleep } = {}) {
++  let lastError;
++  for (let attempt = 1; attempt <= attempts; attempt++) {
++    try {
++      return await fn();
++    } catch (error) {
++      lastError = error;
++      if (!isRetryable(error) || attempt === attempts) throw error;
++      await sleepFn(baseDelayMs * 2 ** (attempt - 1));
++    }
++  }
++  throw lastError;
++}
++
++/**
++ * The shared safety envelope every *-safe.js entry point runs its
++ * per-repo operation through: full-wipe guard, dry-run, typed
++ * confirmation for destructive operations, retry-with-backoff per
++ * repo, continue-on-error across the list (same as the original
++ * scripts), and a real summary at the end (the originals print nothing
++ * comparable).
++ *
++ * @param {object} opts
++ * @param {string} opts.operationName - e.g. "DELETE", "TRANSFER"
++ * @param {{owner:string, repo:string, display:string}[]} opts.entries - target entries
++ * @param {string} [opts.allReposFile] - inventory file for the full-wipe guard
++ * @param {string} [opts.defaultOwner] - owner all_repos.txt's entries belong to
++ * @param {boolean} [opts.allowFullMatch] - bypass the full-wipe guard
++ * @param {boolean} [opts.dryRun] - list intended actions without calling execute
++ * @param {boolean} [opts.destructive] - require typed confirmation before proceeding
++ * @param {function(number): string} [opts.confirmPhrase] - given entries.length, the exact phrase to require
++ * @param {function({owner,repo,display}): Promise<any>} opts.execute - performs the real operation for one entry
++ * @param {function(string): Promise<string>} [opts.prompt] - injectable for tests
++ * @param {function} [opts.sleepFn] - injectable for tests
++ */
++async function runSafely(opts) {
++  const {
++    operationName,
++    entries,
++    allReposFile,
++    defaultOwner,
++    allowFullMatch = false,
++    dryRun = false,
++    destructive = false,
++    confirmPhrase,
++    execute,
++    prompt = realPrompt,
++    sleepFn = sleep,
++    log = console.log,
++  } = opts;
++
++  if (allReposFile) {
++    const guard = checkFullWipeGuard(entries, allReposFile, defaultOwner, allowFullMatch);
++    if (guard.blocked) {
++      log(`❌ ${guard.reason}`);
++      return { aborted: "full-wipe-guard", succeeded: [], failed: [], skipped: [] };
++    }
++  }
++
++  if (dryRun) {
++    entries.forEach((entry) => log(`[DRY RUN] Would ${operationName} ${entry.display}`));
++    return { aborted: null, dryRun: true, succeeded: [], failed: [], skipped: [...entries] };
++  }
++
++  if (destructive) {
++    const phrase = confirmPhrase ? confirmPhrase(entries.length) : `${operationName} ${entries.length}`;
++    const answer = await prompt(
++      `⚠️  Type "${phrase}" to confirm ${operationName} on ${entries.length} repositories: `
++    );
++    if (answer.trim() !== phrase) {
++      log("❌ Confirmation did not match. Aborting without making any changes.");
++      return { aborted: "confirmation-mismatch", succeeded: [], failed: [], skipped: [] };
++    }
++  }
++
++  const succeeded = [];
++  const failed = [];
++
++  for (const entry of entries) {
++    try {
++      log(`Processing: ${entry.display}...`);
++      await withRetry(() => execute(entry), { sleepFn });
++      log(`  ✅ ${operationName} succeeded for ${entry.display}`);
++      succeeded.push(entry.display);
++    } catch (error) {
++      log(`  ❌ ${operationName} failed for ${entry.display}: ${error.message}`);
++      failed.push({ repo: entry.display, error: error.message });
++    }
++  }
++
++  log(
++    `\n${operationName} complete: ${succeeded.length} succeeded, ${failed.length} failed, ` +
++      `out of ${entries.length} total.`
++  );
++
++  return { aborted: null, succeeded, failed, skipped: [] };
++}
++
++module.exports = {
++  loadRepoList,
++  parseEntries,
++  checkFullWipeGuard,
++  withRetry,
++  isRetryable,
++  runSafely,
++  realPrompt,
++};
+diff --git a/test-safety-core.js b/test-safety-core.js
+new file mode 100644
+index 0000000..a1fbe83
+--- /dev/null
++++ b/test-safety-core.js
+@@ -0,0 +1,269 @@
++"use strict";
++
++const fs = require("fs");
++const path = require("path");
++const os = require("os");
++
++const { parseEntries, checkFullWipeGuard, withRetry, runSafely } = require("./safety-core");
++
++let passed = 0;
++let failed = 0;
++
++function assert(cond, msg) {
++  if (cond) {
++    passed++;
++    console.log(`OK: ${msg}`);
++  } else {
++    failed++;
++    console.error(`FAIL: ${msg}`);
++  }
++}
++
++async function assertRejects(fn, msg) {
++  try {
++    await fn();
++    failed++;
++    console.error(`FAIL: ${msg} (expected rejection, got none)`);
++  } catch (e) {
++    passed++;
++    console.log(`OK: ${msg}`);
++  }
++}
++
++// --- test fixtures -----------------------------------------------------
++
++const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "repo-manager-safety-test-"));
++const allReposFile = path.join(tmpDir, "all_repos.txt");
++fs.writeFileSync(allReposFile, ["alpha", "beta", "gamma"].join("\n"));
++
++const noopSleep = () => Promise.resolve();
++const fakeLog = (sink) => (msg) => sink.push(msg);
++
++function entries(names, defaultOwner = "me") {
++  return parseEntries(names, defaultOwner, false);
++}
++
++// --- parseEntries ----------------------------------------------------------
++
++(function testParseEntriesBareMode() {
++  const result = parseEntries(["alpha", "beta"], "me", false);
++  assert(
++    result.every((e) => e.owner === "me" && e.display === e.repo),
++    "bare mode: every entry defaults to the given owner, display is the bare repo name"
++  );
++})();
++
++(function testParseEntriesOwnerRepoMode() {
++  const result = parseEntries(["me/alpha", "someorg/beta", "gamma"], "me", true);
++  assert(result[0].owner === "me" && result[0].repo === "alpha" && result[0].display === "me/alpha", "owner-repo mode parses an explicit owner/repo line");
++  assert(result[1].owner === "someorg" && result[1].repo === "beta", "owner-repo mode parses a different, non-default owner");
++  assert(result[2].owner === "me" && result[2].repo === "gamma" && result[2].display === "me/gamma", "owner-repo mode still accepts a bare line, defaulting the owner and showing it in display");
++})();
++
++// --- checkFullWipeGuard ------------------------------------------------
++
++(function testFullWipeGuard() {
++  const fullMatch = checkFullWipeGuard(entries(["gamma", "alpha", "beta"]), allReposFile, "me", false);
++  assert(fullMatch.blocked === true, "full-wipe guard blocks when target entries exactly match all_repos.txt (order-independent)");
++
++  const fullMatchAllowed = checkFullWipeGuard(entries(["gamma", "alpha", "beta"]), allReposFile, "me", true);
++  assert(fullMatchAllowed.blocked === false, "full-wipe guard allows the same list through with allowFullMatch");
++
++  const partial = checkFullWipeGuard(entries(["alpha"]), allReposFile, "me", false);
++  assert(partial.blocked === false, "full-wipe guard does not block a genuine subset");
++
++  const missingInventory = checkFullWipeGuard(entries(["alpha"]), path.join(tmpDir, "does-not-exist.txt"), "me", false);
++  assert(missingInventory.blocked === false, "full-wipe guard no-ops gracefully when no inventory file exists");
++})();
++
++(function testFullWipeGuardOwnerRepoMode() {
++  // All three entries resolve to the default owner's full inventory,
++  // just spelled out as owner/repo — the guard must still catch this.
++  const sameOwnerSpelledOut = parseEntries(["me/alpha", "me/beta", "me/gamma"], "me", true);
++  const blocked = checkFullWipeGuard(sameOwnerSpelledOut, allReposFile, "me", false);
++  assert(blocked.blocked === true, "owner-repo mode: explicit 'defaultOwner/name' entries matching the full inventory still trip the guard");
++
++  // A cross-owner list can never equal a single-owner inventory file.
++  const crossOwner = parseEntries(["me/alpha", "someorg/beta", "me/gamma"], "me", true);
++  const notBlocked = checkFullWipeGuard(crossOwner, allReposFile, "me", false);
++  assert(notBlocked.blocked === false, "owner-repo mode: a cross-owner target list is never mistaken for a single-owner full wipe");
++})();
++
++// --- withRetry -----------------------------------------------------------
++
++(async function testRetry() {
++  let calls = 0;
++  const result = await withRetry(
++    async () => {
++      calls++;
++      if (calls < 3) throw new Error("secondary rate limit hit, please retry");
++      return "ok";
++    },
++    { attempts: 5, baseDelayMs: 1, sleepFn: noopSleep }
++  );
++  assert(result === "ok" && calls === 3, `retryable error retries until success (got ${calls} calls, result=${result})`);
++
++  let non404calls = 0;
++  await assertRejects(
++    () =>
++      withRetry(
++        async () => {
++          non404calls++;
++          const err = new Error("Not Found");
++          err.status = 404;
++          throw err;
++        },
++        { attempts: 5, baseDelayMs: 1, sleepFn: noopSleep }
++      ),
++    "non-retryable error (404) rejects"
++  );
++  assert(non404calls === 1, `non-retryable error fails fast without burning retries (got ${non404calls} calls)`);
++
++  let exhausted = 0;
++  await assertRejects(
++    () =>
++      withRetry(
++        async () => {
++          exhausted++;
++          throw new Error("ETIMEDOUT");
++        },
++        { attempts: 3, baseDelayMs: 1, sleepFn: noopSleep }
++      ),
++    "retryable error still rejects once attempts are exhausted"
++  );
++  assert(exhausted === 3, `exhausts exactly the configured attempt count (got ${exhausted})`);
++})();
++
++// --- runSafely: dry-run ---------------------------------------------------
++
++(async function testDryRun() {
++  const log = [];
++  let executeCalls = 0;
++  const result = await runSafely({
++    operationName: "DELETE",
++    entries: entries(["alpha"]),
++    allReposFile,
++    defaultOwner: "me",
++    dryRun: true,
++    destructive: true,
++    execute: async () => {
++      executeCalls++;
++    },
++    log: fakeLog(log),
++  });
++  assert(executeCalls === 0, "dry-run never calls execute");
++  assert(result.dryRun === true && result.skipped.length === 1, "dry-run reports the entry as skipped");
++  assert(log.some((l) => l.includes("[DRY RUN]")), "dry-run logs its intended action");
++})();
++
++// --- runSafely: confirmation ----------------------------------------------
++
++(async function testConfirmationMismatch() {
++  const log = [];
++  let executeCalls = 0;
++  const result = await runSafely({
++    operationName: "DELETE",
++    entries: entries(["alpha"]),
++    allReposFile,
++    defaultOwner: "me",
++    destructive: true,
++    confirmPhrase: () => "DELETE 1 REPOS",
++    prompt: async () => "nope",
++    execute: async () => {
++      executeCalls++;
++    },
++    log: fakeLog(log),
++  });
++  assert(executeCalls === 0, "a wrong confirmation phrase never calls execute");
++  assert(result.aborted === "confirmation-mismatch", "a wrong confirmation phrase reports the correct abort reason");
++})();
++
++(async function testConfirmationMatch() {
++  const log = [];
++  let executeCalls = 0;
++  const result = await runSafely({
++    operationName: "DELETE",
++    entries: entries(["alpha"]),
++    allReposFile,
++    defaultOwner: "me",
++    destructive: true,
++    confirmPhrase: () => "DELETE 1 REPOS",
++    prompt: async () => "DELETE 1 REPOS",
++    execute: async () => {
++      executeCalls++;
++    },
++    log: fakeLog(log),
++  });
++  assert(executeCalls === 1, "the exact confirmation phrase lets execute run");
++  assert(result.succeeded.length === 1, "a matched confirmation reports success");
++})();
++
++// --- runSafely: full-wipe guard wired end-to-end ---------------------------
++
++(async function testFullWipeGuardEndToEnd() {
++  const log = [];
++  let executeCalls = 0;
++  const result = await runSafely({
++    operationName: "DELETE",
++    entries: entries(["alpha", "beta", "gamma"]),
++    allReposFile,
++    defaultOwner: "me",
++    destructive: true,
++    prompt: async () => "whatever", // must never even be reached
++    execute: async () => {
++      executeCalls++;
++    },
++    log: fakeLog(log),
++  });
++  assert(executeCalls === 0, "full-wipe guard blocks before confirmation is ever prompted");
++  assert(result.aborted === "full-wipe-guard", "full-wipe guard reports the correct abort reason");
++})();
++
++// --- runSafely: continue-on-error + summary ---------------------------------
++
++(async function testContinueOnErrorAndSummary() {
++  const log = [];
++  const result = await runSafely({
++    operationName: "ARCHIVE",
++    entries: entries(["alpha", "beta", "gamma"]),
++    destructive: false,
++    execute: async (entry) => {
++      if (entry.repo === "beta") throw new Error("boom");
++      return "ok";
++    },
++    log: fakeLog(log),
++  });
++  assert(result.succeeded.length === 2 && result.failed.length === 1, `one failure doesn't stop the rest (succeeded=${result.succeeded.length}, failed=${result.failed.length})`);
++  assert(result.failed[0].repo === "beta", "the failed entry names the right repo");
++  assert(log.some((l) => l.includes("2 succeeded, 1 failed")), "a real summary line is printed at the end");
++})();
++
++// --- runSafely: owner-repo mode wired end-to-end ----------------------------
++
++(async function testOwnerRepoModeEndToEnd() {
++  const log = [];
++  const calledWith = [];
++  const mixedEntries = parseEntries(["alpha", "someorg/shared-tool"], "me", true);
++  const result = await runSafely({
++    operationName: "ARCHIVE",
++    entries: mixedEntries,
++    allReposFile,
++    defaultOwner: "me",
++    destructive: false,
++    execute: async (entry) => {
++      calledWith.push(`${entry.owner}/${entry.repo}`);
++    },
++    log: fakeLog(log),
++  });
++  assert(result.succeeded.length === 2, "owner-repo mode: both a default-owner and an explicit-owner entry succeed");
++  assert(
++    calledWith.includes("me/alpha") && calledWith.includes("someorg/shared-tool"),
++    `execute receives the resolved owner for each entry (got ${JSON.stringify(calledWith)})`
++  );
++  assert(log.some((l) => l.includes("someorg/shared-tool")), "log lines use the owner/repo display form for a cross-owner entry");
++})();
++
++setTimeout(() => {
++  console.log(`\n${passed} passed, ${failed} failed`);
++  if (failed > 0) process.exit(1);
++}, 100);
+-- 
+2.43.0
+

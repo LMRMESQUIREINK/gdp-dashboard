@@ -14,6 +14,18 @@
 #  prop_firm_pass_probability) as a separate tool category — TPT
 #  funded-account sizing questions, independent of the EODHD/FMP
 #  symbol-trading flow above. See notes/prop-firm-sizing-analysis.md.
+#  PATCHED (4): wired in /builds/agent-memory-layer/'s real
+#  MemoryStore/SQLiteMemoryStore as a third tool category —
+#  remember_preference / recall_preferences / supersede_preference —
+#  standing trading preferences that persist across sessions
+#  (jarvis_memory.sqlite3), independent of both the symbol-trading
+#  and prop-firm flows above. See jarvis_memory.py.
+#  PATCHED (5): wired in /builds/okf-navigator/ as a fourth tool
+#  category — check_module_impact — over a real OKF-formatted
+#  knowledge bundle (okf_knowledge/) describing THIS BUILD's own
+#  actual module dependency graph, for a developer asking "what
+#  depends on X" about this codebase, not a trading question. See
+#  jarvis_okf.py and /notes/okf-rag-agentic-bundle-analysis.md.
 #  Data Layer: EODHD+FMP (via data_pipeline.py)
 #  Generated: 2026-07-18 | Patched: 2026-08-03 | Patched again: 2026-08-04
 #  | Patched again: 2026-09-21 | Pro fixes applied: see README.md
@@ -80,6 +92,48 @@ WHAT CHANGED IN THIS BUILD (on top of the patch above)
       prop_firm_pass_probability (Monte Carlo eval pass probability).
       These never touch EODHD/FMP or the signal/risk pipeline — a
       fully separate tool category for TPT funded-account questions.
+
+ALTERNATE INTERFACE — the same prop-firm math, over MCP instead of here
+    The three prop_firm_* tools above are Claude-tool-use wrappers around
+    /builds/prop-firm-sizing/'s functions, reached by asking this file's
+    ask_jarvis() a natural-language question. /builds/prop-firm-mcp-server/
+    wraps the SAME underlying functions a different way: as a real MCP
+    server (official `mcp` SDK), for any MCP-speaking host (Claude Desktop,
+    another agent, etc.) rather than only this script's own Anthropic-
+    client loop. It's a fifth tool-surface on this project's prop-firm
+    code, not a second implementation — same classes, same numbers,
+    verified to match in that build's own test suite. Reach for it when
+    the caller is an MCP host instead of a Python process importing this
+    file directly; reach for prop_firm_* here when you're already inside
+    ask_jarvis()'s tool-dispatch loop. See that build's README for the
+    stdio vs. Streamable-HTTP transport choice and what server.py's
+    --transport/--redis-url flags do.
+
+SESSION MEMORY — remember_preference / recall_preferences / supersede_preference
+    These three tools are Claude-tool-use wrappers around jarvis_memory.py,
+    which wraps /builds/agent-memory-layer/'s MemoryStore and
+    SQLiteMemoryStore — copied in unmodified (memory_layer.py,
+    persistence.py), same convention the three prop_firm_* files already
+    follow in this directory. agent-memory-layer's own test suite (57
+    assertions across test_memory_layer.py and test_persistence.py) is
+    what proves the underlying lifecycle/supersession/persistence
+    mechanics; this build's own test_jarvis_memory.py proves only that
+    THIS wiring calls those real functions correctly, not a re-test of
+    logic already covered there. Standing preferences persist in
+    jarvis_memory.sqlite3 across process restarts — the same real,
+    cross-process-tested durability agent-memory-layer's own round-3
+    next-move build gave it.
+
+CODEBASE-IMPACT TOOL — check_module_impact
+    A fourth, independent tool category, wrapping /builds/okf-navigator/'s
+    real trust-tier/staleness/link-resolution rules over okf_knowledge/, an
+    OKF-formatted knowledge bundle describing THIS BUILD's own actual module
+    dependency graph (every link written after directly grepping this
+    repo's real import statements — see jarvis_okf.py's own docstring and
+    /notes/okf-rag-agentic-bundle-analysis.md Addendum 2). For a developer
+    asking "what depends on risk_manager.py" about this codebase, never a
+    trading question. okf_navigator.py is copied in unmodified, same
+    convention memory_layer.py/persistence.py already follow here.
 """
 
 import os
@@ -97,6 +151,9 @@ import pandas as pd
 from prop_firm_sizing import PropFirmAccount, SessionState, TPT_TIERS
 from prop_firm_position_sizing import AccountRules, evaluate_size
 from prop_pass_simulator import PassSimulator
+
+import jarvis_memory
+import jarvis_okf
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_KEY"))
 MODEL = os.getenv("JARVIS_MODEL", "claude-opus-5")
@@ -259,6 +316,82 @@ TOOLS = [
                          "days_remaining", "avg_daily_pnl", "daily_pnl_std"],
         },
     },
+    {
+        "name": "remember_preference",
+        "description": (
+            "Store a NEW standing trading preference for this trader, "
+            "persisted across sessions (e.g. 'always size conservatively "
+            "for NQ', 'prefers EMA crossover signals over RSI'). Always "
+            "creates a new record — never call this to update an existing "
+            "preference; call supersede_preference with its memory_id "
+            "instead once recall_preferences has shown you what's there."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "content": {"type": "string", "description": "The preference, in the trader's own words"},
+                "importance": {"type": "number", "default": 5.0,
+                                "description": "0-10 scale; how much this should weigh in future answers"},
+            },
+            "required": ["content"],
+        },
+    },
+    {
+        "name": "recall_preferences",
+        "description": (
+            "List every standing preference currently on file for this "
+            "trader, each with its memory_id. Call this before acting on "
+            "a per-symbol or prop-firm question whenever a standing "
+            "preference might apply, and before calling remember_preference "
+            "— so you can tell whether what the trader just said is new or "
+            "should instead supersede something already recorded."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "supersede_preference",
+        "description": (
+            "Replace one SPECIFIC existing preference (named by the "
+            "memory_id recall_preferences returned) with a new one — use "
+            "this when the trader's new statement clearly contradicts or "
+            "updates a prior preference you can see in recall_preferences' "
+            "output. The old preference is marked superseded, never "
+            "deleted or silently merged. Never guess a memory_id you "
+            "haven't actually seen from a recall_preferences call."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "old_memory_id": {"type": "string", "description": "memory_id from a prior recall_preferences call"},
+                "new_content": {"type": "string"},
+                "importance": {"type": "number", "default": 5.0},
+            },
+            "required": ["old_memory_id", "new_content"],
+        },
+    },
+    {
+        "name": "check_module_impact",
+        "description": (
+            "For a question about CHANGING THIS CODEBASE ITSELF (not a "
+            "trading question) -- 'what depends on risk_manager.py', "
+            "'what would break if I change signal_generator.py' -- look "
+            "up this build's own real, documented module dependency "
+            "graph (an OKF-formatted knowledge bundle, not trading data) "
+            "and report the real impact radius plus how fresh/trusted "
+            "that documentation is. Never use this for a symbol, "
+            "prop-firm, or preference question."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "module": {"type": "string",
+                            "description": "A module filename, e.g. 'risk_manager.py' or 'signal_generator.py'"},
+                "max_hops": {"type": "integer", "default": 2,
+                              "description": "How many dependency hops out to report"},
+            },
+            "required": ["module"],
+        },
+    },
 ]
 
 
@@ -397,6 +530,28 @@ def _run_tool(name: str, tool_input: dict) -> dict:
             "simulations": sim.simulations,
         }
 
+    if name == "remember_preference":
+        return jarvis_memory.remember_preference(
+            content=tool_input["content"],
+            importance=tool_input.get("importance", 5.0),
+        )
+
+    if name == "recall_preferences":
+        return {"preferences": jarvis_memory.recall_preferences()}
+
+    if name == "supersede_preference":
+        return jarvis_memory.supersede_preference(
+            old_memory_id=tool_input["old_memory_id"],
+            new_content=tool_input["new_content"],
+            importance=tool_input.get("importance", 5.0),
+        )
+
+    if name == "check_module_impact":
+        return jarvis_okf.check_module_impact(
+            module=tool_input["module"],
+            max_hops=tool_input.get("max_hops", 2),
+        )
+
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -446,6 +601,35 @@ these, and don't run prop-firm tools for an ordinary symbol question.
    yourself, and say so plainly if the user hasn't given them.
 3. These tools never fetch live market data and are independent of any
    EODHD/FMP symbol lookup — they only compute from the numbers given.
+
+SESSION MEMORY TOOLS (remember_preference, recall_preferences,
+supersede_preference) are a THIRD, separate flow — call recall_preferences
+once at the start of any symbol or prop-firm question to check whether a
+standing preference applies (e.g. a recalled "always size conservatively
+for NQ" should lower risk_pct on an NQ check even if the user doesn't
+repeat it this time).
+1. When the trader states something that sounds like a standing
+   preference (not a one-off instruction for this message only), first
+   call recall_preferences to see if something similar is already on
+   file.
+2. If nothing similar exists, call remember_preference with the new
+   content.
+3. If an existing preference is what the trader is actually updating or
+   contradicting, call supersede_preference naming its exact memory_id
+   from recall_preferences' output — never guess a memory_id, and never
+   silently ignore a contradiction between what's on file and what the
+   trader just said.
+4. Don't call remember_preference for routine one-off requests ("check
+   AAPL for me") — only for things stated as standing/general.
+
+CODEBASE-IMPACT TOOL (check_module_impact) is a FOURTH, separate flow —
+this is for a developer asking about CHANGING THIS PROJECT'S OWN CODE
+(e.g. "what depends on risk_manager.py," "what would I need to re-check
+if I touch signal_generator.py"), never for a trading question. Don't
+run the symbol-trading/prop-firm/memory tools for this, and don't run
+this for a trading question. Report the trust tier and freshness it
+returns plainly — "machine-confirmed" means this session's own grep
+verified it, not a human, and say so if asked.
 """
 
 

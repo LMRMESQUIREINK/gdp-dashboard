@@ -1,0 +1,5 @@
+{
+  "name": "blast-radius",
+  "version": "0.1.0",
+  "description": "Confirms before a destructive Bash command (rm -rf, force-push, git reset --hard, git clean -f, git branch -D) actually runs."
+}

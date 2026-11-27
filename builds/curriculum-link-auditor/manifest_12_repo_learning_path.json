@@ -1,0 +1,26 @@
+{
+  "source": "\"12 Open-Source GitHub Repositories to Learn AI and LLM Engineering From Scratch\" (vijayasekhardeepak.com newsletter)",
+  "claims": [
+    {
+      "repo": "mml-book/mml-book.github.io",
+      "claimed_structure_keywords": ["Mathematics For Machine Learning"]
+    },
+    {
+      "repo": "microsoft/AI-For-Beginners",
+      "claimed_lesson_count": 24
+    },
+    {
+      "repo": "microsoft/generative-ai-for-beginners",
+      "claimed_lesson_count": 21
+    },
+    {
+      "repo": "mlabonne/llm-course",
+      "claimed_author": "Maarten Grootendorst",
+      "claimed_structure_keywords": ["LLM Fundamentals", "The LLM Scientist", "The LLM Engineer"]
+    },
+    {
+      "repo": "huggingface/ml-intern",
+      "claimed_archived": true
+    }
+  ]
+}

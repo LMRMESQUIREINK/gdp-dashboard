@@ -1,0 +1,7 @@
+Multi-Agent Workflow Architecture (From LangChain — OpenSource) https://github.com/langchain-ai/langgraph-101
+Catalog Information Sub-agent (From LangChain — OpenSource) https://github.com/langchain-ai/langgraph-101
+Invoice Information Sub-agent (From LangChain — OpenSource) https://github.com/langchain-ai/langgraph-101
+Supervisor (From LangChain — OpenSource) https://github.com/langchain-ai/langgraph-101
+Human in the loop (From LangChain — OpenSource) https://github.com/langchain-ai/langgraph-101
+Long term memory (From LangChain — OpenSource) https://github.com/langchain-ai/langgraph-101
+Evaluation of AI Agent (From LangChain — OpenSource) https://github.com/langchain-ai/langgraph-101

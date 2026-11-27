@@ -1,0 +1,44 @@
+{
+ "verdicts": {
+  "H1": {
+   "v": "held",
+   "provisional": true
+  },
+  "H2": {
+   "v": "held",
+   "provisional": true
+  },
+  "H3": {
+   "v": "held",
+   "provisional": true
+  },
+  "H4": {
+   "v": "held in part",
+   "provisional": true
+  },
+  "H5": {
+   "v": "held",
+   "provisional": true
+  },
+  "H6": {
+   "v": "held",
+   "provisional": true
+  },
+  "H7": {
+   "v": "held",
+   "provisional": true
+  },
+  "H8": {
+   "v": "held",
+   "provisional": true
+  }
+ },
+ "held": {
+  "v": 7,
+  "provisional": true
+ },
+ "held_in_part": {
+  "v": 1,
+  "provisional": true
+ }
+}

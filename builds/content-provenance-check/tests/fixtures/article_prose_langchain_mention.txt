@@ -1,0 +1,1 @@
+You can obtain your LangSmith API key from their official documentation to trace our RAG product throughout this blog. For the LLM, we will be using the OpenAI API but as you may already know, LangChain supports a variety of LLM providers as well.

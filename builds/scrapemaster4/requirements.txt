@@ -1,0 +1,16 @@
+streamlit==1.67.0
+requests==2.34.2
+beautifulsoup4==4.15.0
+pandas==3.1.1
+openai==3.52.0
+python-dotenv==1.2.4
+pydantic==2.14.3
+html2text==2025.4.15
+tiktoken==0.14.0
+readability-lxml==0.9
+streamlit-tags==1.2.8
+openpyxl==3.1.5
+groq==1.7.0
+google-genai==3.4.0
+selenium==4.53.0
+webdriver-manager==4.1.2

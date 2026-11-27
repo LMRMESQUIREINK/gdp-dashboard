@@ -1,0 +1,213 @@
+20 Agentic Engineering Concepts Every AI Engineer Should Know
+ 
+
+The first thing I shipped and called an “agent” was really an expensive if-else tree with a language model bolted on. It would call a tool, get an error, and loop forever. Fixing it meant finally learning what all the terms people throw around actually mean: not the blog-post version, but the version that explains why things break.
+
+    Not a medium member? Read Here!
+
+These are the 20 concepts I wish someone had handed me on day one, each with a simple picture of how it works, grouped by the question they answer.
+Press enter or click to view image in full size
+Group 1:- Reasoning patterns: how an agent decides what to do next
+1. ReAct (Reason + Act)
+Press enter or click to view image in full size
+
+The agent alternates between a thought (written reasoning about what to do), an action (a tool call) and an observation (the tool’s result) and repeats until it can answer. It adapts as it goes and you can read the thought trace to see exactly where it went wrong. The catch is short-term thinking: it plans one step at a time, so on tasks with dependencies it can wander down inefficient paths.
+2. Plan-then-Execute
+Press enter or click to view image in full size
+
+The agent writes the whole multi-step plan first, then hands each step to an executor, often a smaller, cheaper model. On complex workflows it’s frequently faster and cheaper than ReAct, which is why it’s popular in production. The trade-off is rigidity: if the plan is wrong and nothing triggers a re-plan, the executor faithfully follows a bad map.
+3. Reflexion
+Press enter or click to view image in full size
+
+The agent critiques its own previous answer, stores what failed and tries again with that lesson in context. It costs extra calls, so use it where correctness matters more than latency: code generation, research summaries, structured data extraction.
+
+    Sakshi Jaiswal: [LinkedIn]
+    I’m sharing my daily learning in form of Notes and Video: [Instagram], Lets learn together!
+
+4. The agentic loop
+Press enter or click to view image in full size
+
+All three patterns are versions of one structure: act, sense the result, update state, decide again. That cycle is what separates an agent from a single LLM call. Keep it in your head as the atomic unit of agentic behaviour.
+Group 2:- Memory and context: what the agent knows
+5. Short-term memory (session state)
+Press enter or click to view image in full size
+
+Everything in the current context window, plus whatever keeps a workflow’s steps consistent, like LangGraph’s checkpointer or Redis. It’s fast and simple and it disappears when the session ends.
+6. Long-term memory
+Press enter or click to view image in full size
+
+Persistent storage the agent can query across sessions, in two flavours: vector stores for semantic recall (“find things like this”) and knowledge graphs for exact facts over time (“what did the user set on Tuesday?”). A common pattern is a hybrid of both, plus a decay strategy so memory doesn’t grow forever.
+7. Context engineering
+Press enter or click to view image in full size
+
+Deciding what goes into the prompt, in what order, and when. It isn’t prompt engineering, which is about wording; it’s about selection and sequencing. A badly engineered context makes the agent search for facts it already has or buries the one relevant chunk under noise.
+8. Agentic RAG
+Press enter or click to view image in full size
+
+Retrieval-augmented generation where the agent, not a fixed pipeline, decides whether to retrieve and what to search for. Vanilla RAG retrieves on every turn; agentic RAG can notice the answer is already in memory and skip the search, saving latency and cost.
+9. Memory bloat
+Press enter or click to view image in full size
+
+The failure mode tutorials skip. On long tasks the context keeps growing: you approach the model’s limit, every turn costs more and attention on any single fact gets diluted. Build a summarisation or eviction step from day one, not as a retrofit.
+Group 3:- Tools: how agents act on the world
+10. Tool calling (function calling)
+Press enter or click to view image in full size
+
+The model signals “call this function with these arguments” as structured JSON matching a schema you defined, instead of writing the call in plain text. The model never executes anything; your runtime does, then feeds the result back. Every major provider supports this natively.
+11. Tool schema design
+Press enter or click to view image in full size
+
+Your tool definitions often decide tool-call accuracy more than your model choice. A vague description produces ambiguous calls and required versus optional parameters need to match the real business rules. If the model keeps passing null for a field you need, the schema is wrong before the model is.
+12. Model Context Protocol (MCP)
+Press enter or click to view image in full size
+
+An open standard Anthropic introduced in November 2024 and donated in December 2025 to the Agentic AI Foundation under the Linux Foundation, which it co-founded with Block and OpenAI, with support from Google, Microsoft and AWS. MCP solves the N × M problem: a tool exposes itself once through an MCP server and any MCP-compatible agent can use it. It runs on JSON-RPC 2.0; OAuth 2.1 authorization arrived in the March 2025 spec, async Tasks in November 2025, and statelessness in the July 2026 revision. For a new tool integration today, MCP is the default.
+13. Agent-to-Agent (A2A) protocol
+Press enter or click to view image in full size
+
+MCP connects agents to tools; A2A connects agents to each other. A LangGraph agent, a CrewAI agent and a custom Python agent can all work together over A2A. The goal is interoperability across frameworks.
+14. Blast radius
+Press enter or click to view image in full size
+
+Borrowed from incident response: before a tool call runs, ask how many files, records or services it can affect. Small radius means a bad call is cheap to undo. Large radius (a database write, an email, a deployment) means a human checkpoint first. Enforce that boundary with permissions, not just instructions.
+Group 4:- Multi-agent systems: how agents coordinate
+15. Orchestrator vs worker
+Press enter or click to view image in full size
+
+In a multi-agent system the orchestrator holds the goal and delegates; it routes but doesn’t run tools. Workers run tools but don’t set strategy. The cleaner that separation, the easier it is to debug a failed subtask.
+16. Human-in-the-loop (HITL)
+Press enter or click to view image in full size
+
+A checkpoint where the agent pauses until a human approves, rejects or edits a proposed action. LangGraph supports it natively with interrupt and resume. It’s not a sign your agent isn’t autonomous enough; it’s a load-bearing safety mechanism. The real question is where to put the checkpoints.
+17. Durable execution
+Press enter or click to view image in full size
+
+The workflow can pause, persist its state and resume, even on another machine, without losing progress. Without it, a two-hour task that crashes at minute 90 starts again from zero. It’s what lets you put an agent in a cron job.
+18. State management and reducers
+Press enter or click to view image in full size
+
+In graph frameworks like LangGraph, nodes read and write a shared state object. A reducer decides how concurrent writes merge: if two parallel nodes append to the same list, the reducer combines them. Get it wrong and you lose data silently and only under concurrency.
+19. Parallel agent workflows
+Press enter or click to view image in full size
+
+Several agents run at once against shared state. It’s genuinely faster for work that splits cleanly, but two agents writing conflicting values is the classic failure. Fix it with a lock, a reducer or by partitioning the work so writes never overlap.
+Group 5:- Production safety: what stops it from acting badly
+20. Prompt injection
+Press enter or click to view image in full size
+
+Malicious text in the agent’s environment (a scraped page, a document, a database field) carries instructions that try to override the system prompt. In a chatbot that’s a wrong answer; in an agent it’s a wrong action that can chain across tools before a human sees it. OWASP lists it as LLM01:2025 and says no single technique fully prevents it, so layer defences: input validation, least-privilege tool permissions, an allow-list of tools enforced at the gateway rather than in the prompt and audit logs. Indirect injection, from content the agent fetches at runtime, is the most dangerous kind.
+
+Beyond prompt injection, three properties are worth designing in from the start: observability (can you replay the exact prompt, tool call and observation behind an output?), sandboxing (does code run in an isolated environment with no network by default?) and least-privilege permissions (does the agent really need write access to production when a read-only replica would do?).
+Putting it together: the framework landscape in two minutes
+Press enter or click to view image in full size
+
+LangGraph is the go-to for stateful, long-running workflows: durable execution, human-in-the-loop via interrupt and resume and reducer-based state are built-in primitives rather than community recipes.
+
+CrewAI uses a role-based model of crews and flows. It’s the fastest path from idea to multi-agent prototype and supports MCP and A2A. Treat vendor adoption figures as marketing until independently verified.
+
+AutoGen is now in maintenance mode. Microsoft folded its development into Microsoft Agent Framework, which reached 1.0 general availability on April 2, 2026, with Python and .NET support and native MCP and A2A. For new projects on the Microsoft stack, that’s the successor; the community fork AG2 continues separately.
+
+None of these frameworks saves you from understanding the 20 concepts. They implement them; they don’t explain them. You still need to know what a reducer does to debug a state conflict and you still need to understand blast radius to know where a HITL gate belongs.
+Wrapping up
+
+Twenty concepts is a lot to carry. The shortcut is to group them by the question they answer. Reasoning patterns answer what does the agent do next? Memory answers what does it know? Tools answer how does it act on the world? Multi-agent concepts answer how do agents coordinate? Safety answers what stops it from acting badly?
+
+If you can place a bug or a design decision in one of those buckets, you’ll know which concepts to reach for. That’s more useful than a definition you memorised and forgot by Thursday.
+
+
+
+
+
+
+20 System Design Concepts Every Engineer Needs Before Building an AI Agent
+Memory, orchestration, guardrails, tool protocols: the engineering decisions that separate a demo from a production system
+ 
+
+The agent demo worked on a Thursday afternoon. By Monday it was hallucinating tool arguments, losing context after three turns and calling an external API in a loop nobody noticed until the bill arrived. Some version of that happens to almost every team and it’s a system design problem, not a prompt problem. The model is fine. The architecture around it is the gap.
+
+This article maps the 20 system design concepts that decide whether an agent holds up, grouped into six areas. No framework wars, no benchmarks: just the concepts and the tradeoffs.
+Press enter or click to view image in full size
+Concepts 1–4: The core agent loop
+
+Every agent, whatever the framework, runs the same cycle: take input, reason, choose an action, execute it, observe the result, repeat.
+Press enter or click to view image in full size
+
+1. The agent loop. Treat it as a first-class architectural piece, not a while True buried in library code. If you can't see each edge of the loop, you can't debug it.
+
+2. The context window is working memory. The model can only reason over what fits in its context. Every token spent on boilerplate is a token unavailable for the task, which feels obvious until your agent starts dropping tool results because the history grew past the limit.
+
+3. The action space. Before writing code, define exactly what your agent may do: which APIs it can call, whether it can write to databases, whether it can spawn subtasks. An unbounded action space causes failures that are “correct” in a narrow sense but disastrous in context. In July 2025, Replit’s coding agent deleted SaaStr founder Jason Lemkin’s production database during a code freeze despite repeated instructions not to make changes, then generated fake records to fill the gap. No hard boundary stood between the agent and a destructive operation.
+
+4. Termination conditions. A loop with no ceiling will eventually spin. Every major framework ships a default iteration cap and that default becomes your silent production ceiling unless you set your own. Check yours and set it on purpose.
+
+    Sakshi Jaiswal: [LinkedIn]
+    I’m sharing my daily learning in form of Notes and Video: [Instagram], Lets learn together!
+
+Concepts 5–8: Memory
+
+Memory is where prototype and production agents diverge most. There are three distinct types and they aren’t interchangeable.
+Press enter or click to view image in full size
+
+5. Working memory is whatever fits in the current context window: temporary, cleared each run, bounded by the token limit.
+
+6. Episodic memory persists across runs, stored in a vector database or structured table and retrieved by similarity or rules.
+
+7. Procedural memory captures learned habits, such as how to use a tool correctly, usually baked into the system prompt or a fine-tune. If your agent keeps making the same mistake on a recurring task, it lacks procedural memory of the right approach.
+
+8. RAG inside the loop. Instead of stuffing all reference material into context, retrieve only what’s relevant to the current step. In practice RAG quality is dominated by chunking and re-ranking, not by the retrieval model. Poor chunking is a common root cause of production hallucination: the agent retrieves text that’s near the right answer but isn’t it. Dedicated memory layers like Mem0, Letta and Zep exist because “just use a vector database” breaks down at scale.
+
+A useful model: working memory is RAM, episodic memory is SSD, procedural memory is firmware. Most agent bugs live at the boundary between the first two.
+Concepts 9–12: Planning and reasoning
+Press enter or click to view image in full size
+
+9. ReAct (Reasoning + Acting) is the dominant planning pattern. The model alternates “thought” steps with “action” steps until it reaches an answer or a termination condition. It’s well understood and debuggable, which is its main production advantage.
+
+10. Plan-and-Execute splits the work: a planner breaks the goal into subtasks upfront and an executor runs each one. The planner can be your most capable model while execution uses faster, cheaper ones. The tradeoff is brittleness: if the plan is wrong or the environment changes, you need replanning logic or the agent charges ahead on a stale plan.
+
+11. Reflexion or self-critique: after producing an output, the agent evaluates it against criteria and revises. Research shows this can meaningfully improve accuracy on tasks like coding over a single pass, at the cost of extra latency and model calls. Correctness versus speed is a real production choice.
+
+12. Task decomposition in general: break a problem into subtasks routed to specialized agents or tools. It’s the right move when one context can’t hold everything needed or when parallelism would cut wall-clock time. It’s also where coordination complexity starts compounding: a system that works with two subtasks won’t automatically work with twelve.
+Concepts 13–15: Tool use and protocols
+
+13. Function calling is how a model decides to invoke a capability instead of writing text: it outputs a structured call (a name plus typed arguments), your code runs it and returns the result. Typed schemas (Pydantic or JSON Schema) cut malformed calls sharply and the description is the interface: vague descriptions are the biggest source of wrong tool selection.
+
+from pydantic import BaseModel, Field
+class SearchDocsArgs(BaseModel):
+    query: str = Field(
+        description="Exact keyword or phrase to search. Do NOT use for general web search."
+    )
+    max_results: int = Field(default=5, ge=1, le=20)
+# The description IS the semantic interface the model reads
+def search_internal_docs(args: SearchDocsArgs) -> list[dict]:
+    ...
+
+That one “Do NOT use for general web search” clause does more work than most system prompts. Without it, a model that has both a web-search tool and this one will mix them up.
+
+14. MCP, the Model Context Protocol. Anthropic introduced it in November 2024 and it’s become the closest thing to a universal standard for agent tools: a JSON-RPC client-server interface through which an agent discovers tools at runtime (tools/list) and calls them (tools/call). OpenAI adopted it for its Agents SDK in March 2025 and Google and Microsoft followed.
+Press enter or click to view image in full size
+
+The system design implication: in many clients, every connected server adds its full tool list to the agent’s context. Connect dozens of servers with hundreds of tools and you waste tokens, increase wrong tool picks and add latency. Some clients now load tool definitions on demand, which helps, but the advice holds: build purpose-specific agents with bounded tool sets.
+
+15. Tool error handling. Tools fail constantly: timeouts, 500s, partial responses, schema changes, rate limits. Many agents respond by confidently inventing what the result “probably” was. That’s a hallucination caused by unconstrained tool use, not a defective model. The fix is deterministic fallbacks and explicit retry policies, not better prompting.
+Press enter or click to view image in full size
+Concepts 16–17: Multi-agent coordination
+
+16. Orchestration topology. The three shapes are sequential (a chain of handoffs), parallel (fan out to agents, then merge) and hierarchical (a director delegating to sub-agents, which may delegate further). Hierarchical works well when a problem spans distinct domains. Coordination overhead grows faster than the number of agents: double the agents and you more than double the room for state conflicts and race conditions.
+Press enter or click to view image in full size
+
+17. Shared state and handoff design. When Agent A hands off to Agent B, what exactly crosses the boundary? LangGraph, which reached 1.0 in October 2025 and runs in production at companies including Uber, LinkedIn and Klarna, has agents read and write a central state object, with reducers to merge concurrent updates. That makes state explicit and inspectable. Frameworks that pass state as free-form conversation (the “group chat” model) hide its structure in natural language, which makes multi-step failures much harder to debug. Rule of thumb: use structured, typed state at agent boundaries. If you can’t serialize the handoff, you can’t replay the failure.
+
+Practically: start single-agent. Go multi-agent only when one agent genuinely runs out of context, when parallelism is needed for latency or when the domains separate cleanly. Most teams split too early and spend their time on coordination problems a well-scoped single agent wouldn’t have.
+Concepts 18–20: Production safety
+Press enter or click to view image in full size
+
+18. Guardrails inspect every prompt or response before it’s acted on. Input guardrails catch prompt injection and personal data before the model sees them; output guardrails catch hallucinations, policy violations and data leaks before they reach users or downstream systems. For agents the layer goes further: a pre-tool-use hook can block specific commands, like a destructive file operation or a write to a production table, before they run. This matters because a wrong agent answer can bind a company contractually and a leaked record can trigger a regulatory event.
+
+19. Observability. Traditional monitoring happily reports 200 OK while hallucinated answers reach customers. Agent observability means tracing decisions: which tool was called with which arguments, which memory chunks were retrieved, how long each step took and where the run diverged from the expected path. OpenTelemetry-compatible tracing has become the standard target. Practitioners consistently cite weak observability as one of the biggest pain points in production agents. The checklist: a trace per run, token usage per step, tool-call latency, and a structured log of every handoff.
+
+20. Human-in-the-loop. Not every step should be autonomous. A HITL checkpoint is a designed pause where a person approves an action before the system continues: a purchase over a threshold, a message to a customer, a deletion. LangGraph exposes this as a native interrupt-and-resume primitive. The goal isn’t to reintroduce the bottleneck agents remove; it’s to put human judgment exactly where an autonomous mistake costs more than a review. Finding those points is one of the most important design decisions you’ll make.
+Wrapping up
+
+Twenty concepts is a long list, but the groups make it manageable. Get the loop right first: a bounded action space, explicit termination, disciplined context. Add memory only as complex as your task needs. Pick a planning pattern that matches how often your domain needs replanning. Define tool schemas like contracts. Think hard before going multi-agent and when you do, make state typed and explicit. Then build guardrails, traces and human checkpoints as load-bearing architecture, not afterthoughts.
+
+The engineers whose agents survive production aren’t the ones who picked the right framework. They’re the ones who understood what the framework was doing and could work below it when it mattered.
