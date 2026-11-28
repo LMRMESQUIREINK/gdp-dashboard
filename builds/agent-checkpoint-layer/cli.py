@@ -11,6 +11,14 @@ than `start` or `resume`.
     python3 cli.py approve <run_id>
     python3 cli.py resume <run_id>
     python3 cli.py status <run_id>
+
+`approve`/`resume` both take an optional `--mandate-db` -- when given,
+`approve` ALSO grants a durable Mandate (checkpoint/mandate.py) recording
+the run's context at that exact moment, and `resume` revalidates it
+against whatever the CURRENT prop-firm rules say before letting the
+approval-gated stage run. Omitting `--mandate-db` (the default) is the
+original behavior from before this flag existed: the boolean approval
+flag alone decides, with no revalidation at all.
 """
 from __future__ import annotations
 
@@ -18,8 +26,9 @@ import argparse
 import json
 import sys
 
+from checkpoint.mandate import MandateStore
 from checkpoint.store import CheckpointStore
-from workflow import advance, create
+from workflow import advance, create, grant_approval_mandate
 
 DEFAULT_DB = "runs.db"
 
@@ -39,12 +48,16 @@ def main() -> None:
     p_approve = sub.add_parser("approve")
     p_approve.add_argument("run_id")
     p_approve.add_argument("--db", default=DEFAULT_DB)
+    p_approve.add_argument("--mandate-db", default=None,
+                            help="also grant a durable, revalidated-on-resume Mandate — see checkpoint/mandate.py")
 
     p_resume = sub.add_parser("resume")
     p_resume.add_argument("run_id")
     p_resume.add_argument("--db", default=DEFAULT_DB)
     p_resume.add_argument("--crash-after-stage", default=None,
                            help="test-only crash injection — see workflow.advance()")
+    p_resume.add_argument("--mandate-db", default=None,
+                           help="revalidate this run's Mandate against current rules before resuming — see checkpoint/mandate.py")
 
     p_status = sub.add_parser("status")
     p_status.add_argument("run_id")
@@ -62,10 +75,19 @@ def main() -> None:
 
     elif args.command == "approve":
         store.grant_approval(args.run_id, note="approved via cli")
-        print(json.dumps({"run_id": args.run_id, "approved": True}))
+        mandate_id = None
+        if args.mandate_db:
+            mandate_store = MandateStore(args.mandate_db)
+            mandate_id = grant_approval_mandate(store, mandate_store, args.run_id)
+            mandate_store.close()
+        print(json.dumps({"run_id": args.run_id, "approved": True, "mandate_id": mandate_id}))
 
     elif args.command == "resume":
-        result = advance(store, args.run_id, crash_after_stage=args.crash_after_stage)
+        mandate_store = MandateStore(args.mandate_db) if args.mandate_db else None
+        result = advance(store, args.run_id, crash_after_stage=args.crash_after_stage,
+                          mandate_store=mandate_store)
+        if mandate_store is not None:
+            mandate_store.close()
         print(json.dumps(result, default=str))
 
     elif args.command == "status":

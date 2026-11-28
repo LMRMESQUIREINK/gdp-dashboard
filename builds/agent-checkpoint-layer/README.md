@@ -114,6 +114,87 @@ python3 cli.py approve <run_id>                               # a human, any tim
 python3 cli.py resume <run_id>                                # continues from exactly where it paused
 ```
 
+## `checkpoint/mandate.py` — Mandate revalidation on resume
+
+A durable checkpoint and a standing approval are two different "survives
+ending and resuming" states, and this build originally only had the
+first: once `approve` set the boolean `approvals` flag, `advance()`
+checked it forever, with no way for a run paused for a day (or a week)
+to notice the real rules it was approved against had since changed.
+`/builds/dsh-thread-mandate/`'s own README named this exact gap as left
+for a build like this one, having already read it from
+`deepseek-ai/dsh-superagent-prototype`'s domain model and applied the
+same pattern once already, in `/builds/policy-control-plane/
+policy/mandate_store.py`. This build is the second application of that
+pattern — to a genuinely different kind of state (one linear workflow's
+WAL-logged stage transitions, not a standing multi-call tool
+authorization).
+
+`checkpoint/mandate.py`'s `MandateStore` is a `grant()`/`withdraw()`/
+`end_unit_of_work()`/`resume_unit_of_work()` surface, reusing exactly the
+three rules `mandate_store.py` established: ending a unit of work never
+revokes it; only an explicit withdrawal or a failed revalidation *at
+resume* does; and revalidation reuses whatever real decision function the
+caller already uses for real, never a second ad hoc rule invented just
+for this module. Since this build has no `PolicyEvaluator` class (only
+`prop_firm_position_sizing.evaluate_size()`), `mandate.py` stays generic
+by taking a plain `revalidate_fn(context) -> (ok, reason)` callable
+instead — `workflow.py`'s `_revalidate_against_current_rules()` wires in
+the exact same `evaluate_size()` call `advance()` already runs for real,
+against whatever `TPT_TIERS`/`CONTRACT_SPECS` say *right now*, not the
+context's own cached `risk_sizing` result from grant time.
+
+Wiring is strictly additive: `advance()` gained an optional
+`mandate_store: Optional[MandateStore] = None` parameter, and `cli.py`'s
+`approve`/`resume` gained an optional `--mandate-db` flag. Omitting it
+(the default) is byte-for-byte the pre-existing behavior — confirmed by
+re-running `test_checkpoint.py` unmodified after every change below, with
+zero regression. When given, `approve` also grants a real Mandate via the
+new `grant_approval_mandate()` (recording the run's tier/symbol/contracts
+*at the moment of approval*), and a later `resume` revalidates it; a
+`MandateRevoked` becomes a real, new `approval_revoked` checkpoint status
+— persisted to the WAL like any other status — rather than an uncaught
+exception, since a prop firm tightening a tier's rules between approval
+and resume is an ordinary, expected outcome, not a bug.
+
+```bash
+python3 test_mandate.py
+```
+
+32/32 checks pass on the real run, in three sections:
+
+1. The module in isolation (13 checks) — scripted `revalidate_fn`s,
+   mirroring `/builds/policy-control-plane/test_mandate_store.py`'s own
+   structure: grant/end/resume-succeeds/resume-revokes/already-revoked-
+   stays-revoked/withdraw-is-unconditional/persists-across-reopen.
+2. A real end-to-end section (6 checks) reusing `evaluate_size()`/
+   `PropFirmAccount` directly, with the REAL `TPT_TIERS['100K']` tier
+   *temporarily* tightened (`max_contracts` 12 → 8, always restored in a
+   `finally`, confirmed restored by an assertion) to simulate an actual
+   rules change between grant and resume — not a synthetic stand-in:
+   3 contracts of MES is proven within the 25% rule under the real,
+   untouched tier, then proven revoked once the real tier really
+   tightens.
+3. `workflow.py`'s own wiring (13 checks), split into an in-process half
+   (3a — a monkeypatch to `TPT_TIERS` is only visible to code sharing
+   that process, so the real `approval_revoked` outcome, including that
+   the checkpoint persists it and that `finalize` never actually ran, is
+   proven by calling `create()`/`grant_approval_mandate()`/`advance()`
+   directly) and a real `cli.py` subprocess half (3b — proving
+   `--mandate-db` is genuinely parsed and threaded through end to end on
+   the normal, unchanged-rules path, which is the part a subprocess
+   boundary can still prove for itself).
+
+**No bug found in `checkpoint/mandate.py` or `workflow.py`'s wiring
+itself** — the one failure hit while building this was a test-authoring
+mistake, not a module bug: an early assertion checked the revoked reason
+for the literal substring `"within_rule=False"`, which only appears in
+Section 2's own local helper text, not in `workflow.py`'s real
+`_revalidate_against_current_rules()` (which says "no longer stays
+within the 25% rule" instead) — caught immediately by the first real run
+and fixed by correcting the assertion to match the real code's own
+wording, not by changing the module.
+
 ## What's cut, and why
 
 This implements the orchestration layer's checkpoint/pause/resume piece

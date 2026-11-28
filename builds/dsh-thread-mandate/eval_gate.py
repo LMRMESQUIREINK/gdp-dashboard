@@ -17,13 +17,16 @@ One direct, real consequence of gate-only: the real repo's Strength group
 is `explicit` / `inferred`, and only the gate layer can ever grant
 `explicit` strength (a Trigger's actor is named directly in a rule) --
 `inferred` strength needs the model's judgement, so this module never
-produces it. That's a real, stated scope limit, not an oversight.
+produces it on its own. `run_gate_eval()` now optionally hands off to a
+typed assessment-layer interface (`assessment.py`, same real two-layer
+Eval concept) when no gate rule matches, rather than concluding IGNORE
+on the gate layer's silence alone -- see `assessment.py`'s own docstring
+for exactly what gap that closes.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from thread_mandate import (
     Decision,
@@ -34,11 +37,10 @@ from thread_mandate import (
     Ticket,
     TicketRegistry,
 )
+from assessment import Strength
 
-
-class Strength(Enum):
-    EXPLICIT = "explicit"
-    INFERRED = "inferred"
+if TYPE_CHECKING:
+    from assessment import Assessor
 
 
 @dataclass(frozen=True)
@@ -59,12 +61,18 @@ class GateRule:
 
 @dataclass
 class EvalResult:
-    """Output of the gate layer. `mandate`/`strength`/`matched_scope` are
-    only ever set together, and only on ACCEPT."""
+    """Output of Eval (gate layer, then optionally assessment).
+    `mandate`/`strength`/`matched_scope` are only ever set together, and
+    only on ACCEPT. `reason` is always set on IGNORE, distinguishing "no
+    gate rule, and no assessment layer was even configured" from "no gate
+    rule, and a real assessment layer was consulted and also declined" --
+    the real gap this module's assessment hand-off closes (see
+    `assessment.py`)."""
     decision: Decision
     mandate: Optional[Mandate] = None
     strength: Optional[Strength] = None
     matched_scope: Optional[str] = None
+    reason: str = ""
 
 
 def run_gate_eval(
@@ -73,15 +81,19 @@ def run_gate_eval(
     gate_rules: list[GateRule],
     *,
     expired_attempts: int = 0,
+    assessor: "Optional[Assessor]" = None,
 ) -> EvalResult:
-    """The deterministic gate pass over one already-taken EvalBatch (see
-    `Thread.start_eval()`). Real repo: "An expired Eval queues its
-    Triggers for another attempt. After two consecutive retries, the
-    third expiry records unavailable" -- `expired_attempts` lets a caller
-    model exactly that: 0 and 1 are live retries, 2 or more always records
-    UNAVAILABLE regardless of what the batch actually contains, since the
-    real rule is about the Eval itself timing out, not about anything the
-    Triggers say.
+    """The gate pass over one already-taken EvalBatch (see
+    `Thread.start_eval()`), optionally handing off to the assessment
+    layer when the gate alone finds nothing. Real repo: "An expired Eval
+    queues its Triggers for another attempt. After two consecutive
+    retries, the third expiry records unavailable" -- `expired_attempts`
+    lets a caller model exactly that: 0 and 1 are live retries, 2 or more
+    always records UNAVAILABLE regardless of what the batch actually
+    contains, since the real rule is about the Eval itself timing out,
+    not about anything the Triggers say. The expired-attempts check is
+    deliberately checked before either layer runs -- a timed-out Eval
+    never reaches gate or assessment at all.
 
     A rule whose scope the CURRENT Policy no longer grants is treated as
     if it didn't exist at all -- the gate never falls back to some other
@@ -93,16 +105,25 @@ def run_gate_eval(
     on a Policy change" because half-finished, uncoordinated work is
     worse than a clean stop -- the same reasoning favors resolving an
     explicit stop request before starting anything new in the same batch.
+
+    When no gate rule matches anything in the batch, and `assessor` is
+    given, it is asked before concluding IGNORE -- only the assessment
+    layer may grant INFERRED strength, and only when its own named
+    `scope` is itself one the current Policy grants (the same rule the
+    gate layer already enforces for its own rules, applied identically
+    here so the assessment layer gets no looser a check than the gate
+    layer does).
     """
     if expired_attempts >= 2:
-        return EvalResult(decision=Decision.UNAVAILABLE)
+        return EvalResult(decision=Decision.UNAVAILABLE, reason="Eval expired twice")
 
     for trigger in batch.triggers:
         for rule in gate_rules:
             if not policy.grants(rule.scope):
                 continue
             if trigger.actor in rule.stoppers:
-                return EvalResult(decision=Decision.STOP, matched_scope=rule.scope)
+                return EvalResult(decision=Decision.STOP, matched_scope=rule.scope,
+                                   reason=f"gate rule matched for scope {rule.scope!r}")
 
     for trigger in batch.triggers:
         for rule in gate_rules:
@@ -115,9 +136,44 @@ def run_gate_eval(
                     mandate=mandate,
                     strength=Strength.EXPLICIT,
                     matched_scope=rule.scope,
+                    reason=f"gate rule matched for scope {rule.scope!r}",
                 )
 
-    return EvalResult(decision=Decision.IGNORE)
+    if assessor is None:
+        return EvalResult(
+            decision=Decision.IGNORE,
+            reason="no gate rule matched; no assessment layer is configured",
+        )
+
+    from assessment import AssessmentRequest  # local import avoids a module-load cycle
+
+    declined_scopes = tuple(sorted({rule.scope for rule in gate_rules}))
+    assessment = assessor(AssessmentRequest(batch=batch, policy=policy,
+                                             gate_declined_scopes=declined_scopes))
+
+    if assessment.decision is Decision.ACCEPT and assessment.scope and policy.grants(assessment.scope):
+        mandate = Mandate(scope=assessment.scope, policy_version=policy.version)
+        return EvalResult(
+            decision=Decision.ACCEPT,
+            mandate=mandate,
+            strength=Strength.INFERRED,
+            matched_scope=assessment.scope,
+            reason=f"assessment layer accepted scope {assessment.scope!r}: {assessment.reason}",
+        )
+    if assessment.decision is Decision.STOP and assessment.scope and policy.grants(assessment.scope):
+        return EvalResult(
+            decision=Decision.STOP,
+            matched_scope=assessment.scope,
+            reason=f"assessment layer requested stop for scope {assessment.scope!r}: {assessment.reason}",
+        )
+
+    return EvalResult(
+        decision=Decision.IGNORE,
+        reason=(
+            "no gate rule matched; assessment layer was consulted and declined "
+            f"(or named a scope the current Policy doesn't grant): {assessment.reason}"
+        ),
+    )
 
 
 def accept_ticket(

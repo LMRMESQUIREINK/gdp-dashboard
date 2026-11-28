@@ -79,7 +79,57 @@ only revalidated on resume -- a genuinely new gap.
 
 ## What's built
 
-`thread_mandate.py`:
+### `eval_gate.py` and `assessment.py` -- the real two-layer Eval, gate built, assessment's interface typed
+
+Real repo: *"Eval -- The judgement on a batch of Triggers, in two layers:
+gate and assessment... Gate -- The deterministic first layer of Eval: who
+may originate work, and with what strength... Assessment -- The model's
+judgement during Eval."* The README above originally said Eval itself was
+"read and credited... but not reimplemented" -- that's now only true of
+the model call inside the assessment layer; the gate layer is built and
+tested, and the assessment layer's typed contract is too.
+
+`eval_gate.py`'s `run_gate_eval(batch, policy, gate_rules, *,
+expired_attempts=0, assessor=None)` takes an `EvalBatch` straight off
+`Thread.start_eval()` and produces a real `EvalResult` (`decision`,
+`mandate`, `strength`, `matched_scope`, `reason`). `accept_ticket()` and
+`apply_stop()` are the two things an `EvalResult` is ever used for: create
+a real, Subscription-fan-out-ready `Ticket` on `ACCEPT`, or withdraw a
+targeted `Ticket`'s `Mandate` on `STOP`.
+
+`assessment.py` closes a real gap in the gate-only version: with no
+assessment layer, `run_gate_eval()` returned `IGNORE` the instant no gate
+rule matched -- collapsing "no deterministic rule exists" into the same
+bare decision as "a real assessment layer was consulted and declined,"
+even though the real repo's Strength group (`explicit`/`inferred`) implies
+these are different situations: only the assessment layer can ever grant
+`inferred` strength (a gate rule only ever grants `explicit`), so a gate
+miss was never itself a reason to stop looking. `AssessmentRequest`/
+`AssessmentResult`/`Assessor` (a plain `Callable[[AssessmentRequest],
+AssessmentResult]`) are the typed contract an assessor would plug into;
+`EvalResult.reason` now distinguishes, in plain text, "no gate rule
+matched; no assessment layer is configured" from "no gate rule matched;
+assessment layer was consulted and declined." **No live model
+implementation of an `Assessor` exists in this sandbox** -- the same
+standing restriction as every other build here needing a live model call.
+`test_assessment.py` exercises the real hand-off with a scripted stand-in
+assessor, same mocking convention this project uses throughout for a
+model-dependent component.
+
+An assessor is held to exactly the same check the gate layer already
+enforces for its own rules: it can name an `ACCEPT`/`STOP` scope, but that
+scope still has to be one the *current* `Policy` grants, or it's refused
+and falls through to the real `IGNORE`. A matching gate rule always
+decides the batch *without ever calling the assessor at all* -- proven
+directly in the test by a call-counter assessor that's wired in but never
+invoked when the gate layer already matched.
+
+```bash
+python3 test_eval_gate.py      # 22/22
+python3 test_assessment.py     # 20/20
+```
+
+### `thread_mandate.py`
 
 - `Trigger` -- one immutable event, carrying an `ActorKind` (`PERSON`,
   `BOT`, or `CI`), matching the real repo's own actor-kind distinction.
@@ -142,15 +192,32 @@ instead of three, a straightforward syntax error caught immediately by
 
 ## What's deliberately not built here
 
-The real repo's Eval itself (a deterministic *gate* layer plus a model
-*assessment* layer, producing `accept`/`stop`/`ignore`/`unavailable`) is
-read and credited in `/notes/dsh-superagent-analysis.md` but not
-reimplemented -- its assessment layer needs a live model call, and this
-project already has adjacent governance mechanisms
-(`/builds/policy-control-plane/`, `/builds/agent-checkpoint-layer/`)
-covering related ground from different source articles. The real GitHub/
-Feishu Source implementations, the panel UI, and the actual DeepSeek
-Harness Executor integration are all out of scope here -- none are
-testable from this sandbox without a live GitHub App or a live DSH
-runtime, and none of them is the generalizable mechanism this build set
-out to extract.
+A live `Assessor` implementation -- the actual model call behind
+`assessment.py`'s typed contract -- needs a real model API, the same
+standing restriction as every other build in this project needing one;
+`test_assessment.py`'s scripted stand-in proves the hand-off mechanism
+itself, not a real model's judgement. This project already has adjacent
+governance mechanisms (`/builds/policy-control-plane/`,
+`/builds/agent-checkpoint-layer/`) covering related ground from different
+source articles, so a second, redundant general-purpose policy engine
+wasn't built here either -- `eval_gate.py`'s `GateRule` is deliberately
+narrow (originate/stop scopes keyed to actor names), matching only what
+the real repo's own Gate concept actually is.
+
+The real GitHub/Feishu Source implementations, the panel UI, and the
+actual DeepSeek Harness Executor integration are all out of scope here --
+none are testable from this sandbox without a live GitHub App or a live
+DSH runtime, and none of them is the generalizable mechanism this build
+set out to extract.
+
+## Where this is used elsewhere in the project
+
+`/builds/interface-lift-toolkit/thread_gate_tool.py` copies
+`thread_mandate.py` and `eval_gate.py` in unmodified (this project's
+standard cross-build convention: a static, point-in-time snapshot, not a
+live sync -- that copy does not carry this round's `assessment.py`
+addition, since the toolkit's gate wiring has no present need for it) and
+wires `run_gate_eval()`/`accept_ticket()`/`apply_stop()` onto that
+toolkit's real `ToolRegistry`, so a Ticket's Mandate genuinely gates real
+tool dispatch (`prop_firm_size_check`) rather than staying a standalone
+demo. See that build's own README/`okf_knowledge/` bundle for the details.

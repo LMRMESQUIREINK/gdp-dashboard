@@ -23,3 +23,6 @@ failed, because `ok` is computed from `checks`, not passed in.
   omission from the round that added this file, caught by
   `/builds/okf-navigator/drift_check.py`; named as plain text, not a
   link, since this file isn't modeled as its own concept in this bundle.
+- `thread_gate_tool.py` — same, for `thread_gate_request`/
+  `thread_gate_execute`. Same convention immediately above: named as
+  plain text, not modeled as its own concept.

@@ -33,3 +33,8 @@ come out in Anthropic's native tool-use shape, matching
   file, caught by `/builds/okf-navigator/drift_check.py`'s AST re-grep
   rather than left in place: this file itself isn't modeled as its own
   concept in this bundle, so it's named here as plain text, not a link.
+- `thread_gate_tool.py` — imports `ToolRegistry` to register
+  `thread_gate_request`/`thread_gate_execute`, wiring
+  `/builds/dsh-thread-mandate/`'s gate-only Eval onto this toolkit's real
+  dispatch. Same convention as `okf_impact_tool.py` immediately above:
+  not modeled as its own concept here, named as plain text.

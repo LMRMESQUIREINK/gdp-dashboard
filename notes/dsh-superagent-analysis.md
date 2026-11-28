@@ -258,3 +258,77 @@ running. 18/18 tests pass, including a real SQLite persistence round
 trip and a direct proof that a person's withdrawal and a policy-driven
 revocation are two structurally distinct mechanisms, matching the exact
 distinction `dsh-thread-mandate` found in the original source repo.
+
+## Addendum 2 — all three further next-moves done in one round
+
+**(1) Same-day — `eval_gate.py`'s gate wired into a real OKF-tracked
+tool registry.** `/builds/interface-lift-toolkit/thread_gate_tool.py`
+copies `thread_mandate.py`/`eval_gate.py` in unmodified (this project's
+standard cross-build snapshot convention — this copy doesn't carry
+Addendum 2's own `assessment.py` addition below, since the toolkit's
+gate wiring has no present need for it) and wires `run_gate_eval()`/
+`accept_ticket()`/`apply_stop()` onto that toolkit's real `ToolRegistry`,
+so a Ticket's Mandate genuinely gates real tool dispatch
+(`prop_firm_size_check`) instead of staying a standalone demo. 15/15 new
+tests pass, including the gated dispatch matching a direct call
+byte-for-byte, the same accepted Ticket authorizing a second,
+differently-parameterized call with no fresh Eval, and a stop-authorized
+actor's withdrawal correctly blocking post-stop dispatch even though an
+identical call succeeded earlier. The toolkit's `okf_knowledge/` bundle
+was updated and `/builds/okf-navigator/drift_check.py` re-run clean
+(16 modules, zero drift) afterward.
+
+**(2) Within a week — the model-assessment layer's typed interface.**
+`/builds/dsh-thread-mandate/assessment.py` — the real repo's own
+two-layer Eval concept names a deterministic *gate* layer (what
+`eval_gate.py` already was) and a model *assessment* layer that alone
+can ever grant `inferred` Strength. Before this round, a gate miss
+collapsed straight to `IGNORE`, conflating "no deterministic rule
+exists" with "a real assessment layer was consulted and declined" —
+`EvalResult` gained a `reason` field and `run_gate_eval()` gained an
+optional `assessor` parameter that, when given, is consulted before
+concluding `IGNORE`, with the same Policy-grants-this-scope check the
+gate layer already enforces applied identically to an assessor's
+`ACCEPT`/`STOP`. No live model implementation exists in this sandbox —
+the same standing restriction as every build here needing one —
+`test_assessment.py` exercises the real hand-off with a scripted
+stand-in `Assessor`. 20/20 tests pass, including proof that a matching
+gate rule always decides *without ever calling the assessor at all* (a
+call-counter assessor wired in but never invoked) and that an assessor
+cannot grant a scope the current Policy doesn't allow, any more than a
+gate rule can. No bug found in either `eval_gate.py`'s extension or the
+new module — both suites that existed before this change were re-run
+afterward with zero regression.
+
+**(3) 2-3 weeks — Mandate-revalidation-on-resume in
+`agent-checkpoint-layer`.** `checkpoint/mandate.py` applies the same
+pattern a second time, to a genuinely different kind of "survives ending
+and resuming" state than `policy-control-plane`'s: one linear workflow's
+WAL-logged stage transitions, not a standing multi-call tool
+authorization. Since this build has no `PolicyEvaluator` class,
+`mandate.py` stays generic by taking an injected `revalidate_fn(context)
+-> (ok, reason)` callable; `workflow.py`'s own
+`_revalidate_against_current_rules()` wires in the exact same
+`evaluate_size()` call `advance()` already runs for real. Wiring is
+strictly additive (`advance(mandate_store=None)`, `cli.py`'s
+`--mandate-db`, both defaulting to the pre-existing behavior exactly) —
+confirmed by re-running `test_checkpoint.py` unmodified with zero
+regression. 32/32 new tests pass across three sections: the module in
+isolation; a real end-to-end section that *temporarily* tightens the
+REAL `TPT_TIERS['100K']['max_contracts']` (12 → 8, restored in a
+`finally`, restoration itself asserted) to simulate an actual rules
+change between grant and resume, proving the exact same 3-contract MES
+Mandate that was fine under the original tier is correctly revoked once
+the real tier really tightens; and `workflow.py`'s own wiring, split
+into an in-process half (proving the real `approval_revoked` checkpoint
+status, that it's actually persisted to the WAL, and that `finalize`
+never ran) and a real `cli.py` subprocess half (proving `--mandate-db`
+is genuinely parsed and threaded through end to end on the normal path —
+the part a subprocess boundary can still prove for itself, since an
+in-process monkeypatch to `TPT_TIERS` isn't visible across a process
+boundary). **One real test-authoring mistake, not a module bug**,
+caught by the first real run and fixed in the test, not the code: an
+early assertion checked for the literal substring `"within_rule=False"`,
+which only appears in the test's own Section 2 helper, not in
+`workflow.py`'s real revalidation function (which says "no longer stays
+within the 25% rule" instead).

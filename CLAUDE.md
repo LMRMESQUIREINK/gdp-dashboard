@@ -5958,6 +5958,63 @@ yourself every time.
   `/builds/okf-navigator/drift_check.py` correctly flagged the real,
   undocumented new consumer edges before the bundle was updated, then
   came back clean once they were added.
+- **All three of that round's own further next-moves done in one round,
+  not a subset.** Addendum 2 in `/notes/dsh-superagent-analysis.md`. (1)
+  **Same-day — `eval_gate.py`'s gate wired into a real OKF-tracked tool
+  registry**: `/builds/interface-lift-toolkit/thread_gate_tool.py`
+  copies `thread_mandate.py`/`eval_gate.py` in unmodified (this
+  project's standard cross-build snapshot convention) and wires
+  `run_gate_eval()`/`accept_ticket()`/`apply_stop()` onto that toolkit's
+  real `ToolRegistry`, so a Ticket's Mandate genuinely gates real tool
+  dispatch (`prop_firm_size_check`) instead of staying a standalone
+  demo. 15/15 new tests pass, including the gated dispatch matching a
+  direct call byte-for-byte and a stop-authorized actor's withdrawal
+  correctly blocking post-stop dispatch even though an identical call
+  succeeded earlier. The toolkit's `okf_knowledge/` bundle was updated
+  and `/builds/okf-navigator/drift_check.py` re-run clean (16 modules,
+  zero drift) afterward. (2) **Within a week — the model-assessment
+  layer's typed interface**: `/builds/dsh-thread-mandate/assessment.py`
+  closes a real gap in the gate-only build — a gate miss used to
+  collapse straight to `IGNORE`, conflating "no deterministic rule
+  exists" with "a real assessment layer was consulted and declined,"
+  even though only the assessment layer can ever grant the real repo's
+  `inferred` Strength. `EvalResult` gained a `reason` field and
+  `run_gate_eval()` gained an optional `assessor` parameter, consulted
+  before concluding `IGNORE`, held to the exact same Policy-grants-this-
+  scope check the gate layer already enforces for its own rules. No
+  live model implementation exists in this sandbox — `test_assessment.py`
+  exercises the real hand-off with a scripted stand-in `Assessor`.
+  20/20 tests pass, including proof that a matching gate rule always
+  decides without ever calling the assessor at all. No bug found; both
+  pre-existing suites re-confirmed with zero regression. (3) **2-3
+  weeks — Mandate-revalidation-on-resume in `/builds/agent-checkpoint-
+  layer/`**: `checkpoint/mandate.py` applies the same pattern a second
+  time (after `policy-control-plane`'s) to a genuinely different kind of
+  "survives ending and resuming" state — one linear workflow's
+  WAL-logged stage transitions, not a standing multi-call tool
+  authorization. No `PolicyEvaluator` exists in that build, so
+  `mandate.py` stays generic via an injected `revalidate_fn`;
+  `workflow.py`'s own revalidation wires in the exact same
+  `evaluate_size()` call `advance()` already runs for real. Wiring is
+  strictly additive (`advance(mandate_store=None)`, `cli.py`'s
+  `--mandate-db`, both defaulting to the pre-existing behavior exactly)
+  — confirmed by re-running the pre-existing `test_checkpoint.py`
+  unmodified with zero regression. 32/32 new tests pass, including a
+  real end-to-end section that *temporarily* tightens the REAL
+  `TPT_TIERS['100K']['max_contracts']` (12 → 8, restored in a `finally`,
+  restoration itself asserted) to prove the exact same 3-contract MES
+  Mandate that was fine under the original tier is correctly revoked
+  once the real tier really tightens, plus an in-process proof that the
+  revoked checkpoint status is actually persisted and `finalize` never
+  ran, and a real `cli.py` subprocess proof that `--mandate-db` is
+  genuinely parsed and threaded through on the normal path. One real
+  test-authoring mistake (not a module bug) was caught by the first real
+  run and fixed in the test: an assertion checked for text that only
+  appears in the test's own helper, not in `workflow.py`'s real
+  revalidation function. `agent-checkpoint-layer` has no `okf_knowledge/`
+  bundle (unlike `policy-control-plane`/`interface-lift-toolkit`/
+  `trading-jarvis`), so there was nothing for `drift_check.py` to
+  re-check there — stated plainly rather than silently skipped.
 
 ---
 
